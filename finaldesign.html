@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>WHAT TO DO :)</title>
+    <style>
+        body {
+           
+            background: radial-gradient(circle at top left, #667eea, #764ba2, #2d3436);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        
+        .todo-container {
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(15px);        
+            padding: 40px;
+            border-radius: 30px;
+            
+            
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3), 
+                        inset 0 0 15px rgba(255, 255, 255, 0.1); 
+            
+            width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+
+        input::placeholder { color: rgba(255, 255, 255, 0.5); }
+        input:focus { border-color: #00d2ff; background: rgba(255, 255, 255, 0.1); }
+
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.5);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="todo-container">
+        <h1>TO DO LIST :)</h1>
+        <div class="input-section">
+            <input type="text" id="taskInput" placeholder="What do you need to do brosky?">
+            <button id="addBtn">Add</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
+
+</body>
+</html>
