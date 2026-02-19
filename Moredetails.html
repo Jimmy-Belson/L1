@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mega Space To-Do</title>
+    <title>TO DO LIST!!!</title>
     <style>
         body {
             margin: 0;
@@ -16,7 +16,7 @@
             color: white;
         }
 
-        /* ОГРОМНОЕ КОЛИЧЕСТВО ЗВЕЗД */
+
         .stars-container {
             position: absolute;
             width: 100%;
@@ -24,7 +24,6 @@
             z-index: 0;
         }
 
-        /* Слой 1: Мелкая пыль (сотни точек) */
         .stars-dust {
             position: absolute;
             width: 1px;
@@ -34,23 +33,21 @@
                 100px 100px #fff, 300px 200px #fff, 500px 50px #fff, 800px 400px #fff, 1200px 100px #fff,
                 1400px 600px #fff, 200px 800px #fff, 600px 300px #fff, 1000px 700px #fff, 400px 900px #fff,
                 50px 450px #fff, 750px 850px #fff, 1150px 150px #fff, 1550px 450px #fff, 950px 50px #fff,
-                /* Дублируем для густоты */
                 120px 350px #fff, 450px 550px #fff, 850px 150px #fff, 1350px 750px #fff, 150px 950px #fff,
                 650px 650px #fff, 1050px 350px #fff, 250px 150px #fff, 1450px 50px #fff, 550px 850px #fff;
             animation: twinkle 3s infinite alternate;
         }
 
-        /* Слой 2: ОГРОМНЫЕ ГОРЯЩИЕ ЗВЕЗДЫ */
         .stars-huge {
             position: absolute;
-            width: 4px; /* Увеличил размер */
+            width: 4px; 
             height: 4px;
             border-radius: 50%;
             background: white;
             box-shadow: 
-                200px 400px 10px 2px #00d2ff,   /* Голубое свечение */
-                800px 200px 10px 2px #a855f7,   /* Фиолетовое свечение */
-                1300px 500px 15px 3px #fff,     /* Белое свечение */
+                200px 400px 10px 2px #00d2ff,   
+                800px 200px 10px 2px #a855f7,   
+                1300px 500px 15px 3px #fff,     
                 400px 700px 12px 2px #00d2ff,
                 1100px 800px 10px 2px #a855f7,
                 150px 150px 8px 2px #fff;
@@ -63,10 +60,9 @@
             50% { transform: scale(1.5); filter: brightness(1.5); } 
         }
 
-        /* ЦЕЛЫЙ ФЛОТ РАКЕТ */
         .rocket {
             position: absolute;
-            font-size: 45px; /* Сделал больше */
+            font-size: 45px; 
             z-index: 1;
             filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.6));
         }
@@ -92,7 +88,7 @@
             padding: 50px;
             width: 480px;
             border-radius: 45px;
-            border: 3px solid #00d2ff; /* Жирнее рамка */
+            border: 3px solid #00d2ff; 
             box-shadow: 0 0 40px rgba(0, 210, 255, 0.5);
             text-align: center;
             z-index: 10;
@@ -139,7 +135,7 @@
             text-align: left;
             cursor: pointer;
             transition: 0.3s;
-            border-left: 5px solid #a855f7; /* Фиолетовый акцент */
+            border-left: 5px solid #a855f7; 
         }
 
         li:hover {
