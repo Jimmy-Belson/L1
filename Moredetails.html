@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Mega Space To-Do</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at center, #1e3a8a 0%, #070b14 100%);
+            overflow: hidden;
+            color: white;
+        }
+
+        /* ОГРОМНОЕ КОЛИЧЕСТВО ЗВЕЗД */
+        .stars-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Слой 1: Мелкая пыль (сотни точек) */
+        .stars-dust {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background: transparent;
+            box-shadow: 
+                100px 100px #fff, 300px 200px #fff, 500px 50px #fff, 800px 400px #fff, 1200px 100px #fff,
+                1400px 600px #fff, 200px 800px #fff, 600px 300px #fff, 1000px 700px #fff, 400px 900px #fff,
+                50px 450px #fff, 750px 850px #fff, 1150px 150px #fff, 1550px 450px #fff, 950px 50px #fff,
+                /* Дублируем для густоты */
+                120px 350px #fff, 450px 550px #fff, 850px 150px #fff, 1350px 750px #fff, 150px 950px #fff,
+                650px 650px #fff, 1050px 350px #fff, 250px 150px #fff, 1450px 50px #fff, 550px 850px #fff;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        /* Слой 2: ОГРОМНЫЕ ГОРЯЩИЕ ЗВЕЗДЫ */
+        .stars-huge {
+            position: absolute;
+            width: 4px; /* Увеличил размер */
+            height: 4px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 
+                200px 400px 10px 2px #00d2ff,   /* Голубое свечение */
+                800px 200px 10px 2px #a855f7,   /* Фиолетовое свечение */
+                1300px 500px 15px 3px #fff,     /* Белое свечение */
+                400px 700px 12px 2px #00d2ff,
+                1100px 800px 10px 2px #a855f7,
+                150px 150px 8px 2px #fff;
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        @keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
+        @keyframes pulse { 
+            0%, 100% { transform: scale(1); filter: brightness(1); } 
+            50% { transform: scale(1.5); filter: brightness(1.5); } 
+        }
+
+        /* ЦЕЛЫЙ ФЛОТ РАКЕТ */
+        .rocket {
+            position: absolute;
+            font-size: 45px; /* Сделал больше */
+            z-index: 1;
+            filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.6));
+        }
+
+        .r1 { animation: fly 10s linear infinite; bottom: -100px; left: 5%; }
+        .r2 { animation: fly 15s linear infinite; bottom: -100px; left: 25%; animation-delay: 2s; }
+        .r3 { animation: fly 12s linear infinite; bottom: -100px; left: 50%; animation-delay: 5s; }
+        .r4 { animation: fly 18s linear infinite; bottom: -100px; left: 75%; animation-delay: 1s; }
+        .r5 { animation: fly 14s linear infinite; bottom: -100px; left: 90%; animation-delay: 8s; }
+
+        @keyframes fly {
+            0% { transform: translate(0, 0) rotate(45deg); opacity: 0; }
+            10% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { transform: translate(500px, -1200px) rotate(45deg); opacity: 0; }
+        }
+
+        /* ОСНОВНОЕ ОКНО */
+        .todo-container {
+            position: relative;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(15px);
+            padding: 50px;
+            width: 480px;
+            border-radius: 45px;
+            border: 3px solid #00d2ff; /* Жирнее рамка */
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.5);
+            text-align: center;
+            z-index: 10;
+        }
+
+        h1 { font-size: 32px; letter-spacing: 4px; margin-bottom: 30px; }
+
+        .input-section { display: flex; gap: 15px; margin-bottom: 25px; }
+
+        input {
+            flex: 1;
+            padding: 18px;
+            border-radius: 20px;
+            border: 2px solid rgba(0, 210, 255, 0.4);
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            outline: none;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 15px 35px;
+            background: #00d2ff;
+            color: #000;
+            border: none;
+            border-radius: 20px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #fff;
+            box-shadow: 0 0 25px #00d2ff;
+            transform: scale(1.1);
+        }
+
+        ul { list-style: none; padding: 0; }
+        li {
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 12px;
+            padding: 18px;
+            border-radius: 20px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.3s;
+            border-left: 5px solid #a855f7; /* Фиолетовый акцент */
+        }
+
+        li:hover {
+            background: rgba(168, 85, 247, 0.2);
+            transform: translateX(15px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stars-container">
+        <div class="stars-dust"></div>
+        <div class="stars-huge"></div>
+    </div>
+
+    <div class="rocket r1">🚀</div>
+    <div class="rocket r2">🚀</div>
+    <div class="rocket r3">🚀</div>
+    <div class="rocket r4">🚀</div>
+    <div class="rocket r5">🚀</div>
+
+    <div class="todo-container">
+        <h1>TO DO LIST :)</h1>
+        <div class="input-section">
+            <input type="text" id="taskInput" placeholder="What do you need to do brosky?">
+            <button id="addBtn">ADD</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
+
+    <script>
+        const btn = document.getElementById('addBtn');
+        const input = document.getElementById('taskInput');
+        const list = document.getElementById('taskList');
+
+        btn.onclick = function() {
+            if (input.value.trim() !== "") {
+                const li = document.createElement('li');
+                li.textContent = input.value;
+                li.onclick = function() {
+                    this.style.opacity = '0';
+                    this.style.transform = 'translateX(100px)';
+                    setTimeout(() => { this.remove(); }, 300);
+                };
+                list.appendChild(li);
+                input.value = "";
+            }
+        };
+
+        input.onkeypress = (e) => { if (e.key === "Enter") btn.click(); };
+    </script>
+</body>
+</html>
