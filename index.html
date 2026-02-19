@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>To do commander!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space to do list</title>
     <style>
         body {
             margin: 0;
@@ -25,19 +26,20 @@
 
         .dust {
             position: absolute;
-            width: 2px; height: 2px;
+            width: 2px;
+            height: 2px;
             background: transparent;
             box-shadow: 
                 200px 100px #fff, 400px 300px #fff, 600px 150px #fff, 800px 500px #fff, 1000px 200px #fff,
                 1200px 700px #fff, 1400px 300px #fff, 100px 800px #fff, 300px 600px #fff, 500px 900px #fff,
-                150px 250px #fff, 350px 450px #fff, 550px 650px #fff, 1350px 750px #fff, 150px 950px #fff,
-                700px 400px #fff, 900px 100px #fff, 1100px 800px #fff, 1300px 500px #fff, 1500px 50px #fff;
+                150px 250px #fff, 350px 450px #fff, 550px 650px #fff, 1350px 750px #fff, 150px 950px #fff;
             animation: twinkle 3s infinite alternate;
         }
 
         .big-stars {
             position: absolute;
-            width: 6px; height: 6px;
+            width: 6px;
+            height: 6px;
             background: #fff;
             border-radius: 50%;
             box-shadow: 
@@ -51,7 +53,6 @@
 
         @keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.6); opacity: 1; } }
-
 
         .saturn {
             position: absolute; top: 5%; left: 5%;
@@ -94,13 +95,13 @@
             background: rgba(10, 20, 40, 0.85);
             backdrop-filter: blur(20px);
             padding: 45px;
-            width: 450px;
+            width: 90%;
+            max-width: 450px;
             border-radius: 45px;
             border: 3px solid #00d2ff;
             box-shadow: 0 0 50px rgba(0, 210, 255, 0.4);
             text-align: center;
             z-index: 10;
-            
             animation: bounceIn 1.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -109,10 +110,9 @@
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-       
         h1 { color: #00d2ff; letter-spacing: 6px; text-shadow: 0 0 15px #00d2ff; margin-bottom: 30px; }
         .input-section { display: flex; gap: 10px; margin-bottom: 25px; }
-        input { flex: 1; padding: 18px; border-radius: 20px; border: 2px solid #00d2ff; background: #000; color: #fff; outline: none; }
+        input { flex: 1; padding: 18px; border-radius: 20px; border: 2px solid #00d2ff; background: #000; color: #fff; outline: none; min-width: 0; }
         button { padding: 15px 30px; background: #00d2ff; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; color: #000; }
         button:hover { background: #fff; box-shadow: 0 0 25px #fff; transform: scale(1.1); }
 
@@ -124,11 +124,10 @@
         }
         li:hover { background: rgba(168, 85, 247, 0.25); transform: translateX(15px); }
 
-        
         .rocket { position: absolute; font-size: 55px; z-index: 5; filter: drop-shadow(0 0 10px #fff); }
         .r1 { animation: fly 12s linear infinite; bottom: -100px; left: 15%; }
         .r2 { animation: fly 20s linear infinite; top: -100px; right: 20%; transform: rotate(180deg); }
-        .ufo { animation: flyUfo 15s ease-in-out infinite; top: 10%; right: 10%; font-size: 50px; }
+        .ufo { animation: flyUfo 15s ease-in-out infinite; top: 10%; right: 10%; font-size: 50px; position: absolute; z-index: 5;}
 
         @keyframes fly {
             0% { transform: translate(0, 0) rotate(45deg); opacity: 0; }
@@ -138,6 +137,15 @@
         @keyframes flyUfo {
             0%, 100% { transform: translateX(0) rotate(0deg); }
             50% { transform: translateX(-100px) rotate(10deg); }
+        }
+
+        @media (max-width: 600px) {
+            .todo-container { padding: 25px 15px; }
+            h1 { font-size: 22px; letter-spacing: 3px; }
+            .earth { width: 180px; height: 180px; bottom: -40px; right: -40px; }
+            .saturn { width: 80px; height: 80px; }
+            .saturn::after { width: 140px; height: 35px; }
+            .rocket { font-size: 30px; }
         }
     </style>
 </head>
@@ -156,12 +164,12 @@
 
     <div class="rocket r1">🚀</div>
     <div class="rocket r2">🚀</div>
-    <div class="rocket ufo">🛸</div>
+    <div class="ufo">🛸</div>
 
     <div class="todo-container">
-        <h1>TO DO SPACE LIST</h1>
+        <h1>SPACE TO DO LIST!</h1>
         <div class="input-section">
-            <input type="text" id="taskInput" placeholder="New task, commander?">
+            <input type="text" id="taskInput" placeholder="New mission, commander?">
             <button id="addBtn">SEND</button>
         </div>
         <ul id="taskList"></ul>
