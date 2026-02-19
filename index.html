@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Galactic Station</title>
+    <title>Galactic Command Center | Live</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body, html {
             margin: 0; padding: 0; height: 100%; width: 100%;
@@ -15,8 +16,7 @@
         .stars-layer {
             position: absolute; width: 100%; height: 100%;
             background: transparent url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.4; z-index: -1;
-            pointer-events: none;
+            opacity: 0.4; z-index: -1; pointer-events: none;
         }
 
         .saturn {
@@ -104,7 +104,7 @@
             border-radius: 8px; border-left: 4px solid #00d2ff; font-size: 13px; cursor: pointer;
         }
 
-        .comment-box { max-height: 90px; overflow-y: auto; margin-bottom: 10px; }
+        .comment-box { max-height: 110px; overflow-y: auto; margin-bottom: 10px; border: 1px solid rgba(168, 85, 247, 0.2); padding: 5px; border-radius: 5px; }
         .comment-item { font-size: 12px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
         .c-nick { color: #a855f7; font-weight: bold; margin-right: 8px; }
 
@@ -118,20 +118,12 @@
         @keyframes drift { from { transform: rotate(0deg) translate(0,0); } to { transform: rotate(360deg) translate(20px, 10px); } }
         @keyframes flyRocket {
             0% { transform: translate(-100px, 100vh) rotate(45deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
             100% { transform: translate(100vw, -100px) rotate(45deg); opacity: 0; }
         }
         @keyframes ufoFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(10deg); } }
         @keyframes typing { from { width: 0 } to { width: 100% } }
         @keyframes blink { from { border-color: transparent } to { border-color: #00d2ff } }
         @keyframes scan { 0% { top: -10px; } 100% { top: 100%; } }
-
-        @media (max-width: 600px) {
-            .glass-panel { width: 90%; padding: 15px; }
-            h1 { font-size: 16px; }
-            .earth { width: 140px; height: 140px; }
-        }
     </style>
 </head>
 <body>
@@ -143,7 +135,7 @@
     <div class="stats-panel">
         <div>T-CLOCK: <span id="clock">00:00:00</span></div>
         <div>MISSIONS: <span id="taskCount">0</span></div>
-        <div>SYSTEM: ACTIVE</div>
+        <div>NET-STATE: <span id="netStatus" style="color: #00ff00;">ONLINE</span></div>
     </div>
 
     <div class="saturn" id="saturn"></div>
@@ -157,22 +149,22 @@
 
     <div class="main-layout">
         <div class="glass-panel">
-            <h1>TO DO LOG</h1>
+            <h1>STATION LOG</h1>
             <div class="input-row">
-                <input type="text" id="taskInput" class="task-input" placeholder=">> WHAT'S THE MISSION, COMMANDER?">
+                <input type="text" id="taskInput" class="task-input" placeholder=">> LOCAL TASK">
                 <button id="addBtn" class="btn-main">ADD</button>
             </div>
             <ul id="taskList"></ul>
         </div>
 
         <div class="glass-panel">
-            <h2 style="font-size: 10px; color: #a855f7; letter-spacing: 3px; margin: 0 0 10px 0;">COMMUNICATION</h2>
+            <h2 style="font-size: 10px; color: #a855f7; letter-spacing: 3px; margin: 0 0 10px 0;">GLOBAL COMMS</h2>
             <div id="commentList" class="comment-box"></div>
             <div class="input-row">
-                <input type="text" id="nicknameInput" class="nick-input" placeholder="Name.....">
-                <input type="text" id="commentInput" class="comm-input" placeholder="MESSAGE TO OTHER COMMANDERS....">
+                <input type="text" id="nicknameInput" class="nick-input" placeholder="CALLSIGN">
+                <input type="text" id="commentInput" class="comm-input" placeholder="GLOBAL MESSAGE...">
             </div>
-            <button id="sendCommentBtn" class="btn-comm">SEND MESSAGE</button>
+            <button id="sendCommentBtn" class="btn-comm">BROADCAST SIGNAL</button>
         </div>
     </div>
 
@@ -180,6 +172,11 @@
     <audio id="staticSound" src="https://www.soundjay.com/mechanical/radio-static-1.mp3"></audio>
 
     <script>
+
+        const SB_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+        const SB_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
         const canvas = document.getElementById('cursor-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
@@ -238,14 +235,9 @@
         const commInput = document.getElementById('commentInput');
         const commList = document.getElementById('commentList');
 
-        function save() {
+        function saveTasks() {
             const t = Array.from(document.querySelectorAll('#taskList li')).map(l => l.innerText);
-            const c = Array.from(document.querySelectorAll('.comment-item')).map(item => ({
-                n: item.querySelector('.c-nick').innerText.replace(':',''),
-                m: item.querySelector('.c-txt').innerText
-            }));
             localStorage.setItem('tasks', JSON.stringify(t));
-            localStorage.setItem('comms', JSON.stringify(c.slice(-5)));
             document.getElementById('taskCount').innerText = t.length;
         }
 
@@ -253,35 +245,63 @@
             if(!val) return;
             const li = document.createElement('li');
             li.innerText = val;
-            li.onclick = () => { li.remove(); save(); };
+            li.onclick = () => { li.remove(); saveTasks(); };
             taskList.appendChild(li);
         }
 
-        function addComm(n, m) {
-            if(!m) return;
+        async function loadComments() {
+            const { data, error } = await _supabase
+                .from('comments')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (!error && data) {
+                commList.innerHTML = '';
+                data.reverse().forEach(c => renderComment(c.nickname, c.message));
+            }
+        }
+
+        function renderComment(n, m) {
             const div = document.createElement('div');
             div.className = 'comment-item';
             div.innerHTML = `<span class="c-nick">${n || 'PILOT'}:</span><span class="c-txt">${m}</span>`;
             commList.appendChild(div);
-            if(commList.children.length > 5) commList.removeChild(commList.firstChild);
             commList.scrollTop = commList.scrollHeight;
         }
 
-        taskBtn.onclick = () => { addTask(taskInput.value); save(); taskInput.value = ''; };
+        async function sendGlobalComment() {
+            const nick = nickInput.value || 'Anonymous';
+            const msg = commInput.value;
+            if(!msg.trim()) return;
+
+            const { error } = await _supabase
+                .from('comments')
+                .insert([{ nickname: nick, message: msg }]);
+
+            if (!error) {
+                commInput.value = '';
+                loadComments(); 
+            }
+        }
+
+        _supabase
+            .channel('schema-db-changes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
+                renderComment(payload.new.nickname, payload.new.message);
+            })
+            .subscribe();
+
+        taskBtn.onclick = () => { addTask(taskInput.value); saveTasks(); taskInput.value = ''; };
         taskInput.onkeypress = (e) => { if(e.key === 'Enter') taskBtn.click(); };
 
-        commentBtn.onclick = () => { 
-            addComm(nickInput.value, commInput.value); 
-            save(); 
-            commInput.value = ''; 
-        };
-        commInput.onkeypress = (e) => { if(e.key === 'Enter') commentBtn.click(); };
+        commentBtn.onclick = sendGlobalComment;
+        commInput.onkeypress = (e) => { if(e.key === 'Enter') sendGlobalComment(); };
 
         const st = JSON.parse(localStorage.getItem('tasks') || '[]');
-        const sc = JSON.parse(localStorage.getItem('comms') || '[]');
         st.forEach(addTask);
-        sc.forEach(item => addComm(item.n, item.m));
         document.getElementById('taskCount').innerText = st.length;
+        loadComments();
     </script>
 </body>
 </html>
