@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Galactic Station</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            overflow: hidden; font-family: 'Consolas', monospace;
+            background: radial-gradient(circle at center, #1e3a8a 0%, #050810 100%);
+            color: white;
+        }
+
+        .stars-layer {
+            position: absolute; width: 100%; height: 100%;
+            background: transparent url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.4; z-index: -1;
+            pointer-events: none;
+        }
+
+        .saturn {
+            position: absolute; top: 10%; left: 10%; width: 80px; height: 80px;
+            background: radial-gradient(circle at 30% 30%, #f4e4bc, #b38b59);
+            border-radius: 50%; z-index: 1; cursor: pointer;
+            box-shadow: inset -10px -10px 20px #000;
+        }
+        .saturn::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 150px; height: 35px; border: 6px solid rgba(189, 152, 105, 0.3);
+            border-radius: 50%; transform: translate(-50%, -50%) rotate(20deg);
+        }
+
+        .earth {
+            position: absolute; bottom: -50px; right: -50px; width: 220px; height: 220px;
+            background: radial-gradient(circle at 40% 40%, #2b67af, #06284d);
+            border-radius: 50%; z-index: 1; cursor: pointer;
+            box-shadow: 0 0 30px rgba(43, 103, 175, 0.4);
+            animation: rotateEarth 120s linear infinite;
+        }
+
+        .asteroid {
+            position: absolute; background: #333; z-index: 1;
+            clip-path: polygon(20% 0%, 80% 10%, 100% 40%, 70% 90%, 20% 100%, 0% 50%);
+            opacity: 0.6;
+        }
+        .ast-1 { width: 40px; height: 40px; top: 30%; right: 20%; animation: drift 40s infinite linear; }
+        .ast-2 { width: 25px; height: 25px; bottom: 40%; left: 15%; animation: drift 50s infinite linear reverse; }
+
+        .rocket { position: absolute; font-size: 35px; z-index: 2; animation: flyRocket 25s linear infinite; opacity: 0.8; }
+        .ufo { position: absolute; top: 20%; right: 15%; font-size: 40px; z-index: 2; animation: ufoFloat 12s ease-in-out infinite; }
+
+        #cursor-canvas { position: absolute; top: 0; left: 0; z-index: 100; pointer-events: none; }
+        
+        .scanner-line {
+            position: absolute; width: 100%; height: 2px;
+            background: rgba(0, 210, 255, 0.5); box-shadow: 0 0 15px #00d2ff;
+            z-index: 5; top: -10px; animation: scan 15s linear infinite;
+        }
+
+        .stats-panel {
+            position: absolute; top: 20px; left: 20px; z-index: 20;
+            background: rgba(0, 210, 255, 0.1); border: 1px solid #00d2ff;
+            padding: 10px; border-radius: 10px; font-size: 11px; backdrop-filter: blur(5px);
+        }
+
+        .main-layout {
+            position: relative; z-index: 10; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; height: 100vh; gap: 20px;
+        }
+
+        .glass-panel {
+            background: rgba(10, 20, 40, 0.85); backdrop-filter: blur(20px);
+            padding: 25px; width: 85%; max-width: 400px;
+            border-radius: 20px; border: 1px solid rgba(0, 210, 255, 0.3);
+        }
+
+        h1 { 
+            color: #00d2ff; font-size: 20px; letter-spacing: 5px; margin: 0 0 15px 0; text-align: center;
+            overflow: hidden; border-right: 2px solid #00d2ff; white-space: nowrap; width: 0;
+            animation: typing 3s steps(20) forwards, blink 0.7s infinite;
+        }
+
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { 
+            background: rgba(0,0,0,0.7); border: 1px solid #00d2ff; border-radius: 8px;
+            padding: 12px; color: #00d2ff; outline: none; font-size: 13px;
+        }
+        
+        .task-input { flex: 1; }
+        .nick-input { width: 80px; border-color: #a855f7; color: #a855f7; }
+        .comm-input { flex: 1; }
+
+        button {
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer; 
+            transition: 0.2s; text-transform: uppercase;
+        }
+        .btn-main { background: #00d2ff; color: #001; padding: 10px 20px; }
+        .btn-comm { width: 100%; background: #a855f7; color: white; padding: 14px; margin-top: 5px; }
+
+        ul { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; }
+        li { 
+            background: rgba(0, 210, 255, 0.05); padding: 12px; margin-bottom: 8px;
+            border-radius: 8px; border-left: 4px solid #00d2ff; font-size: 13px; cursor: pointer;
+        }
+
+        .comment-box { max-height: 90px; overflow-y: auto; margin-bottom: 10px; }
+        .comment-item { font-size: 12px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+        .c-nick { color: #a855f7; font-weight: bold; margin-right: 8px; }
+
+        #mute-btn {
+            position: absolute; top: 15px; right: 15px; z-index: 101;
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 20px;
+        }
+
+        @keyframes rotateEarth { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes drift { from { transform: rotate(0deg) translate(0,0); } to { transform: rotate(360deg) translate(20px, 10px); } }
+        @keyframes flyRocket {
+            0% { transform: translate(-100px, 100vh) rotate(45deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translate(100vw, -100px) rotate(45deg); opacity: 0; }
+        }
+        @keyframes ufoFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(10deg); } }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink { from { border-color: transparent } to { border-color: #00d2ff } }
+        @keyframes scan { 0% { top: -10px; } 100% { top: 100%; } }
+
+        @media (max-width: 600px) {
+            .glass-panel { width: 90%; padding: 15px; }
+            h1 { font-size: 16px; }
+            .earth { width: 140px; height: 140px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="cursor-canvas"></canvas>
+    <div class="stars-layer"></div>
+    <div class="scanner-line"></div>
+    
+    <div class="stats-panel">
+        <div>T-CLOCK: <span id="clock">00:00:00</span></div>
+        <div>MISSIONS: <span id="taskCount">0</span></div>
+        <div>SYSTEM: ACTIVE</div>
+    </div>
+
+    <div class="saturn" id="saturn"></div>
+    <div class="earth" id="earth"></div>
+    <div class="asteroid ast-1"></div>
+    <div class="asteroid ast-2"></div>
+    <div class="rocket">🚀</div>
+    <div class="ufo">🛸</div>
+    
+    <button id="mute-btn">🔈</button>
+
+    <div class="main-layout">
+        <div class="glass-panel">
+            <h1>TO DO LOG</h1>
+            <div class="input-row">
+                <input type="text" id="taskInput" class="task-input" placeholder=">> WHAT'S THE MISSION, COMMANDER?">
+                <button id="addBtn" class="btn-main">ADD</button>
+            </div>
+            <ul id="taskList"></ul>
+        </div>
+
+        <div class="glass-panel">
+            <h2 style="font-size: 10px; color: #a855f7; letter-spacing: 3px; margin: 0 0 10px 0;">COMMUNICATION</h2>
+            <div id="commentList" class="comment-box"></div>
+            <div class="input-row">
+                <input type="text" id="nicknameInput" class="nick-input" placeholder="Name.....">
+                <input type="text" id="commentInput" class="comm-input" placeholder="MESSAGE TO OTHER COMMANDERS....">
+            </div>
+            <button id="sendCommentBtn" class="btn-comm">SEND TRANSMISSION</button>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop src="https://www.soundjay.com/free-music/iron-man-01.mp3"></audio>
+    <audio id="staticSound" src="https://www.soundjay.com/mechanical/radio-static-1.mp3"></audio>
+
+    <script>
+        const canvas = document.getElementById('cursor-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        window.addEventListener('mousemove', (e) => {
+            for(let i=0; i<3; i++) {
+                particles.push({
+                    x: e.clientX, y: e.clientY,
+                    size: Math.random() * 2.5 + 1,
+                    spX: (Math.random() - 0.5) * 2,
+                    spY: (Math.random() - 0.5) * 2,
+                    alpha: 1
+                });
+            }
+        });
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, i) => {
+                p.x += p.spX; p.y += p.spY; p.alpha -= 0.02;
+                ctx.fillStyle = `rgba(0, 210, 255, ${p.alpha})`;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                if(p.alpha <= 0) particles.splice(i, 1);
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toTimeString().split(' ')[0];
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        const staticSound = document.getElementById('staticSound');
+        document.getElementById('earth').onclick = () => staticSound.play();
+        document.getElementById('saturn').onclick = () => staticSound.play();
+
+        const bgMusic = document.getElementById('bgMusic');
+        const muteBtn = document.getElementById('mute-btn');
+        muteBtn.onclick = () => {
+            if(bgMusic.paused) { bgMusic.play(); muteBtn.innerText = '🔊'; }
+            else { bgMusic.pause(); muteBtn.innerText = '🔈'; }
+        };
+
+        const taskBtn = document.getElementById('addBtn');
+        const taskInput = document.getElementById('taskInput');
+        const taskList = document.getElementById('taskList');
+        const commentBtn = document.getElementById('sendCommentBtn');
+        const nickInput = document.getElementById('nicknameInput');
+        const commInput = document.getElementById('commentInput');
+        const commList = document.getElementById('commentList');
+
+        function save() {
+            const t = Array.from(document.querySelectorAll('#taskList li')).map(l => l.innerText);
+            const c = Array.from(document.querySelectorAll('.comment-item')).map(item => ({
+                n: item.querySelector('.c-nick').innerText.replace(':',''),
+                m: item.querySelector('.c-txt').innerText
+            }));
+            localStorage.setItem('tasks', JSON.stringify(t));
+            localStorage.setItem('comms', JSON.stringify(c.slice(-5)));
+            document.getElementById('taskCount').innerText = t.length;
+        }
+
+        function addTask(val) {
+            if(!val) return;
+            const li = document.createElement('li');
+            li.innerText = val;
+            li.onclick = () => { li.remove(); save(); };
+            taskList.appendChild(li);
+        }
+
+        function addComm(n, m) {
+            if(!m) return;
+            const div = document.createElement('div');
+            div.className = 'comment-item';
+            div.innerHTML = `<span class="c-nick">${n || 'PILOT'}:</span><span class="c-txt">${m}</span>`;
+            commList.appendChild(div);
+            if(commList.children.length > 5) commList.removeChild(commList.firstChild);
+            commList.scrollTop = commList.scrollHeight;
+        }
+
+        taskBtn.onclick = () => { addTask(taskInput.value); save(); taskInput.value = ''; };
+        taskInput.onkeypress = (e) => { if(e.key === 'Enter') taskBtn.click(); };
+
+        commentBtn.onclick = () => { 
+            addComm(nickInput.value, commInput.value); 
+            save(); 
+            commInput.value = ''; 
+        };
+        commInput.onkeypress = (e) => { if(e.key === 'Enter') commentBtn.click(); };
+
+        const st = JSON.parse(localStorage.getItem('tasks') || '[]');
+        const sc = JSON.parse(localStorage.getItem('comms') || '[]');
+        st.forEach(addTask);
+        sc.forEach(item => addComm(item.n, item.m));
+        document.getElementById('taskCount').innerText = st.length;
+    </script>
+</body>
+</html>
