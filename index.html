@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v5.4</title>
+    <title>ORBITRON TERMINAL v5.6</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -12,12 +12,26 @@
         .ui { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
         .sidebar { width: 320px; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
         .terminal { width: 600px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
-        .terminal::before { content: "ENCRYPTED_LINK"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
+        .terminal::before { content: "COMM_LINK_ESTABLISHED"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
         #todo-list { margin-top: 15px; height: 200px; overflow-y: auto; }
-        .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; }
+        .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; animation: slideIn 0.3s ease-out forwards; }
         .todo-item:hover { border-color: var(--p); color: var(--p); padding-left: 15px; }
         #chat-box { height: 350px; overflow-y: auto; margin-bottom: 20px; scrollbar-width: thin; scrollbar-color: var(--n) transparent; }
-        .msg { background: rgba(0, 242, 255, 0.03); padding: 12px; margin-bottom: 12px; border-left: 2px solid var(--n); transition: 0.2s; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(4px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        .msg { 
+            background: rgba(0, 242, 255, 0.03); 
+            padding: 12px; 
+            margin-bottom: 12px; 
+            border-left: 2px solid var(--n); 
+            animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.1) forwards;
+            will-change: transform, opacity;
+        }
+
         .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
         input { background: rgba(0,0,0,0.7); border: 1px solid var(--n); color: #fff; padding: 14px; width: calc(100% - 32px); font-family: inherit; outline: none; margin-bottom: 10px; }
         button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
@@ -69,58 +83,61 @@
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
     let sb;
-    try { sb = window.supabase.createClient(URL, KEY); } catch (e) { console.error(e); }
+    try { sb = window.supabase.createClient(URL, KEY); } catch (e) {}
 
-    const beep = () => {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'square'; osc.frequency.value = 800;
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start(); osc.stop(ctx.currentTime + 0.05);
+    const beep = (f = 800) => {
+        try {
+            const c = new (window.AudioContext || window.webkitAudioContext)();
+            const o = c.createOscillator();
+            const g = c.createGain();
+            o.connect(g); g.connect(c.destination);
+            o.type = 'sine'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.1, c.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, c.currentTime + 0.1);
+            o.start(); o.stop(c.currentTime + 0.1);
+        } catch(e) {}
     };
 
     window.addTodo = function() {
-        const input = document.getElementById('todo-in');
-        if (!input.value) return;
-        const item = document.createElement('div');
-        item.className = 'todo-item';
-        item.innerHTML = `> ${input.value.toUpperCase()}`;
-        item.onclick = function() { this.remove(); };
-        document.getElementById('todo-list').appendChild(item);
-        input.value = '';
+        const i = document.getElementById('todo-in');
+        if (!i.value) return;
+        beep(1200);
+        const d = document.createElement('div');
+        d.className = 'todo-item';
+        d.innerHTML = `> ${i.value.toUpperCase()}`;
+        d.onclick = function() { beep(400); this.remove(); };
+        document.getElementById('todo-list').appendChild(d);
+        i.value = '';
     };
 
-    window.auth = async function(mode) {
+    window.auth = async function(m) {
         if(!sb) return;
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = mode === 'in' 
+        const { error } = m === 'in' 
             ? await sb.auth.signInWithPassword({ email: e, password: p })
             : await sb.auth.signUp({ email: e, password: p });
         if (error) alert(error.message);
     };
 
     sb.auth.onAuthStateChange((_, s) => {
-        const aUI = document.getElementById('auth-ui'), cUI = document.getElementById('chat-ui');
-        if(aUI) aUI.classList.toggle('hidden', !!s);
-        if(cUI) cUI.classList.toggle('hidden', !s);
-        if (s) load();
+        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
+        document.getElementById('chat-ui').classList.toggle('hidden', !s);
+        if (s) { beep(1000); load(); }
     });
 
     async function load() {
         if(!sb) return;
         const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
-        const box = document.getElementById('chat-box');
-        if (!box) return;
-        box.innerHTML = '';
+        const b = document.getElementById('chat-box');
+        if (!b) return;
+        b.innerHTML = '';
         if (data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
-            d.innerHTML = `<span class="msg-nick">${m.nickname}</span> ${m.message}`;
-            box.appendChild(d);
+            d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
+            b.appendChild(d);
         });
-        box.scrollTop = box.scrollHeight;
+        b.scrollTop = b.scrollHeight;
     }
 
     window.send = async function() {
@@ -128,18 +145,16 @@
         const i = document.getElementById('msg-in');
         const { data: { user } } = await sb.auth.getUser();
         if (i.value && user) {
-            const val = i.value; const nick = user.email.split('@')[0];
-            i.value = ''; beep();
-
-            const box = document.getElementById('chat-box');
+            const v = i.value; const n = user.email.split('@')[0];
+            i.value = ''; beep(800);
+            const b = document.getElementById('chat-box');
             const d = document.createElement('div');
-            d.className = 'msg'; d.style.opacity = '0.5';
-            d.innerHTML = `<span class="msg-nick">${nick}</span> ${val}`;
-            box.appendChild(d);
-            box.scrollTop = box.scrollHeight;
-
-            sb.from('comments').insert([{ message: val, nickname: nick }])
-              .then(({ error }) => { if(!error) d.style.opacity = '1'; });
+            d.className = 'msg'; d.style.borderLeftColor = 'var(--p)';
+            d.innerHTML = `<span class="msg-nick">${n}</span>${v}`;
+            b.appendChild(d);
+            b.scrollTop = b.scrollHeight;
+            sb.from('comments').insert([{ message: v, nickname: n }])
+              .then(({ error }) => { if(!error) d.style.borderLeftColor = 'var(--n)'; });
         }
     };
 
@@ -154,7 +169,7 @@
         stars = []; stones = []; astronauts = [];
         for(let i=0; i<200; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5 });
         for(let i=0; i<6; i++) stones.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*0.5, r: Math.random()*20+5, rot: Math.random()*6 });
-        for(let i=0; i<3; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.1+Math.random()*0.2, vy: 0.05+Math.random()*0.1, rot: Math.random() });
+        for(let i=0; i<3; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.15, vy: 0.08, rot: Math.random() });
     }
 
     function drawPlanet() {
@@ -171,20 +186,19 @@
     function drawUFO() {
         ufo.x += 0.8; if(ufo.x > canvas.width + 100) ufo.x = -100;
         ctx.save(); ctx.translate(ufo.x, ufo.y + Math.sin(Date.now()/600)*15);
-        const pulse = Math.abs(Math.sin(Date.now()/300));
-        const thruster = ctx.createRadialGradient(0, 10, 5, 0, 15, 25*pulse);
-        thruster.addColorStop(0, 'rgba(0, 242, 255, 0.9)'); thruster.addColorStop(1, 'transparent');
-        ctx.fillStyle = thruster; ctx.beginPath(); ctx.ellipse(0, 12, 25*pulse, 6*pulse, 0, 0, Math.PI*2); ctx.fill();
+        const p = Math.abs(Math.sin(Date.now()/300));
+        const th = ctx.createRadialGradient(0, 10, 5, 0, 15, 25*p);
+        th.addColorStop(0, 'rgba(0, 242, 255, 0.8)'); th.addColorStop(1, 'transparent');
+        ctx.fillStyle = th; ctx.beginPath(); ctx.ellipse(0, 12, 25*p, 6*p, 0, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-35, 120); ctx.lineTo(35, 120); ctx.fill();
-        ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.ellipse(0, 0, 50, 14, 0, 0, Math.PI*2); ctx.fill();
-        const time = Date.now() / 400;
+        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0, 0, 50, 14, 0, 0, Math.PI*2); ctx.fill();
+        const t = Date.now() / 400;
         for(let i=0; i<8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            ctx.fillStyle = (Math.floor(time + i)%2 === 0) ? '#ff00ff' : '#00f2ff';
-            ctx.beginPath(); ctx.arc(Math.cos(angle)*46, Math.sin(angle)*12, 2, 0, Math.PI*2); ctx.fill();
+            const a = (i/8)*Math.PI*2; ctx.fillStyle = (Math.floor(t+i)%2===0)?'#f0f':'#0ff';
+            ctx.beginPath(); ctx.arc(Math.cos(a)*46, Math.sin(a)*12, 2, 0, 7); ctx.fill();
         }
-        ctx.fillStyle = 'rgba(100, 200, 255, 0.5)'; ctx.beginPath(); ctx.arc(0, -6, 18, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = 'rgba(100,200,255,0.4)'; ctx.beginPath(); ctx.arc(0,-6,18,Math.PI,0); ctx.fill();
         ctx.restore();
         document.getElementById('ufo-x').innerText = Math.floor(ufo.x);
         document.getElementById('ufo-y').innerText = Math.floor(ufo.y);
@@ -192,7 +206,7 @@
 
     function loop() {
         ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,canvas.width, canvas.height);
-        stars.forEach(s => { ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill(); });
+        stars.forEach(s => { ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); });
         drawPlanet();
         stones.forEach(s => {
             s.y += s.s; s.rot += 0.005; if(s.y > canvas.height + 50) s.y = -50;
@@ -202,10 +216,10 @@
         astronauts.forEach(a => {
             a.x += a.vx; a.y += a.vy; a.rot += 0.002; if(a.x > canvas.width + 50) a.x = -50;
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.fillStyle = '#777'; ctx.fillRect(-14, -10, 6, 18);
-            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.roundRect(-10, -12, 20, 24, 5); ctx.fill();
-            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0, -14, 6, 4, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#777'; ctx.fillRect(-14,-10,6,18);
+            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.roundRect(-10,-12,20,24,5); ctx.fill();
+            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0,-14,8,0,7); ctx.fill();
+            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0,-14,6,4,0,0,7); ctx.fill();
             ctx.restore();
         });
         drawUFO();
