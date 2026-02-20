@@ -61,14 +61,15 @@
     </div>
 </div>
 <script>
-    const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
-    const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const sb = window.supabase.createClient(URL, KEY);
+    const MY_SUPABASE_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+    const MY_SUPABASE_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+    const supabase = window.supabase.createClient(MY_SUPABASE_URL, MY_SUPABASE_KEY);
+
     const authScreen = document.getElementById('auth-screen');
     const chatScreen = document.getElementById('chat-screen');
     const chatBox = document.getElementById('chat-box');
 
-    sb.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
             authScreen.classList.add('hidden');
             chatScreen.classList.remove('hidden');
@@ -83,21 +84,21 @@
     async function handleSignUp() {
         const e = document.getElementById('email').value;
         const p = document.getElementById('password').value;
-        const { error } = await sb.auth.signUp({ email: e, password: p });
+        const { error } = await supabase.auth.signUp({ email: e, password: p });
         if (error) alert(error.message); else alert("Success!");
     }
 
     async function handleSignIn() {
         const e = document.getElementById('email').value;
         const p = document.getElementById('password').value;
-        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
+        const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
         if (error) alert(error.message);
     }
 
-    async function handleSignOut() { await sb.auth.signOut(); }
+    async function handleSignOut() { await supabase.auth.signOut(); }
 
     async function loadMessages() {
-        const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
+        const { data } = await supabase.from('comments').select('*').order('created_at', { ascending: true });
         chatBox.innerHTML = '';
         if(data) data.forEach(renderMessage);
         scrollToBottom();
@@ -116,15 +117,15 @@
 
     async function sendMessage() {
         const input = document.getElementById('msg-input');
-        const { data: { user } } = await sb.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         if (input.value.trim() && user) {
-            await sb.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
+            await supabase.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
             input.value = '';
         }
     }
 
     function subscribeToMessages() {
-        sb.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, p => renderMessage(p.new)).subscribe();
+        supabase.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, p => renderMessage(p.new)).subscribe();
     }
 
     function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
@@ -138,14 +139,14 @@
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.onresize = resize; resize();
 
-    for(let i=0; i<500; i++) {
-        stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random() < 0.1 ? Math.random()*3 + 1.5 : Math.random()*1.2, o: Math.random(), s: Math.random()*0.015 });
+    for(let i=0; i<800; i++) {
+        stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random() < 0.05 ? Math.random()*3 + 1.5 : Math.random()*1, o: Math.random(), s: Math.random()*0.015 });
     }
-    for(let i=0; i<8; i++) {
-        asteroids.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2 + 1, vx: Math.random()*0.5 - 0.25, vy: Math.random()*1 + 0.5 });
+    for(let i=0; i<10; i++) {
+        asteroids.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2 + 1, vx: Math.random()*0.4 - 0.2, vy: Math.random()*0.8 + 0.4 });
     }
-    planets.push({ x: canvas.width*0.85, y: canvas.height*0.15, r: 70, col: '#ff3366' });
-    planets.push({ x: canvas.width*0.15, y: canvas.height*0.8, r: 50, col: '#4422ff' });
+    planets.push({ x: canvas.width*0.85, y: canvas.height*0.2, r: 80, col: '#ff3366' });
+    planets.push({ x: canvas.width*0.15, y: canvas.height*0.75, r: 60, col: '#4422ff' });
 
     function draw() {
         ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
@@ -158,14 +159,14 @@
             grad.addColorStop(0, p.col); grad.addColorStop(1, '#000');
             ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
         });
-        ctx.fillStyle = "#aaa";
+        ctx.fillStyle = "#999";
         asteroids.forEach(a => {
             a.x += a.vx; a.y += a.vy; if(a.y > canvas.height) a.y = -20;
             ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI*2); ctx.fill();
         });
-        ufo.x += ufo.speed; if(ufo.x > canvas.width + 200) ufo.x = -200;
-        ctx.fillStyle = "#ff00ff"; ctx.fillRect(ufo.x, ufo.y, 25, 6);
-        ctx.beginPath(); ctx.arc(ufo.x+12, ufo.y-4, 6, 0, Math.PI*2); ctx.fill();
+        ufo.x += ufo.speed; if(ufo.x > canvas.width + 300) ufo.x = -300;
+        ctx.fillStyle = "#ff00ff"; ctx.fillRect(ufo.x, ufo.y, 30, 7);
+        ctx.beginPath(); ctx.arc(ufo.x+15, ufo.y-5, 7, 0, Math.PI*2); ctx.fill();
         requestAnimationFrame(draw);
     }
     draw();
