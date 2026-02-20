@@ -2,32 +2,107 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>DEEP SPACE TERMINAL v3.0</title>
+    <title>ORBITRON TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --n: #00f2ff; --p: #ff00ff; --b: #02040a; --glass: rgba(0, 20, 40, 0.8); }
-        body, html { margin: 0; padding: 0; background: var(--b); color: var(--n); font-family: 'Segoe UI', monospace; height: 100vh; overflow: hidden; }
-        
+        :root { 
+            --neon: #00f2ff; 
+            --pink: #ff00ff; 
+            --bg: #010812;
+            --glass: rgba(10, 25, 47, 0.7);
+        }
+
+        * { transition: all 0.2s ease; }
+
+        body, html { 
+            margin: 0; padding: 0; 
+            background: var(--bg); 
+            color: var(--neon); 
+            font-family: 'Share Tech Mono', monospace; 
+            height: 100vh; overflow: hidden; 
+        }
+
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; }
-        .ui-layer { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
 
-        /* ИНТЕРФЕЙС */
-        .sidebar { width: 300px; background: var(--glass); border-right: 2px solid var(--n); padding: 25px; pointer-events: auto; backdrop-filter: blur(10px); display: flex; flex-direction: column; }
-        .main { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
-        .terminal { width: 550px; background: var(--glass); border: 1px solid var(--n); padding: 30px; pointer-events: auto; box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
+        /* UI LAYOUT */
+        .interface { 
+            position: relative; z-index: 10; 
+            display: flex; height: 100vh; 
+            background: radial-gradient(circle at center, transparent 0%, rgba(1, 8, 18, 0.8) 100%);
+            pointer-events: none;
+        }
 
-        #chat-box { height: 380px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); }
-        .msg { padding: 12px; border-left: 3px solid var(--p); background: rgba(255, 0, 255, 0.03); margin-bottom: 10px; cursor: pointer; animation: blink 0.5s ease-out; }
-        @keyframes blink { from { opacity: 0; } to { opacity: 1; } }
-        .msg:hover { background: rgba(255, 0, 0, 0.15); border-left-color: #ff4d4d; }
-        .msg:hover::after { content: " [DELETE]"; color: #ff4d4d; font-size: 0.7em; margin-left: 10px; }
+        .sidebar { 
+            width: 320px; background: var(--glass); 
+            border-right: 1px solid var(--neon); 
+            padding: 30px; pointer-events: auto; 
+            backdrop-filter: blur(15px); 
+            box-shadow: 15px 0 50px rgba(0,0,0,0.5);
+        }
 
-        input { background: #000; border: 1px solid var(--n); color: #fff; padding: 12px; width: calc(100% - 26px); outline: none; margin-bottom: 10px; border-radius: 4px; }
-        button { background: var(--n); color: #000; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; }
-        button:hover { background: var(--p); color: #fff; box-shadow: 0 0 20px var(--p); }
+        .main-hub { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
 
-        .todo-item { background: rgba(0, 242, 255, 0.05); padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid rgba(0, 242, 255, 0.1); cursor: pointer; }
-        .todo-item:hover { border-color: var(--n); }
+        /* TERMINAL STYLE */
+        .terminal { 
+            width: 500px; background: var(--glass); 
+            border: 1px solid var(--neon); 
+            padding: 30px; pointer-events: auto; 
+            position: relative; border-radius: 2px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        .terminal::before {
+            content: "SECURE_CONNECTION_ACTIVE";
+            position: absolute; top: -10px; left: 20px;
+            background: var(--bg); padding: 0 10px; font-size: 0.7rem; color: var(--pink);
+        }
+
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; letter-spacing: 3px; text-transform: uppercase; }
+
+        /* CHAT */
+        #chat-box { 
+            height: 350px; overflow-y: auto; 
+            margin-bottom: 20px; padding-right: 15px; 
+            scrollbar-width: thin; scrollbar-color: var(--neon) transparent;
+        }
+
+        .msg { 
+            background: rgba(0, 242, 255, 0.05); 
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            padding: 12px; margin-bottom: 12px; 
+            position: relative; cursor: pointer;
+        }
+
+        .msg:hover { background: rgba(255, 0, 255, 0.1); border-color: var(--pink); }
+        .msg-nick { color: var(--pink); font-size: 0.75rem; display: block; margin-bottom: 4px; }
+
+        /* INPUTS */
+        input { 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--neon); 
+            color: #fff; padding: 12px; width: calc(100% - 26px); 
+            font-family: 'Share Tech Mono', monospace; outline: none; margin-bottom: 10px;
+        }
+        
+        input:focus { box-shadow: 0 0 15px var(--neon); }
+
+        button { 
+            background: transparent; color: var(--neon); 
+            border: 1px solid var(--neon); padding: 12px; 
+            width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif;
+            font-weight: bold; font-size: 0.8rem;
+        }
+
+        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
+
+        /* TODO */
+        .todo-item { 
+            padding: 10px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); 
+            display: flex; justify-content: space-between; font-size: 0.8rem; cursor: pointer;
+        }
+        .todo-item:hover { color: var(--pink); background: rgba(255, 255, 255, 0.05); }
+
         .hidden { display: none; }
     </style>
 </head>
@@ -35,59 +110,50 @@
 
 <canvas id="canvas-bg"></canvas>
 
-<div class="ui-layer">
+<div class="interface">
     <div class="sidebar">
-        <h2 style="letter-spacing: 3px; border-bottom: 2px solid var(--p); padding-bottom: 10px;">OPERATIONS</h2>
+        <h3>SYSTEM_LOG</h3>
         <div id="todo-list">
-            <input type="text" id="todo-in" placeholder="+ NEW OBJECTIVE" style="font-size: 0.7em;">
-            <div class="todo-item" onclick="this.remove()">SCAN SECTOR 7G <span style="color: var(--p)">[!]</span></div>
-            <div class="todo-item" onclick="this.remove()">FUEL STATUS: 88% <span style="color: #0f0">[OK]</span></div>
+            <input type="text" id="todo-in" placeholder="> ADD TASK">
+            <div class="todo-item">DEEP_SPACE_SCAN <span>[WAIT]</span></div>
+            <div class="todo-item">OXYGEN_LEVEL <span>[99%]</span></div>
         </div>
-        <div style="margin-top: auto; font-size: 0.8em; line-height: 1.8;">
-            UPLINK: <span id="db-status" style="color: yellow;">CONNECTING...</span><br>
-            SHIP_POS: <span id="coords" style="color: var(--p);">0, 0</span>
+        
+        <div style="margin-top: auto; font-size: 0.7rem; border-top: 1px solid var(--neon); padding-top: 10px; opacity: 0.6;">
+            PILOT_STATUS: ONLINE <br>
+            SHIP_MODEL: ORBITRON-V3 <br>
+            COORDINATES: <span id="pos-display">0.0.0</span>
         </div>
     </div>
 
-    <div class="main">
+    <div class="main-hub">
         <div class="terminal">
             <div id="auth-ui">
-                <h1 style="text-align: center; letter-spacing: 5px;">AUTHORIZATION</h1>
-                <input type="email" id="email" placeholder="PILOT EMAIL">
-                <input type="password" id="pass" placeholder="ACCESS CODE">
-                <button onclick="auth('in')">LOGIN</button>
-                <button onclick="auth('up')" style="background:none; color:var(--p); border: 1px solid var(--p); margin-top:10px;">REGISTER</button>
+                <h2 style="text-align: center">ACCESS_GATE</h2>
+                <input type="email" id="email" placeholder="LOGIN_ID">
+                <input type="password" id="pass" placeholder="SECURITY_CODE">
+                <button onclick="auth('in')">ESTABLISH_LINK</button>
             </div>
 
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 5px;">
                     <input type="text" id="msg-in" placeholder="TYPE SIGNAL...">
-                    <button onclick="send()" style="width: 100px;">SEND</button>
+                    <button onclick="send()" style="width: 80px;">SEND</button>
                 </div>
-                <button onclick="out()" style="background:none; color:#ff4d4d; border:1px solid #ff4d4d; margin-top:10px; font-size:0.7em;">LOGOUT</button>
+                <button onclick="out()" style="margin-top: 10px; border-color: var(--pink); color: var(--pink); font-size: 0.6rem;">TERMINATE</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // УБЕРИ ПРОБЕЛЫ В ЭТИХ СТРОКАХ:
     const G_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const G_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    
-    let db;
-    try {
-        db = window.supabase.createClient(G_URL, G_KEY);
-        document.getElementById('db-status').innerText = 'ONLINE';
-        document.getElementById('db-status').style.color = '#0f0';
-    } catch(e) {
-        document.getElementById('db-status').innerText = 'ERROR';
-        document.getElementById('db-status').style.color = 'red';
-    }
+    const sb = window.supabase.createClient(G_URL, G_KEY);
 
-    // --- БАЗА ДАННЫХ ---
-    db.auth.onAuthStateChange((_, s) => {
+    // --- AUTH & CHAT LOGIC ---
+    sb.auth.onAuthStateChange((_, s) => {
         document.getElementById('auth-ui').classList.toggle('hidden', !!s);
         document.getElementById('chat-ui').classList.toggle('hidden', !s);
         if(s) load();
@@ -95,20 +161,20 @@
 
     async function auth(t) {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = t === 'in' ? await db.auth.signInWithPassword({email:e, password:p}) : await db.auth.signUp({email:e, password:p});
-        if(error) alert(error.message);
+        const { error } = t === 'in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
+        if(error) alert("ERR: " + error.message);
     }
-    async function out() { await db.auth.signOut(); }
+    async function out() { await sb.auth.signOut(); }
 
     async function load() {
-        const { data } = await db.from('comments').select('*').order('created_at', { ascending: true });
+        const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
         const box = document.getElementById('chat-box');
         box.innerHTML = '';
         if(data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
-            d.innerHTML = `<span style="color:var(--p); font-size:0.8em;">[${m.nickname}]:</span><br>${m.message}`;
-            d.onclick = async () => { if(confirm("Удалить?")) { await db.from('comments').delete().eq('id', m.id); load(); } };
+            d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
+            d.onclick = async () => { if(confirm("DELETE?")) { await sb.from('comments').delete().eq('id', m.id); load(); } };
             box.appendChild(d);
         });
         box.scrollTop = box.scrollHeight;
@@ -116,82 +182,119 @@
 
     async function send() {
         const i = document.getElementById('msg-in');
-        const { data: { user } } = await db.auth.getUser();
+        const { data: { user } } = await sb.auth.getUser();
         if(i.value && user) {
-            const val = i.value; i.value = ''; // Мгновенно убираем текст
-            await db.from('comments').insert([{ message: val, nickname: user.email.split('@')[0] }]);
+            const txt = i.value; i.value = '';
+            await sb.from('comments').insert([{ message: txt, nickname: user.email.split('@')[0] }]);
             load();
         }
     }
-    db.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
+    sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
-    // --- ГРАФИКА (ДЕТАЛИЗИРОВАННАЯ) ---
+    // --- COSMIC ENGINE 4.0 (CANVAS) ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let stars = [], particles = [];
-    let ufo = { x: -200, y: 300, s: 2.5, t: 0 };
+    let stars = [], stones = [], astronauts = [];
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.onresize = resize; resize();
 
-    for(let i=0; i<600; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2, o: Math.random() });
-
-    function drawPlanet(x, y, r, col, hasRing) {
-        let g = ctx.createRadialGradient(x-r*0.3, y-r*0.3, r*0.1, x, y, r);
-        g.addColorStop(0, '#fff'); g.addColorStop(0.3, col); g.addColorStop(1, '#000');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-        if(hasRing) {
-            ctx.strokeStyle = "rgba(255,255,255,0.15)"; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.ellipse(x, y, r*2.2, r*0.5, Math.PI/4, 0, Math.PI*2); ctx.stroke();
-        }
-    }
-
-    function drawShip() {
-        ufo.x += ufo.s; ufo.t += 0.05;
-        let shake = Math.sin(ufo.t)*5;
-        if(ufo.x > canvas.width + 200) ufo.x = -200;
-
-        // Корпус корабля (Серебристый металл)
-        ctx.fillStyle = "#A0A0A0";
-        ctx.beginPath(); ctx.ellipse(ufo.x, ufo.y + shake, 45, 12, 0, 0, Math.PI*2); ctx.fill();
-        // Купол (Стеклянный)
-        ctx.fillStyle = "rgba(0, 242, 255, 0.4)";
-        ctx.beginPath(); ctx.arc(ufo.x, ufo.y - 5 + shake, 15, Math.PI, 0); ctx.fill();
-        // Двигатели (Свечение)
-        ctx.shadowBlur = 15; ctx.shadowColor = "#ff00ff";
-        ctx.fillStyle = (Math.sin(ufo.t*5) > 0) ? "#ff00ff" : "#333";
-        ctx.beginPath(); ctx.arc(ufo.x - 30, ufo.y + 5 + shake, 3, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(ufo.x + 30, ufo.y + 5 + shake, 3, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        document.getElementById('coords').innerText = `${Math.floor(ufo.x)}, ${Math.floor(ufo.y + shake)}`;
-    }
-
-
+    // Init Stars
+    for(let i=0; i<400; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5 });
     
+    // Init Simple Stones (Камешки)
+    for(let i=0; i<12; i++) {
+        stones.push({
+            x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+            size: Math.random()*10+5, s: Math.random()*0.5+0.2, rot: Math.random()*Math.PI
+        });
+    }
+
+    // Init Simple Astronauts
+    for(let i=0; i<3; i++) {
+        astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.3, vy: 0.2, rot: 0 });
+    }
+
+    function drawAstronaut(a) {
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        ctx.rotate(a.rot);
+        // Тело (упрощенный мультяшный стиль)
+        ctx.fillStyle = "white";
+        ctx.fillRect(-10, -10, 20, 25); // Туловище
+        ctx.fillStyle = "#333";
+        ctx.fillRect(-7, -7, 14, 8); // Стекло шлема
+        ctx.fillStyle = "white";
+        ctx.fillRect(-12, -2, 4, 10); // Рука л
+        ctx.fillRect(8, -2, 4, 10);  // Рука п
+        ctx.restore();
+        a.x += a.vx; a.y += a.vy; a.rot += 0.005;
+        if(a.x > canvas.width + 50) a.x = -50;
+    }
+
+    function drawStone(s) {
+        ctx.fillStyle = "#2c3e50";
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.rot);
+        ctx.beginPath();
+        for(let i=0; i<6; i++) {
+            let angle = (i/6)*Math.PI*2;
+            let r = s.size + (Math.sin(i*2)*3);
+            ctx.lineTo(Math.cos(angle)*r, Math.sin(angle)*r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        s.y += s.s; s.rot += 0.01;
+        if(s.y > canvas.height + 50) s.y = -50;
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = "rgba(0, 242, 255, 0.05)";
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+        for(let i=0; i<canvas.height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width, i); ctx.stroke(); }
+    }
+
     function loop() {
-        ctx.fillStyle = "#02040a"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg');
+        ctx.fillRect(0,0,canvas.width, canvas.height);
         
+        drawGrid();
+
         stars.forEach(s => {
-            ctx.fillStyle = `rgba(255,255,255,${s.o})`;
+            ctx.fillStyle = "white";
             ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
-            s.o += (Math.random()-0.5)*0.02;
         });
 
-        drawPlanet(canvas.width*0.8, canvas.height*0.2, 80, "#ff4500", true); // Марс с кольцом
-        drawPlanet(canvas.width*0.15, canvas.height*0.8, 50, "#00bfff", false); // Нептун
+        stones.forEach(drawStone);
+        astronauts.forEach(drawAstronaut);
 
-        drawShip();
+        // UFO (Корабль из прошлого кода)
+        drawUFO();
+
         requestAnimationFrame(loop);
     }
+
+    let ufoX = -100;
+    function drawUFO() {
+        ufoX += 1.5; if(ufoX > canvas.width + 100) ufoX = -100;
+        ctx.fillStyle = "#7f8c8d";
+        ctx.beginPath(); ctx.ellipse(ufoX, 150, 40, 12, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "rgba(0, 242, 255, 0.4)";
+        ctx.beginPath(); ctx.arc(ufoX, 145, 15, Math.PI, 0); ctx.fill();
+        document.getElementById('pos-display').innerText = Math.floor(ufoX) + ".14.0";
+    }
+
     loop();
 
-    // To-Do
+    // To-Do Logic
     document.getElementById('todo-in').onkeypress = (e) => {
         if(e.key === 'Enter' && e.target.value) {
             const d = document.createElement('div');
             d.className = 'todo-item';
-            d.innerHTML = `${e.target.value.toUpperCase()} <span style="color:red">[X]</span>`;
+            d.innerHTML = `${e.target.value.toUpperCase()} <span>[NEW]</span>`;
             d.onclick = () => d.remove();
             document.getElementById('todo-list').prepend(d);
             e.target.value = '';
