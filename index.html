@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v5.0</title>
+    <title>ORBITRON TERMINAL v5.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -67,10 +67,7 @@
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
     let sb;
-    
-    try {
-        sb = window.supabase.createClient(URL, KEY);
-    } catch (e) { console.error("Client init failed"); }
+    try { sb = window.supabase.createClient(URL, KEY); } catch (e) { console.error("Client init failed"); }
 
     window.addTodo = function() {
         const input = document.getElementById('todo-in');
@@ -125,6 +122,7 @@
 
     sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
+    // --- УЛУЧШЕННАЯ ГРАФИКА ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
@@ -134,7 +132,7 @@
         stars = []; stones = []; astronauts = [];
         for(let i=0; i<200; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5 });
         for(let i=0; i<6; i++) stones.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*0.5, r: Math.random()*20+5, rot: Math.random()*6 });
-        for(let i=0; i<2; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.2, vy: 0.1, rot: 0 });
+        for(let i=0; i<3; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.1+Math.random()*0.2, vy: 0.05+Math.random()*0.1, rot: Math.random() });
     }
 
     function drawPlanet() {
@@ -150,11 +148,33 @@
 
     function drawUFO() {
         ufo.x += 0.8; if(ufo.x > canvas.width + 100) ufo.x = -100;
-        ctx.save(); ctx.translate(ufo.x, ufo.y + Math.sin(Date.now()/800)*15);
+        const bob = Math.sin(Date.now()/600)*15;
+        ctx.save(); ctx.translate(ufo.x, ufo.y + bob);
+
+        // Пульсирующий двигатель снизу
+        const pulse = Math.abs(Math.sin(Date.now()/300));
+        const thruster = ctx.createRadialGradient(0, 10, 5, 0, 15, 25*pulse);
+        thruster.addColorStop(0, 'rgba(0, 242, 255, 0.9)'); thruster.addColorStop(1, 'transparent');
+        ctx.fillStyle = thruster; ctx.beginPath(); ctx.ellipse(0, 12, 25*pulse, 6*pulse, 0, 0, Math.PI*2); ctx.fill();
+        
+        // Основной луч
         ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-30, 100); ctx.lineTo(30, 100); ctx.fill();
-        ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(0, 0, 40, 12, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(0, 242, 255, 0.6)'; ctx.beginPath(); ctx.arc(0, -5, 15, Math.PI, 0); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-35, 120); ctx.lineTo(35, 120); ctx.fill();
+        
+        // Корпус (темный металл)
+        ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.ellipse(0, 0, 50, 14, 0, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.stroke();
+        
+        // Мигающие огни по периметру
+        const time = Date.now() / 400;
+        for(let i=0; i<8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            ctx.fillStyle = (Math.floor(time + i)%2 === 0) ? '#ff00ff' : '#00f2ff';
+            ctx.beginPath(); ctx.arc(Math.cos(angle)*46, Math.sin(angle)*12, 2, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Купол (стекло)
+        ctx.fillStyle = 'rgba(100, 200, 255, 0.5)'; ctx.beginPath(); ctx.arc(0, -6, 18, Math.PI, 0); ctx.fill();
         ctx.restore();
         const ux = document.getElementById('ufo-x'), uy = document.getElementById('ufo-y');
         if(ux) ux.innerText = Math.floor(ufo.x); if(uy) uy.innerText = Math.floor(ufo.y);
@@ -162,18 +182,28 @@
 
     function loop() {
         ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,canvas.width, canvas.height);
-        stars.forEach(s => { ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); });
+        stars.forEach(s => { ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill(); });
         drawPlanet();
         stones.forEach(s => {
-            s.y += s.s; s.rot += 0.01; if(s.y > canvas.height + 50) s.y = -50;
+            s.y += s.s; s.rot += 0.005; if(s.y > canvas.height + 50) s.y = -50;
             ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.rot); ctx.fillStyle = '#1a2533'; 
-            ctx.fillRect(-s.r/2, -s.r/2, s.r, s.r); ctx.restore();
+            ctx.beginPath(); for(let i=0;i<5;i++) ctx.lineTo(Math.cos(i*1.2)*s.r, Math.sin(i*1.2)*s.r); ctx.fill(); ctx.restore();
         });
+        
+        // Астронавты (Детализированные)
         astronauts.forEach(a => {
-            a.x += a.vx; a.y += a.vy; a.rot += 0.005; if(a.x > canvas.width + 50) a.x = -50;
+            a.x += a.vx; a.y += a.vy; a.rot += 0.002; if(a.x > canvas.width + 50) a.x = -50;
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.fillStyle = 'white'; ctx.fillRect(-8, -10, 16, 20);
-            ctx.fillStyle = '#111'; ctx.fillRect(-5, -7, 10, 6);
+            // Ранец
+            ctx.fillStyle = '#777'; ctx.fillRect(-14, -10, 6, 18);
+            // Тело (скафандр)
+            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.roundRect(-10, -12, 20, 24, 5); ctx.fill();
+            // Шлем
+            ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI*2); ctx.fill();
+            // Визор (стекло)
+            ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0, -14, 6, 4, 0, 0, Math.PI*2); ctx.fill();
+            // Блик на визоре
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-2, -15, 1.5, 0, Math.PI*2); ctx.fill();
             ctx.restore();
         });
         drawUFO();
