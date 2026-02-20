@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v5.6</title>
+    <title>ORBITRON TERMINAL v5.7</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -12,24 +12,48 @@
         .ui { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
         .sidebar { width: 320px; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
         .terminal { width: 600px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
-        .terminal::before { content: "COMM_LINK_ESTABLISHED"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
+        .terminal::before { content: "COMM_LINK_STABLE"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
+        
         #todo-list { margin-top: 15px; height: 200px; overflow-y: auto; }
         .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; animation: slideIn 0.3s ease-out forwards; }
         .todo-item:hover { border-color: var(--p); color: var(--p); padding-left: 15px; }
-        #chat-box { height: 350px; overflow-y: auto; margin-bottom: 20px; scrollbar-width: thin; scrollbar-color: var(--n) transparent; }
+
+        #chat-box { 
+            height: 350px; 
+            overflow-y: auto; 
+            margin-bottom: 20px; 
+            scrollbar-width: thin; 
+            scrollbar-color: var(--n) transparent;
+            overflow-anchor: none;
+        }
         
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(15px) scale(0.98); filter: blur(4px); }
-            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+            0% { 
+                opacity: 0; 
+                transform: translateY(10px); 
+                max-height: 0;
+                margin-bottom: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                filter: blur(4px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0); 
+                max-height: 200px;
+                margin-bottom: 12px;
+                padding-top: 12px;
+                padding-bottom: 12px;
+                filter: blur(0); 
+            }
         }
 
         .msg { 
             background: rgba(0, 242, 255, 0.03); 
-            padding: 12px; 
-            margin-bottom: 12px; 
             border-left: 2px solid var(--n); 
-            animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.1) forwards;
-            will-change: transform, opacity;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out forwards;
+            will-change: transform, opacity, max-height;
         }
 
         .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
@@ -98,6 +122,10 @@
         } catch(e) {}
     };
 
+    const scrollToBottom = (b) => {
+        b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' });
+    };
+
     window.addTodo = function() {
         const i = document.getElementById('todo-in');
         if (!i.value) return;
@@ -137,7 +165,7 @@
             d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
             b.appendChild(d);
         });
-        b.scrollTop = b.scrollHeight;
+        scrollToBottom(b);
     }
 
     window.send = async function() {
@@ -152,7 +180,7 @@
             d.className = 'msg'; d.style.borderLeftColor = 'var(--p)';
             d.innerHTML = `<span class="msg-nick">${n}</span>${v}`;
             b.appendChild(d);
-            b.scrollTop = b.scrollHeight;
+            scrollToBottom(b);
             sb.from('comments').insert([{ message: v, nickname: n }])
               .then(({ error }) => { if(!error) d.style.borderLeftColor = 'var(--n)'; });
         }
