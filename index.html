@@ -6,83 +6,31 @@
     <title>Galactic Chat Station</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            margin: 0;
-            background: radial-gradient(circle at center, #0a1422 0%, #050505 100%);
-            color: #00f2ff;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+        body { margin: 0; background: radial-gradient(circle at center, #0a1422 0%, #050505 100%); color: #00f2ff; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: -1; }
-        .container {
-            background: rgba(10, 25, 41, 0.8);
-            border: 2px solid #00f2ff;
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
-            padding: 25px;
-            border-radius: 20px;
-            width: 420px;
-            backdrop-filter: blur(12px);
-            z-index: 10;
-        }
-        #chat-box {
-            height: 380px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            padding-right: 10px;
-        }
-        .msg {
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(0, 242, 255, 0.05);
-            border-left: 3px solid #ff00ff;
-            border-radius: 0 10px 10px 0;
-        }
+        .container { background: rgba(10, 25, 41, 0.8); border: 2px solid #00f2ff; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4); padding: 25px; border-radius: 20px; width: 420px; backdrop-filter: blur(12px); z-index: 10; }
+        #chat-box { height: 380px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px; }
+        .msg { margin-bottom: 15px; padding: 10px; background: rgba(0, 242, 255, 0.05); border-left: 3px solid #ff00ff; border-radius: 0 10px 10px 0; }
         .msg-author { font-size: 0.75em; color: #ff00ff; font-weight: bold; }
         .msg-time { font-size: 0.65em; color: rgba(255, 255, 255, 0.4); float: right; }
         .msg-text { color: #fff; margin-top: 5px; }
-        input {
-            width: calc(100% - 24px);
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #00f2ff;
-            color: #fff;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            outline: none;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #00f2ff;
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
+        input { width: calc(100% - 24px); background: rgba(0, 0, 0, 0.6); border: 1px solid #00f2ff; color: #fff; padding: 12px; margin-bottom: 12px; border-radius: 8px; outline: none; }
+        button { width: 100%; padding: 12px; background: #00f2ff; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { background: #ff00ff; color: #fff; transform: scale(1.02); }
         .hidden { display: none; }
         .secondary-btn { background: transparent; color: #00f2ff; border: 1px solid #00f2ff; margin-top: 10px; }
     </style>
 </head>
 <body>
-
 <canvas id="canvas-bg"></canvas>
-
 <div class="container">
     <div id="auth-screen">
         <h2 style="text-align: center; letter-spacing: 2px;">STATION LOGIN</h2>
         <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password (min 6 symbols)">
+        <input type="password" id="password" placeholder="Password (min 6 chars)">
         <button onclick="handleSignIn()">ENTER</button>
         <button onclick="handleSignUp()" class="secondary-btn">REGISTER NEW PILOT</button>
     </div>
-
     <div id="chat-screen" class="hidden">
         <div id="chat-box"></div>
         <input type="text" id="msg-input" placeholder="Transmit message...">
@@ -90,7 +38,6 @@
         <button onclick="handleSignOut()" style="margin-top:10px; background:#ff4d4d; color:white;">LOGOUT</button>
     </div>
 </div>
-
 <script>
     const SB_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const SB_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
@@ -117,7 +64,7 @@
         const password = document.getElementById('password').value;
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) alert(error.message);
-        else alert("Пилот зарегистрирован! Теперь введите данные и нажмите ENTER.");
+        else alert("Пилот зарегистрирован!");
     }
 
     async function handleSignIn() {
@@ -141,11 +88,7 @@
         div.className = 'msg';
         const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const author = msg.nickname || 'Pilot';
-        div.innerHTML = `
-            <span class="msg-time">${time}</span>
-            <span class="msg-author">🚀 ${author}</span>
-            <div class="msg-text">${msg.message}</div>
-        `;
+        div.innerHTML = `<span class="msg-time">${time}</span><span class="msg-author">🚀 ${author}</span><div class="msg-text">${msg.message}</div>`;
         chatBox.appendChild(div);
         scrollToBottom();
     }
@@ -154,54 +97,34 @@
         const input = document.getElementById('msg-input');
         const user = (await supabase.auth.getUser()).data.user;
         if (input.value.trim() && user) {
-            await supabase.from('comments').insert([{ 
-                message: input.value, 
-                nickname: user.email.split('@')[0] 
-            }]);
+            await supabase.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
             input.value = '';
         }
     }
 
     function subscribeToMessages() {
-        supabase.channel('public:comments')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
-                renderMessage(payload.new);
-            }).subscribe();
+        supabase.channel('public:comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+            renderMessage(payload.new);
+        }).subscribe();
     }
 
     function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
 
-    document.getElementById('msg-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
+    document.getElementById('msg-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [];
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.onresize = resize;
     resize();
-    for(let i=0; i<200; i++) {
-        stars.push({
-            x: Math.random()*canvas.width,
-            y: Math.random()*canvas.height,
-            r: Math.random() < 0.1 ? Math.random()*3 + 1 : Math.random()*1.5 + 0.5,
-            d: Math.random()*0.4 + 0.1
-        });
-    }
+    for(let i=0; i<200; i++) { stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random() < 0.1 ? Math.random()*3 + 1 : Math.random()*1.5 + 0.5, d: Math.random()*0.4 + 0.1 }); }
     function draw() {
         ctx.fillStyle = '#050505';
         ctx.fillRect(0,0,canvas.width, canvas.height);
         stars.forEach(s => {
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-            ctx.fill();
-            s.y += s.d;
-            if(s.y > canvas.height) s.y = -10;
+            ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+            s.y += s.d; if(s.y > canvas.height) s.y = -10;
         });
         requestAnimationFrame(draw);
     }
