@@ -2,107 +2,34 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL</title>
+    <title>ORBITRON TERMINAL v4.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --neon: #00f2ff; 
-            --pink: #ff00ff; 
-            --bg: #010812;
-            --glass: rgba(10, 25, 47, 0.7);
-        }
-
-        * { transition: all 0.2s ease; }
-
-        body, html { 
-            margin: 0; padding: 0; 
-            background: var(--bg); 
-            color: var(--neon); 
-            font-family: 'Share Tech Mono', monospace; 
-            height: 100vh; overflow: hidden; 
-        }
-
+        :root { --n: #00f2ff; --p: #ff00ff; --bg: #010812; --gl: rgba(10, 25, 47, 0.8); }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; }
-
-        /* UI LAYOUT */
-        .interface { 
-            position: relative; z-index: 10; 
-            display: flex; height: 100vh; 
-            background: radial-gradient(circle at center, transparent 0%, rgba(1, 8, 18, 0.8) 100%);
-            pointer-events: none;
-        }
-
-        .sidebar { 
-            width: 320px; background: var(--glass); 
-            border-right: 1px solid var(--neon); 
-            padding: 30px; pointer-events: auto; 
-            backdrop-filter: blur(15px); 
-            box-shadow: 15px 0 50px rgba(0,0,0,0.5);
-        }
-
-        .main-hub { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
-
-        /* TERMINAL STYLE */
-        .terminal { 
-            width: 500px; background: var(--glass); 
-            border: 1px solid var(--neon); 
-            padding: 30px; pointer-events: auto; 
-            position: relative; border-radius: 2px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
-        }
-
-        .terminal::before {
-            content: "SECURE_CONNECTION_ACTIVE";
-            position: absolute; top: -10px; left: 20px;
-            background: var(--bg); padding: 0 10px; font-size: 0.7rem; color: var(--pink);
-        }
-
-        h1, h2, h3 { font-family: 'Orbitron', sans-serif; letter-spacing: 3px; text-transform: uppercase; }
-
-        /* CHAT */
-        #chat-box { 
-            height: 350px; overflow-y: auto; 
-            margin-bottom: 20px; padding-right: 15px; 
-            scrollbar-width: thin; scrollbar-color: var(--neon) transparent;
-        }
-
-        .msg { 
-            background: rgba(0, 242, 255, 0.05); 
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            padding: 12px; margin-bottom: 12px; 
-            position: relative; cursor: pointer;
-        }
-
-        .msg:hover { background: rgba(255, 0, 255, 0.1); border-color: var(--pink); }
-        .msg-nick { color: var(--pink); font-size: 0.75rem; display: block; margin-bottom: 4px; }
-
-        /* INPUTS */
-        input { 
-            background: rgba(0,0,0,0.5); border: 1px solid var(--neon); 
-            color: #fff; padding: 12px; width: calc(100% - 26px); 
-            font-family: 'Share Tech Mono', monospace; outline: none; margin-bottom: 10px;
-        }
+        .ui { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
         
-        input:focus { box-shadow: 0 0 15px var(--neon); }
+        /* Боковая панель */
+        .sidebar { width: 300px; background: var(--gl); border-right: 1px solid var(--n); padding: 25px; pointer-events: auto; backdrop-filter: blur(10px); display: flex; flex-direction: column; }
+        
+        /* Главный хаб */
+        .hub { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
+        .terminal { width: 550px; background: var(--gl); border: 2px solid var(--n); padding: 30px; pointer-events: auto; position: relative; box-shadow: 0 0 20px rgba(0, 242, 255, 0.1); }
+        .terminal::after { content: "SECURE_MODE"; position: absolute; top: -12px; right: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 5px; border: 1px solid var(--p); }
 
-        button { 
-            background: transparent; color: var(--neon); 
-            border: 1px solid var(--neon); padding: 12px; 
-            width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif;
-            font-weight: bold; font-size: 0.8rem;
-        }
+        /* Чат */
+        #chat-box { height: 380px; overflow-y: auto; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); }
+        .msg { background: rgba(0, 242, 255, 0.05); padding: 10px; margin-bottom: 10px; border-left: 3px solid var(--p); cursor: pointer; }
+        .msg:hover { background: rgba(255, 0, 0, 0.1); border-left-color: #ff4d4d; }
+        .msg-nick { color: var(--p); font-size: 11px; margin-bottom: 4px; display: block; }
 
-        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
+        input { background: rgba(0,0,0,0.6); border: 1px solid var(--n); color: #fff; padding: 12px; width: calc(100% - 26px); font-family: inherit; outline: none; margin-bottom: 8px; }
+        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 1px; }
+        button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
 
-        /* TODO */
-        .todo-item { 
-            padding: 10px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); 
-            display: flex; justify-content: space-between; font-size: 0.8rem; cursor: pointer;
-        }
-        .todo-item:hover { color: var(--pink); background: rgba(255, 255, 255, 0.05); }
-
+        h2 { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; text-shadow: 0 0 10px var(--n); }
         .hidden { display: none; }
     </style>
 </head>
@@ -110,196 +37,130 @@
 
 <canvas id="canvas-bg"></canvas>
 
-<div class="interface">
+<div class="ui">
     <div class="sidebar">
-        <h3>SYSTEM_LOG</h3>
+        <h2>SYSTEM_LOG</h2>
+        <input type="text" id="todo-in" placeholder="+ ADD OBJECTIVE">
         <div id="todo-list">
-            <input type="text" id="todo-in" placeholder="> ADD TASK">
-            <div class="todo-item">DEEP_SPACE_SCAN <span>[WAIT]</span></div>
-            <div class="todo-item">OXYGEN_LEVEL <span>[99%]</span></div>
+            <div class="msg" style="font-size: 12px;" onclick="this.remove()">SCANNING_VOID... [OK]</div>
         </div>
-        
-        <div style="margin-top: auto; font-size: 0.7rem; border-top: 1px solid var(--neon); padding-top: 10px; opacity: 0.6;">
-            PILOT_STATUS: ONLINE <br>
-            SHIP_MODEL: ORBITRON-V3 <br>
-            COORDINATES: <span id="pos-display">0.0.0</span>
+        <div style="margin-top: auto; font-size: 11px; opacity: 0.7; line-height: 2;">
+            SECTOR: 004-X<br>
+            HULL_INTEGRITY: 100%<br>
+            POS: <span id="ufo-coords">0,0</span>
         </div>
     </div>
 
-    <div class="main-hub">
+    <div class="hub">
         <div class="terminal">
             <div id="auth-ui">
-                <h2 style="text-align: center">ACCESS_GATE</h2>
-                <input type="email" id="email" placeholder="LOGIN_ID">
-                <input type="password" id="pass" placeholder="SECURITY_CODE">
-                <button onclick="auth('in')">ESTABLISH_LINK</button>
+                <h2 style="text-align: center;">IDENTIFICATION</h2>
+                <input type="email" id="email" placeholder="PILOT_ID">
+                <input type="password" id="pass" placeholder="PASSWORD">
+                <button onclick="handleAuth('in')">LOGIN</button>
+                <button onclick="handleAuth('up')" style="margin-top:5px; border-color:var(--p); color:var(--p);">REGISTER</button>
             </div>
 
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
                 <div style="display: flex; gap: 5px;">
-                    <input type="text" id="msg-in" placeholder="TYPE SIGNAL...">
-                    <button onclick="send()" style="width: 80px;">SEND</button>
+                    <input type="text" id="msg-in" placeholder="ENTER MESSAGE...">
+                    <button onclick="sendMsg()" style="width: 80px;">SEND</button>
                 </div>
-                <button onclick="out()" style="margin-top: 10px; border-color: var(--pink); color: var(--pink); font-size: 0.6rem;">TERMINATE</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const G_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
-    const G_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const sb = window.supabase.createClient(G_URL, G_KEY);
+    // Настройки Supabase
+    const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+    const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+    const client = window.supabase.createClient(URL, KEY);
 
-    // --- AUTH & CHAT LOGIC ---
-    sb.auth.onAuthStateChange((_, s) => {
-        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
-        document.getElementById('chat-ui').classList.toggle('hidden', !s);
-        if(s) load();
+    // Логика чата
+    client.auth.onAuthStateChange((_, session) => {
+        document.getElementById('auth-ui').classList.toggle('hidden', !!session);
+        document.getElementById('chat-ui').classList.toggle('hidden', !session);
+        if(session) syncChat();
     });
 
-    async function auth(t) {
+    async function handleAuth(mode) {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = t === 'in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
-        if(error) alert("ERR: " + error.message);
+        const { error } = mode === 'in' ? await client.auth.signInWithPassword({email:e, password:p}) : await client.auth.signUp({email:e, password:p});
+        if(error) alert(error.message);
     }
-    async function out() { await sb.auth.signOut(); }
 
-    async function load() {
-        const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
+    async function syncChat() {
+        const { data } = await client.from('comments').select('*').order('created_at', { ascending: true });
         const box = document.getElementById('chat-box');
         box.innerHTML = '';
         if(data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
             d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
-            d.onclick = async () => { if(confirm("DELETE?")) { await sb.from('comments').delete().eq('id', m.id); load(); } };
+            d.onclick = async () => { if(confirm("Удалить?")) { await client.from('comments').delete().eq('id', m.id); syncChat(); } };
             box.appendChild(d);
         });
         box.scrollTop = box.scrollHeight;
     }
 
-    async function send() {
+    async function sendMsg() {
         const i = document.getElementById('msg-in');
-        const { data: { user } } = await sb.auth.getUser();
+        const { data: { user } } = await client.auth.getUser();
         if(i.value && user) {
-            const txt = i.value; i.value = '';
-            await sb.from('comments').insert([{ message: txt, nickname: user.email.split('@')[0] }]);
-            load();
+            const val = i.value; i.value = '';
+            await client.from('comments').insert([{ message: val, nickname: user.email.split('@')[0] }]);
+            syncChat();
         }
     }
-    sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
+    client.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, syncChat).subscribe();
 
-    // --- COSMIC ENGINE 4.0 (CANVAS) ---
+    // --- КОСМИЧЕСКИЙ ДВИЖОК ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let stars = [], stones = [], astronauts = [];
+    let stars = [], objects = [];
 
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.onresize = resize; resize();
-
-    // Init Stars
-    for(let i=0; i<400; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5 });
-    
-    // Init Simple Stones (Камешки)
-    for(let i=0; i<12; i++) {
-        stones.push({
-            x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-            size: Math.random()*10+5, s: Math.random()*0.5+0.2, rot: Math.random()*Math.PI
-        });
+    function init() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        stars = []; objects = [];
+        for(let i=0; i<300; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5 });
+        // Добавляем камешки
+        for(let i=0; i<10; i++) objects.push({ type: 'stone', x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*0.5+0.2, r: Math.random()*8+4 });
+        // Добавляем космонавтов
+        for(let i=0; i<2; i++) objects.push({ type: 'man', x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.2, vy: 0.1, rot: 0 });
     }
 
-    // Init Simple Astronauts
-    for(let i=0; i<3; i++) {
-        astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.3, vy: 0.2, rot: 0 });
-    }
-
-    function drawAstronaut(a) {
-        ctx.save();
-        ctx.translate(a.x, a.y);
-        ctx.rotate(a.rot);
-        // Тело (упрощенный мультяшный стиль)
-        ctx.fillStyle = "white";
-        ctx.fillRect(-10, -10, 20, 25); // Туловище
-        ctx.fillStyle = "#333";
-        ctx.fillRect(-7, -7, 14, 8); // Стекло шлема
-        ctx.fillStyle = "white";
-        ctx.fillRect(-12, -2, 4, 10); // Рука л
-        ctx.fillRect(8, -2, 4, 10);  // Рука п
-        ctx.restore();
-        a.x += a.vx; a.y += a.vy; a.rot += 0.005;
-        if(a.x > canvas.width + 50) a.x = -50;
-    }
-
-    function drawStone(s) {
-        ctx.fillStyle = "#2c3e50";
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.rot);
-        ctx.beginPath();
-        for(let i=0; i<6; i++) {
-            let angle = (i/6)*Math.PI*2;
-            let r = s.size + (Math.sin(i*2)*3);
-            ctx.lineTo(Math.cos(angle)*r, Math.sin(angle)*r);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-        s.y += s.s; s.rot += 0.01;
-        if(s.y > canvas.height + 50) s.y = -50;
-    }
-
-    function drawGrid() {
-        ctx.strokeStyle = "rgba(0, 242, 255, 0.05)";
-        ctx.lineWidth = 1;
-        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
-        for(let i=0; i<canvas.height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width, i); ctx.stroke(); }
-    }
-
-    function loop() {
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg');
+    function draw() {
+        ctx.fillStyle = '#010812';
         ctx.fillRect(0,0,canvas.width, canvas.height);
         
-        drawGrid();
+        // Звезды
+        ctx.fillStyle = '#fff';
+        stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill(); });
 
-        stars.forEach(s => {
-            ctx.fillStyle = "white";
-            ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+        objects.forEach(o => {
+            if(o.type === 'stone') {
+                ctx.fillStyle = '#2c3e50';
+                o.y += o.s; if(o.y > canvas.height) o.y = -20;
+                ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 7); ctx.fill();
+            } else {
+                o.x += o.vx; o.y += o.vy; o.rot += 0.01;
+                if(o.x > canvas.width) o.x = -30;
+                ctx.save();
+                ctx.translate(o.x, o.y); ctx.rotate(o.rot);
+                ctx.fillStyle = 'white'; ctx.fillRect(-8, -10, 16, 20); // Тело
+                ctx.fillStyle = '#333'; ctx.fillRect(-5, -7, 10, 6); // Шлем
+                ctx.restore();
+            }
         });
 
-        stones.forEach(drawStone);
-        astronauts.forEach(drawAstronaut);
-
-        // UFO (Корабль из прошлого кода)
-        drawUFO();
-
-        requestAnimationFrame(loop);
+        requestAnimationFrame(draw);
     }
 
-    let ufoX = -100;
-    function drawUFO() {
-        ufoX += 1.5; if(ufoX > canvas.width + 100) ufoX = -100;
-        ctx.fillStyle = "#7f8c8d";
-        ctx.beginPath(); ctx.ellipse(ufoX, 150, 40, 12, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "rgba(0, 242, 255, 0.4)";
-        ctx.beginPath(); ctx.arc(ufoX, 145, 15, Math.PI, 0); ctx.fill();
-        document.getElementById('pos-display').innerText = Math.floor(ufoX) + ".14.0";
-    }
-
-    loop();
-
-    // To-Do Logic
-    document.getElementById('todo-in').onkeypress = (e) => {
-        if(e.key === 'Enter' && e.target.value) {
-            const d = document.createElement('div');
-            d.className = 'todo-item';
-            d.innerHTML = `${e.target.value.toUpperCase()} <span>[NEW]</span>`;
-            d.onclick = () => d.remove();
-            document.getElementById('todo-list').prepend(d);
-            e.target.value = '';
-        }
-    }
+    init(); draw();
+    window.onresize = init;
 </script>
 </body>
 </html>
