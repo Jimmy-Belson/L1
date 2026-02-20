@@ -26,8 +26,8 @@
 <div class="container">
     <div id="auth-screen">
         <h2 style="text-align: center; letter-spacing: 2px;">STATION LOGIN</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password (min 6 chars)">
+        <input type="email" id="email" placeholder="Email" autocomplete="email">
+        <input type="password" id="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
         <button onclick="handleSignIn()">ENTER</button>
         <button onclick="handleSignUp()" class="secondary-btn">REGISTER NEW PILOT</button>
     </div>
@@ -41,13 +41,13 @@
 <script>
     const SB_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const SB_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+    const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
     const authScreen = document.getElementById('auth-screen');
     const chatScreen = document.getElementById('chat-screen');
     const chatBox = document.getElementById('chat-box');
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabaseClient.auth.onAuthStateChange((event, session) => {
         if (session) {
             authScreen.classList.add('hidden');
             chatScreen.classList.remove('hidden');
@@ -62,7 +62,7 @@
     async function handleSignUp() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabaseClient.auth.signUp({ email, password });
         if (error) alert(error.message);
         else alert("Пилот зарегистрирован!");
     }
@@ -70,14 +70,14 @@
     async function handleSignIn() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) alert(error.message);
     }
 
-    async function handleSignOut() { await supabase.auth.signOut(); }
+    async function handleSignOut() { await supabaseClient.auth.signOut(); }
 
     async function loadMessages() {
-        const { data } = await supabase.from('comments').select('*').order('created_at', { ascending: true });
+        const { data } = await supabaseClient.from('comments').select('*').order('created_at', { ascending: true });
         chatBox.innerHTML = '';
         if(data) data.forEach(renderMessage);
         scrollToBottom();
@@ -95,15 +95,16 @@
 
     async function sendMessage() {
         const input = document.getElementById('msg-input');
-        const user = (await supabase.auth.getUser()).data.user;
+        const userResult = await supabaseClient.auth.getUser();
+        const user = userResult.data.user;
         if (input.value.trim() && user) {
-            await supabase.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
+            await supabaseClient.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
             input.value = '';
         }
     }
 
     function subscribeToMessages() {
-        supabase.channel('public:comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+        supabaseClient.channel('public:comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
             renderMessage(payload.new);
         }).subscribe();
     }
