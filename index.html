@@ -17,9 +17,7 @@
             align-items: center;
             height: 100vh;
         }
-
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: -1; }
-
         .container {
             background: rgba(10, 25, 41, 0.8);
             border: 2px solid #00f2ff;
@@ -30,14 +28,12 @@
             backdrop-filter: blur(12px);
             z-index: 10;
         }
-
         #chat-box {
             height: 380px;
             overflow-y: auto;
             margin-bottom: 20px;
             padding-right: 10px;
         }
-
         .msg {
             margin-bottom: 15px;
             padding: 10px;
@@ -45,11 +41,9 @@
             border-left: 3px solid #ff00ff;
             border-radius: 0 10px 10px 0;
         }
-
         .msg-author { font-size: 0.75em; color: #ff00ff; font-weight: bold; }
         .msg-time { font-size: 0.65em; color: rgba(255, 255, 255, 0.4); float: right; }
         .msg-text { color: #fff; margin-top: 5px; }
-
         input {
             width: calc(100% - 24px);
             background: rgba(0, 0, 0, 0.6);
@@ -60,7 +54,6 @@
             border-radius: 8px;
             outline: none;
         }
-
         button {
             width: 100%;
             padding: 12px;
@@ -72,7 +65,6 @@
             font-weight: bold;
             transition: 0.3s;
         }
-
         button:hover { background: #ff00ff; color: #fff; transform: scale(1.02); }
         .hidden { display: none; }
         .secondary-btn { background: transparent; color: #00f2ff; border: 1px solid #00f2ff; margin-top: 10px; }
@@ -86,7 +78,7 @@
     <div id="auth-screen">
         <h2 style="text-align: center; letter-spacing: 2px;">STATION LOGIN</h2>
         <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
+        <input type="password" id="password" placeholder="Password (min 6 symbols)">
         <button onclick="handleSignIn()">ENTER</button>
         <button onclick="handleSignUp()" class="secondary-btn">REGISTER NEW PILOT</button>
     </div>
@@ -149,7 +141,6 @@
         div.className = 'msg';
         const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const author = msg.nickname || 'Pilot';
-        
         div.innerHTML = `
             <span class="msg-time">${time}</span>
             <span class="msg-author">🚀 ${author}</span>
@@ -162,7 +153,6 @@
     async function sendMessage() {
         const input = document.getElementById('msg-input');
         const user = (await supabase.auth.getUser()).data.user;
-        
         if (input.value.trim() && user) {
             await supabase.from('comments').insert([{ 
                 message: input.value, 
@@ -181,23 +171,19 @@
 
     function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
 
-    // Клавиша Enter
     document.getElementById('msg-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
 
-    // УЛУЧШЕННЫЙ КОСМОС
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [];
-
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
     window.onresize = resize;
     resize();
-
     for(let i=0; i<200; i++) {
         stars.push({
             x: Math.random()*canvas.width,
@@ -206,7 +192,6 @@
             d: Math.random()*0.4 + 0.1
         });
     }
-
     function draw() {
         ctx.fillStyle = '#050505';
         ctx.fillRect(0,0,canvas.width, canvas.height);
