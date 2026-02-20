@@ -10,29 +10,19 @@
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; }
         .ui { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
-        
-        /* Боковая панель */
         .sidebar { width: 320px; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
-        
-        /* Основной терминал */
         .terminal { width: 600px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
         .terminal::before { content: "ENCRYPTED_LINK"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
-
-        /* ToDo List */
         #todo-list { margin-top: 15px; height: 200px; overflow-y: auto; }
         .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; }
         .todo-item:hover { border-color: var(--p); color: var(--p); padding-left: 15px; }
-
-        /* Чат */
         #chat-box { height: 350px; overflow-y: auto; margin-bottom: 20px; scrollbar-width: thin; scrollbar-color: var(--n) transparent; }
         .msg { background: rgba(0, 242, 255, 0.03); padding: 12px; margin-bottom: 12px; border-left: 2px solid var(--n); transition: 0.3s; }
         .msg:hover { background: rgba(255, 0, 255, 0.08); border-left-color: var(--p); transform: translateX(5px); }
         .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
-
         input { background: rgba(0,0,0,0.7); border: 1px solid var(--n); color: #fff; padding: 14px; width: calc(100% - 32px); font-family: inherit; outline: none; margin-bottom: 10px; }
         button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
         button:hover { background: var(--n); color: #000; box-shadow: 0 0 25px var(--n); }
-        
         h2 { font-family: 'Orbitron', sans-serif; letter-spacing: 3px; font-size: 1.1rem; margin-bottom: 20px; text-shadow: 0 0 10px var(--n); }
         .hidden { display: none; }
     </style>
@@ -46,7 +36,6 @@
         <h2>OBJECTIVES</h2>
         <input type="text" id="todo-in" placeholder="> NEW_TASK" onkeypress="if(event.key==='Enter') addTodo()">
         <div id="todo-list"></div>
-        
         <div style="margin-top: auto; font-size: 10px; border-top: 1px solid rgba(0,242,255,0.2); padding-top: 20px; opacity: 0.8; line-height: 1.8;">
             <div style="color: var(--p)">STATUS: ONLINE</div>
             <div>SECTOR: <span id="ufo-x">0</span>.Y<span id="ufo-y">0</span></div>
@@ -62,7 +51,6 @@
                 <input type="password" id="pass" placeholder="PASSWORD">
                 <button onclick="auth()">ACCESS_SYSTEM</button>
             </div>
-
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
                 <div style="display: flex; gap: 10px;">
@@ -78,34 +66,39 @@
 (function() {
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const sb = window.supabase.createClient(URL, KEY);
+    let sb;
+    
+    try {
+        sb = window.supabase.createClient(URL, KEY);
+    } catch (e) { console.error("Client init failed"); }
 
-    // --- ЛОГИКА TODO ---
     window.addTodo = function() {
         const input = document.getElementById('todo-in');
         if (!input.value) return;
         const item = document.createElement('div');
         item.className = 'todo-item';
-        item.innerHTML = `> ${input.value.toUpperCase()}`;
+        item.innerHTML = `<span class="todo-text">${input.value.toUpperCase()}</span>`;
         item.onclick = function() { this.remove(); };
         document.getElementById('todo-list').appendChild(item);
         input.value = '';
     };
 
-    // --- ЛОГИКА ЧАТА ---
     window.auth = async function() {
+        if(!sb) return;
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
         if (error) alert(error.message);
     };
 
     sb.auth.onAuthStateChange((_, s) => {
-        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
-        document.getElementById('chat-ui').classList.toggle('hidden', !s);
+        const aUI = document.getElementById('auth-ui'), cUI = document.getElementById('chat-ui');
+        if(aUI) aUI.classList.toggle('hidden', !!s);
+        if(cUI) cUI.classList.toggle('hidden', !s);
         if (s) load();
     });
 
     async function load() {
+        if(!sb) return;
         const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
         const box = document.getElementById('chat-box');
         if (!box) return;
@@ -113,13 +106,14 @@
         if (data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
-            d.innerHTML = `<span class="msg-nick">${m.nickname}</span>: ${m.message}`;
+            d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
             box.appendChild(d);
         });
         box.scrollTop = box.scrollHeight;
     }
 
     window.send = async function() {
+        if(!sb) return;
         const i = document.getElementById('msg-in');
         const { data: { user } } = await sb.auth.getUser();
         if (i.value && user) {
@@ -131,7 +125,6 @@
 
     sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
-    // --- ГРАФИКА (PLANET, UFO, ASTRONAUTS) ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
@@ -146,12 +139,9 @@
 
     function drawPlanet() {
         const x = canvas.width * 0.85, y = canvas.height * 0.75;
-        // Свечение
         ctx.shadowBlur = 40; ctx.shadowColor = 'rgba(0, 242, 255, 0.3)';
-        // Кольцо
         ctx.strokeStyle = 'rgba(0, 242, 255, 0.2)'; ctx.lineWidth = 10;
         ctx.beginPath(); ctx.ellipse(x, y, 180, 40, Math.PI/6, 0, Math.PI*2); ctx.stroke();
-        // Сама планета
         const g = ctx.createRadialGradient(x-20, y-20, 5, x, y, 80);
         g.addColorStop(0, '#00f2ff'); g.addColorStop(0.5, '#004466'); g.addColorStop(1, '#01050a');
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 80, 0, Math.PI*2); ctx.fill();
@@ -161,15 +151,13 @@
     function drawUFO() {
         ufo.x += 0.8; if(ufo.x > canvas.width + 100) ufo.x = -100;
         ctx.save(); ctx.translate(ufo.x, ufo.y + Math.sin(Date.now()/800)*15);
-        // Луч
         ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-30, 100); ctx.lineTo(30, 100); ctx.fill();
-        // Корпус
         ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(0, 0, 40, 12, 0, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = 'rgba(0, 242, 255, 0.6)'; ctx.beginPath(); ctx.arc(0, -5, 15, Math.PI, 0); ctx.fill();
         ctx.restore();
-        document.getElementById('ufo-x').innerText = Math.floor(ufo.x);
-        document.getElementById('ufo-y').innerText = Math.floor(ufo.y);
+        const ux = document.getElementById('ufo-x'), uy = document.getElementById('ufo-y');
+        if(ux) ux.innerText = Math.floor(ufo.x); if(uy) uy.innerText = Math.floor(ufo.y);
     }
 
     function loop() {
@@ -184,12 +172,13 @@
         astronauts.forEach(a => {
             a.x += a.vx; a.y += a.vy; a.rot += 0.005; if(a.x > canvas.width + 50) a.x = -50;
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.fillStyle = 'white'; ctx.fillRect(-8, -10, 16, 20); // Тело
-            ctx.fillStyle = '#111'; ctx.fillRect(-5, -7, 10, 6); // Шлем
+            ctx.fillStyle = 'white'; ctx.fillRect(-8, -10, 16, 20);
+            ctx.fillStyle = '#111'; ctx.fillRect(-5, -7, 10, 6);
             ctx.restore();
         });
         drawUFO();
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        const cl = document.getElementById('clock');
+        if(cl) cl.innerText = new Date().toLocaleTimeString();
         requestAnimationFrame(loop);
     }
 
