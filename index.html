@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galactic Chat Station</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -26,8 +25,8 @@
 <div class="container">
     <div id="auth-screen">
         <h2 style="text-align: center; letter-spacing: 2px;">STATION LOGIN</h2>
-        <input type="email" id="email" placeholder="Email" autocomplete="email">
-        <input type="password" id="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Pass (min 6 chars)">
         <button onclick="handleSignIn()">ENTER</button>
         <button onclick="handleSignUp()" class="secondary-btn">REGISTER NEW PILOT</button>
     </div>
@@ -39,15 +38,15 @@
     </div>
 </div>
 <script>
-    const SB_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
-    const SB_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
+    const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+    const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+    const sb = window.supabase.createClient(URL, KEY);
 
     const authScreen = document.getElementById('auth-screen');
     const chatScreen = document.getElementById('chat-screen');
     const chatBox = document.getElementById('chat-box');
 
-    supabaseClient.auth.onAuthStateChange((event, session) => {
+    sb.auth.onAuthStateChange((event, session) => {
         if (session) {
             authScreen.classList.add('hidden');
             chatScreen.classList.remove('hidden');
@@ -60,24 +59,23 @@
     });
 
     async function handleSignUp() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) alert(error.message);
-        else alert("Пилот зарегистрирован!");
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('password').value;
+        const { error } = await sb.auth.signUp({ email: e, password: p });
+        if (error) alert(error.message); else alert("Pilot Registered!");
     }
 
     async function handleSignIn() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('password').value;
+        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
         if (error) alert(error.message);
     }
 
-    async function handleSignOut() { await supabaseClient.auth.signOut(); }
+    async function handleSignOut() { await sb.auth.signOut(); }
 
     async function loadMessages() {
-        const { data } = await supabaseClient.from('comments').select('*').order('created_at', { ascending: true });
+        const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
         chatBox.innerHTML = '';
         if(data) data.forEach(renderMessage);
         scrollToBottom();
@@ -87,42 +85,35 @@
         const div = document.createElement('div');
         div.className = 'msg';
         const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const author = msg.nickname || 'Pilot';
-        div.innerHTML = `<span class="msg-time">${time}</span><span class="msg-author">🚀 ${author}</span><div class="msg-text">${msg.message}</div>`;
+        div.innerHTML = `<span class="msg-time">${time}</span><span class="msg-author">🚀 ${msg.nickname || 'Pilot'}</span><div class="msg-text">${msg.message}</div>`;
         chatBox.appendChild(div);
         scrollToBottom();
     }
 
     async function sendMessage() {
         const input = document.getElementById('msg-input');
-        const userResult = await supabaseClient.auth.getUser();
-        const user = userResult.data.user;
+        const { data: { user } } = await sb.auth.getUser();
         if (input.value.trim() && user) {
-            await supabaseClient.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
+            await sb.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
             input.value = '';
         }
     }
 
     function subscribeToMessages() {
-        supabaseClient.channel('public:comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
-            renderMessage(payload.new);
-        }).subscribe();
+        sb.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, p => renderMessage(p.new)).subscribe();
     }
 
     function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
-
     document.getElementById('msg-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [];
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.onresize = resize;
-    resize();
-    for(let i=0; i<200; i++) { stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random() < 0.1 ? Math.random()*3 + 1 : Math.random()*1.5 + 0.5, d: Math.random()*0.4 + 0.1 }); }
+    window.onresize = resize; resize();
+    for(let i=0; i<200; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2, d: Math.random()*0.5 });
     function draw() {
-        ctx.fillStyle = '#050505';
-        ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
         stars.forEach(s => {
             ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
             s.y += s.d; if(s.y > canvas.height) s.y = -10;
