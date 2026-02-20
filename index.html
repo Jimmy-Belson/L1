@@ -58,9 +58,16 @@
 (function() {
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const sb = window.supabase.createClient(URL, KEY);
+    let sb;
+    
+    try {
+        sb = window.supabase.createClient(URL, KEY);
+    } catch (e) {
+        console.error(e);
+    }
 
     window.auth = async function(type) {
+        if (!sb) return;
         const e = document.getElementById('email').value;
         const p = document.getElementById('pass').value;
         const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
@@ -68,14 +75,18 @@
     };
 
     sb.auth.onAuthStateChange((_, s) => {
-        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
-        document.getElementById('chat-ui').classList.toggle('hidden', !s);
+        const a = document.getElementById('auth-ui');
+        const c = document.getElementById('chat-ui');
+        if (a) a.classList.toggle('hidden', !!s);
+        if (c) c.classList.toggle('hidden', !s);
         if (s) load();
     });
 
     async function load() {
+        if (!sb) return;
         const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
         const box = document.getElementById('chat-box');
+        if (!box) return;
         box.innerHTML = '';
         if (data) {
             data.forEach(m => {
@@ -95,6 +106,7 @@
     }
 
     window.send = async function() {
+        if (!sb) return;
         const i = document.getElementById('msg-in');
         const { data: { user } } = await sb.auth.getUser();
         if (i.value && user) {
@@ -137,7 +149,8 @@
         ctx.fillStyle = 'rgba(0, 242, 255, 0.5)'; ctx.beginPath(); ctx.arc(0, -5, 18, Math.PI, 0); ctx.fill();
         ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(0, -8, 4, 0, Math.PI*2); ctx.fill();
         ctx.restore();
-        document.getElementById('pos-val').innerText = `${Math.floor(ufo.x)} . ${Math.floor(ufo.y)} . 0`;
+        const p = document.getElementById('pos-val');
+        if (p) p.innerText = `${Math.floor(ufo.x)} . ${Math.floor(ufo.y)} . 0`;
     }
 
     function loop() {
@@ -152,7 +165,8 @@
         });
         astronauts.forEach(a => {
             a.x += a.vx; a.y += a.vy; a.rot += 0.005; if(a.x > canvas.width + 50) a.x = -50;
-            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot); ctx.fillStyle = 'white'; ctx.fillRect(-10, -12, 20, 25);
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+            ctx.fillStyle = 'white'; ctx.fillRect(-10, -12, 20, 25);
             ctx.fillStyle = '#111'; ctx.fillRect(-7, -9, 14, 8); ctx.restore();
         });
         drawUFO();
