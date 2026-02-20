@@ -2,196 +2,194 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>TERMINAL - DEEP SPACE</title>
+    <title>DEEP SPACE TERMINAL v3.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --n: #00f2ff; --p: #ff00ff; --b: #020205; }
-        body, html { margin: 0; padding: 0; background: var(--b); color: var(--n); font-family: 'Courier New', monospace; height: 100vh; overflow: hidden; }
+        :root { --n: #00f2ff; --p: #ff00ff; --b: #02040a; --glass: rgba(0, 20, 40, 0.8); }
+        body, html { margin: 0; padding: 0; background: var(--b); color: var(--n); font-family: 'Segoe UI', monospace; height: 100vh; overflow: hidden; }
         
-        #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
-        .ui-layer { position: relative; z-index: 10; display: flex; height: 100vh; background: radial-gradient(circle, transparent 20%, var(--b) 80%); }
+        #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; }
+        .ui-layer { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
 
-        /* ЛЕВАЯ ПАНЕЛЬ */
-        .sidebar { width: 300px; background: rgba(0, 10, 20, 0.9); border-right: 2px solid var(--n); padding: 20px; box-shadow: 5px 0 20px rgba(0, 242, 255, 0.2); }
-        .todo-item { border: 1px solid rgba(0, 242, 255, 0.3); padding: 8px; margin: 10px 0; font-size: 0.8em; cursor: pointer; display: flex; justify-content: space-between; }
-        .todo-item:hover { border-color: var(--p); background: rgba(255, 0, 255, 0.1); }
-
-        /* ОСНОВНОЙ БЛОК */
+        /* ИНТЕРФЕЙС */
+        .sidebar { width: 300px; background: var(--glass); border-right: 2px solid var(--n); padding: 25px; pointer-events: auto; backdrop-filter: blur(10px); display: flex; flex-direction: column; }
         .main { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
-        .terminal { width: 500px; background: rgba(0, 5, 10, 0.8); border: 1px solid var(--n); padding: 20px; position: relative; backdrop-filter: blur(5px); }
-        .terminal::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 2px); pointer-events: none; }
+        .terminal { width: 550px; background: var(--glass); border: 1px solid var(--n); padding: 30px; pointer-events: auto; box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
 
-        #chat-box { height: 350px; overflow-y: auto; padding: 10px; border-bottom: 1px solid var(--n); margin-bottom: 15px; }
-        .msg { padding: 8px; border-left: 2px solid var(--p); margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
-        .msg:hover { background: rgba(255, 0, 0, 0.2); border-left-color: red; }
-        .msg:hover::after { content: " [DELETE?]"; color: red; font-size: 0.7em; }
-        .msg-nick { color: var(--p); font-weight: bold; font-size: 0.8em; }
+        #chat-box { height: 380px; overflow-y: auto; padding-right: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); }
+        .msg { padding: 12px; border-left: 3px solid var(--p); background: rgba(255, 0, 255, 0.03); margin-bottom: 10px; cursor: pointer; animation: blink 0.5s ease-out; }
+        @keyframes blink { from { opacity: 0; } to { opacity: 1; } }
+        .msg:hover { background: rgba(255, 0, 0, 0.15); border-left-color: #ff4d4d; }
+        .msg:hover::after { content: " [DELETE]"; color: #ff4d4d; font-size: 0.7em; margin-left: 10px; }
 
-        input { background: #000; border: 1px solid var(--n); color: var(--n); padding: 10px; width: calc(100% - 22px); outline: none; margin-bottom: 10px; }
-        button { background: var(--n); color: #000; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        button:hover { background: var(--p); color: #fff; }
+        input { background: #000; border: 1px solid var(--n); color: #fff; padding: 12px; width: calc(100% - 26px); outline: none; margin-bottom: 10px; border-radius: 4px; }
+        button { background: var(--n); color: #000; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; }
+        button:hover { background: var(--p); color: #fff; box-shadow: 0 0 20px var(--p); }
 
+        .todo-item { background: rgba(0, 242, 255, 0.05); padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid rgba(0, 242, 255, 0.1); cursor: pointer; }
+        .todo-item:hover { border-color: var(--n); }
         .hidden { display: none; }
-        .scanline { position: fixed; top: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.1); z-index: 100; animation: scan 4s linear infinite; }
-        @keyframes scan { from { top: 0; } to { top: 100%; } }
     </style>
 </head>
 <body>
 
-<div class="scanline"></div>
 <canvas id="canvas-bg"></canvas>
 
 <div class="ui-layer">
     <div class="sidebar">
-        <h3>MISSIONS_LOG</h3>
-        <input type="text" id="todo-in" placeholder="ADD TASK...">
+        <h2 style="letter-spacing: 3px; border-bottom: 2px solid var(--p); padding-bottom: 10px;">OPERATIONS</h2>
         <div id="todo-list">
-            <div class="todo-item">CALIBRATE SENSORS <span>[OK]</span></div>
-            <div class="todo-item">VOID SCANNING <span>[..]</span></div>
+            <input type="text" id="todo-in" placeholder="+ NEW OBJECTIVE" style="font-size: 0.7em;">
+            <div class="todo-item" onclick="this.remove()">SCAN SECTOR 7G <span style="color: var(--p)">[!]</span></div>
+            <div class="todo-item" onclick="this.remove()">FUEL STATUS: 88% <span style="color: #0f0">[OK]</span></div>
         </div>
-        <div style="margin-top: 100px; font-size: 0.7em; opacity: 0.5;">
-            LATENCY: 14ms<br>
-            UPLINK: ACTIVE<br>
-            <span id="coords">0.00, 0.00</span>
+        <div style="margin-top: auto; font-size: 0.8em; line-height: 1.8;">
+            UPLINK: <span id="db-status" style="color: yellow;">CONNECTING...</span><br>
+            SHIP_POS: <span id="coords" style="color: var(--p);">0, 0</span>
         </div>
     </div>
 
     <div class="main">
         <div class="terminal">
             <div id="auth-ui">
-                <h2 style="text-align:center">SECURE LOGIN</h2>
-                <input type="email" id="email" placeholder="PILOT_MAIL">
-                <input type="password" id="pass" placeholder="PASSWORD">
+                <h1 style="text-align: center; letter-spacing: 5px;">AUTHORIZATION</h1>
+                <input type="email" id="email" placeholder="PILOT EMAIL">
+                <input type="password" id="pass" placeholder="ACCESS CODE">
                 <button onclick="auth('in')">LOGIN</button>
-                <button onclick="auth('up')" style="background:none; color:var(--p); margin-top:5px;">REGISTER</button>
+                <button onclick="auth('up')" style="background:none; color:var(--p); border: 1px solid var(--p); margin-top:10px;">REGISTER</button>
             </div>
 
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
-                <input type="text" id="msg-in" placeholder="ENTER MESSAGE...">
-                <button onclick="send()">TRANSMIT</button>
-                <button onclick="out()" style="background:none; color:red; border:1px solid red; margin-top:10px; font-size:0.7em;">ABORT SESSION</button>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="msg-in" placeholder="TYPE SIGNAL...">
+                    <button onclick="send()" style="width: 100px;">SEND</button>
+                </div>
+                <button onclick="out()" style="background:none; color:#ff4d4d; border:1px solid #ff4d4d; margin-top:10px; font-size:0.7em;">LOGOUT</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
-    const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const sb = window.supabase.createClient(URL, KEY);
+    // УБЕРИ ПРОБЕЛЫ В ЭТИХ СТРОКАХ:
+    const G_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+    const G_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+    
+    let db;
+    try {
+        db = window.supabase.createClient(G_URL, G_KEY);
+        document.getElementById('db-status').innerText = 'ONLINE';
+        document.getElementById('db-status').style.color = '#0f0';
+    } catch(e) {
+        document.getElementById('db-status').innerText = 'ERROR';
+        document.getElementById('db-status').style.color = 'red';
+    }
 
-    // --- AUTH & CHAT ---
-    sb.auth.onAuthStateChange((_, s) => {
+    // --- БАЗА ДАННЫХ ---
+    db.auth.onAuthStateChange((_, s) => {
         document.getElementById('auth-ui').classList.toggle('hidden', !!s);
         document.getElementById('chat-ui').classList.toggle('hidden', !s);
         if(s) load();
     });
 
-    async function auth(type) {
+    async function auth(t) {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = type === 'in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
+        const { error } = t === 'in' ? await db.auth.signInWithPassword({email:e, password:p}) : await db.auth.signUp({email:e, password:p});
         if(error) alert(error.message);
     }
-    async function out() { await sb.auth.signOut(); }
+    async function out() { await db.auth.signOut(); }
 
     async function load() {
-        const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
+        const { data } = await db.from('comments').select('*').order('created_at', { ascending: true });
         const box = document.getElementById('chat-box');
         box.innerHTML = '';
-        if(data) data.forEach(m => addMsg(m));
+        if(data) data.forEach(m => {
+            const d = document.createElement('div');
+            d.className = 'msg';
+            d.innerHTML = `<span style="color:var(--p); font-size:0.8em;">[${m.nickname}]:</span><br>${m.message}`;
+            d.onclick = async () => { if(confirm("Удалить?")) { await db.from('comments').delete().eq('id', m.id); load(); } };
+            box.appendChild(d);
+        });
         box.scrollTop = box.scrollHeight;
-    }
-
-    function addMsg(m) {
-        const d = document.createElement('div');
-        d.className = 'msg';
-        d.innerHTML = `<span class="msg-nick">${m.nickname}:</span> <span style="color:#fff">${m.message}</span>`;
-        d.onclick = async () => {
-            if(confirm("Delete message?")) {
-                await sb.from('comments').delete().eq('id', m.id);
-                load();
-            }
-        };
-        document.getElementById('chat-box').appendChild(d);
     }
 
     async function send() {
         const i = document.getElementById('msg-in');
-        const { data: { user } } = await sb.auth.getUser();
+        const { data: { user } } = await db.auth.getUser();
         if(i.value && user) {
-            const txt = i.value; i.value = '';
-            await sb.from('comments').insert([{ message: txt, nickname: user.email.split('@')[0] }]);
+            const val = i.value; i.value = ''; // Мгновенно убираем текст
+            await db.from('comments').insert([{ message: val, nickname: user.email.split('@')[0] }]);
             load();
         }
     }
+    db.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
-    sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
-
-    // --- GRAPHICS ENGINE ---
+    // --- ГРАФИКА (ДЕТАЛИЗИРОВАННАЯ) ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let stars = [], ast = [];
-    let ufo = { x: -100, y: 200, s: 2.5 };
+    let stars = [], particles = [];
+    let ufo = { x: -200, y: 300, s: 2.5, t: 0 };
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.onresize = resize; resize();
 
-    for(let i=0; i<800; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5, o: Math.random() });
-    for(let i=0; i<10; i++) ast.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*10+2, s: Math.random()*1.5+0.5 });
+    for(let i=0; i<600; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2, o: Math.random() });
 
-    function drawPlanet(x, y, r, c1, c2) {
-        ctx.save();
-        let g = ctx.createRadialGradient(x - r*0.3, y - r*0.3, r*0.1, x, y, r);
-        g.addColorStop(0, c1); g.addColorStop(1, c2);
-        ctx.fillStyle = g;
-        ctx.shadowBlur = 30; ctx.shadowColor = c1;
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-        ctx.restore();
+    function drawPlanet(x, y, r, col, hasRing) {
+        let g = ctx.createRadialGradient(x-r*0.3, y-r*0.3, r*0.1, x, y, r);
+        g.addColorStop(0, '#fff'); g.addColorStop(0.3, col); g.addColorStop(1, '#000');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+        if(hasRing) {
+            ctx.strokeStyle = "rgba(255,255,255,0.15)"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.ellipse(x, y, r*2.2, r*0.5, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+        }
     }
 
-    function drawUFO(x, y) {
-        ctx.fillStyle = "#555"; // Металлический корпус
-        ctx.beginPath(); ctx.ellipse(x, y, 35, 10, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "rgba(0, 242, 255, 0.5)"; // Голубой купол
-        ctx.beginPath(); ctx.arc(x, y-4, 12, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = (Date.now() % 400 > 200) ? "#0f0" : "#f00"; // Мигание огней
-        ctx.beginPath(); ctx.arc(x-20, y, 2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x+20, y, 2, 0, Math.PI*2); ctx.fill();
+    function drawShip() {
+        ufo.x += ufo.s; ufo.t += 0.05;
+        let shake = Math.sin(ufo.t)*5;
+        if(ufo.x > canvas.width + 200) ufo.x = -200;
+
+        // Корпус корабля (Серебристый металл)
+        ctx.fillStyle = "#A0A0A0";
+        ctx.beginPath(); ctx.ellipse(ufo.x, ufo.y + shake, 45, 12, 0, 0, Math.PI*2); ctx.fill();
+        // Купол (Стеклянный)
+        ctx.fillStyle = "rgba(0, 242, 255, 0.4)";
+        ctx.beginPath(); ctx.arc(ufo.x, ufo.y - 5 + shake, 15, Math.PI, 0); ctx.fill();
+        // Двигатели (Свечение)
+        ctx.shadowBlur = 15; ctx.shadowColor = "#ff00ff";
+        ctx.fillStyle = (Math.sin(ufo.t*5) > 0) ? "#ff00ff" : "#333";
+        ctx.beginPath(); ctx.arc(ufo.x - 30, ufo.y + 5 + shake, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ufo.x + 30, ufo.y + 5 + shake, 3, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        document.getElementById('coords').innerText = `${Math.floor(ufo.x)}, ${Math.floor(ufo.y + shake)}`;
     }
 
-    function renderFrame() {
-        ctx.fillStyle = "#020205"; ctx.fillRect(0,0,canvas.width, canvas.height);
+    function loop() {
+        ctx.fillStyle = "#02040a"; ctx.fillRect(0,0,canvas.width, canvas.height);
         
         stars.forEach(s => {
             ctx.fillStyle = `rgba(255,255,255,${s.o})`;
             ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
-            s.o += (Math.random()-0.5)*0.05;
+            s.o += (Math.random()-0.5)*0.02;
         });
 
-        drawPlanet(canvas.width*0.8, canvas.height*0.2, 70, "#ff4400", "#220000");
-        drawPlanet(canvas.width*0.2, canvas.height*0.7, 50, "#0088ff", "#000511");
+        drawPlanet(canvas.width*0.8, canvas.height*0.2, 80, "#ff4500", true); // Марс с кольцом
+        drawPlanet(canvas.width*0.15, canvas.height*0.8, 50, "#00bfff", false); // Нептун
 
-        ast.forEach(a => {
-            a.y += a.s; if(a.y > canvas.height) a.y = -20;
-            ctx.fillStyle = "#444";
-            ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI*2); ctx.fill();
-        });
-
-        ufo.x += ufo.s; if(ufo.x > canvas.width + 100) ufo.x = -100;
-        drawUFO(ufo.x, ufo.y);
-
-        document.getElementById('coords').innerText = `${ufo.x.toFixed(2)}, ${ufo.y.toFixed(2)}`;
-        requestAnimationFrame(renderFrame);
+        drawShip();
+        requestAnimationFrame(loop);
     }
-    renderFrame();
+    loop();
 
-    // To-Do Logic
+    // To-Do
     document.getElementById('todo-in').onkeypress = (e) => {
         if(e.key === 'Enter' && e.target.value) {
             const d = document.createElement('div');
             d.className = 'todo-item';
-            d.innerHTML = `${e.target.value.toUpperCase()} <span>[..]</span>`;
+            d.innerHTML = `${e.target.value.toUpperCase()} <span style="color:red">[X]</span>`;
             d.onclick = () => d.remove();
             document.getElementById('todo-list').prepend(d);
             e.target.value = '';
