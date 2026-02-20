@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v5.2</title>
+    <title>ORBITRON TERMINAL v5.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -21,8 +21,10 @@
         .msg:hover { background: rgba(255, 0, 255, 0.08); border-left-color: var(--p); transform: translateX(5px); }
         .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
         input { background: rgba(0,0,0,0.7); border: 1px solid var(--n); color: #fff; padding: 14px; width: calc(100% - 32px); font-family: inherit; outline: none; margin-bottom: 10px; }
-        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
+        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
         button:hover { background: var(--n); color: #000; box-shadow: 0 0 25px var(--n); }
+        .btn-alt { border-color: var(--p); color: var(--p); }
+        .btn-alt:hover { background: var(--p); color: #000; box-shadow: 0 0 25px var(--p); }
         h2 { font-family: 'Orbitron', sans-serif; letter-spacing: 3px; font-size: 1.1rem; margin-bottom: 20px; text-shadow: 0 0 10px var(--n); }
         .hidden { display: none; }
     </style>
@@ -49,7 +51,8 @@
                 <h2 style="text-align: center;">IDENT_REQUIRED</h2>
                 <input type="email" id="email" placeholder="PILOT_ID">
                 <input type="password" id="pass" placeholder="PASSWORD">
-                <button onclick="auth()">ACCESS_SYSTEM</button>
+                <button onclick="auth('in')">ESTABLISH_CONNECTION</button>
+                <button onclick="auth('up')" class="btn-alt">JOIN_THE_FLEET</button>
             </div>
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
@@ -74,17 +77,20 @@
         if (!input.value) return;
         const item = document.createElement('div');
         item.className = 'todo-item';
-        item.innerHTML = `<span class="todo-text">${input.value.toUpperCase()}</span>`;
+        item.innerHTML = `> ${input.value.toUpperCase()}`;
         item.onclick = function() { this.remove(); };
         document.getElementById('todo-list').appendChild(item);
         input.value = '';
     };
 
-    window.auth = async function() {
+    window.auth = async function(mode) {
         if(!sb) return;
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
+        const { error } = mode === 'in' 
+            ? await sb.auth.signInWithPassword({ email: e, password: p })
+            : await sb.auth.signUp({ email: e, password: p });
         if (error) alert(error.message);
+        else if (mode === 'up') alert("Check your email for confirmation!");
     };
 
     sb.auth.onAuthStateChange((_, s) => {
@@ -122,7 +128,6 @@
 
     sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
-    // --- УЛУЧШЕННАЯ ГРАФИКА ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
@@ -150,30 +155,20 @@
         ufo.x += 0.8; if(ufo.x > canvas.width + 100) ufo.x = -100;
         const bob = Math.sin(Date.now()/600)*15;
         ctx.save(); ctx.translate(ufo.x, ufo.y + bob);
-
-        // Пульсирующий двигатель снизу
         const pulse = Math.abs(Math.sin(Date.now()/300));
         const thruster = ctx.createRadialGradient(0, 10, 5, 0, 15, 25*pulse);
         thruster.addColorStop(0, 'rgba(0, 242, 255, 0.9)'); thruster.addColorStop(1, 'transparent');
         ctx.fillStyle = thruster; ctx.beginPath(); ctx.ellipse(0, 12, 25*pulse, 6*pulse, 0, 0, Math.PI*2); ctx.fill();
-        
-        // Основной луч
         ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-35, 120); ctx.lineTo(35, 120); ctx.fill();
-        
-        // Корпус (темный металл)
         ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.ellipse(0, 0, 50, 14, 0, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.stroke();
-        
-        // Мигающие огни по периметру
         const time = Date.now() / 400;
         for(let i=0; i<8; i++) {
             const angle = (i / 8) * Math.PI * 2;
             ctx.fillStyle = (Math.floor(time + i)%2 === 0) ? '#ff00ff' : '#00f2ff';
             ctx.beginPath(); ctx.arc(Math.cos(angle)*46, Math.sin(angle)*12, 2, 0, Math.PI*2); ctx.fill();
         }
-
-        // Купол (стекло)
         ctx.fillStyle = 'rgba(100, 200, 255, 0.5)'; ctx.beginPath(); ctx.arc(0, -6, 18, Math.PI, 0); ctx.fill();
         ctx.restore();
         const ux = document.getElementById('ufo-x'), uy = document.getElementById('ufo-y');
@@ -189,20 +184,13 @@
             ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.rot); ctx.fillStyle = '#1a2533'; 
             ctx.beginPath(); for(let i=0;i<5;i++) ctx.lineTo(Math.cos(i*1.2)*s.r, Math.sin(i*1.2)*s.r); ctx.fill(); ctx.restore();
         });
-        
-        // Астронавты (Детализированные)
         astronauts.forEach(a => {
             a.x += a.vx; a.y += a.vy; a.rot += 0.002; if(a.x > canvas.width + 50) a.x = -50;
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            // Ранец
             ctx.fillStyle = '#777'; ctx.fillRect(-14, -10, 6, 18);
-            // Тело (скафандр)
             ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.roundRect(-10, -12, 20, 24, 5); ctx.fill();
-            // Шлем
             ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI*2); ctx.fill();
-            // Визор (стекло)
             ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0, -14, 6, 4, 0, 0, Math.PI*2); ctx.fill();
-            // Блик на визоре
             ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-2, -15, 1.5, 0, Math.PI*2); ctx.fill();
             ctx.restore();
         });
@@ -211,7 +199,6 @@
         if(cl) cl.innerText = new Date().toLocaleTimeString();
         requestAnimationFrame(loop);
     }
-
     init(); loop(); window.onresize = init;
 })();
 </script>
