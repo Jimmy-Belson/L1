@@ -3,305 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galactic Command Center | Live</title>
+    <title>Galactic Chat Station</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body, html {
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            overflow: hidden; font-family: 'Consolas', monospace;
-            background: radial-gradient(circle at center, #1e3a8a 0%, #050810 100%);
-            color: white;
+        body {
+            margin: 0;
+            background: radial-gradient(circle at center, #0a1422 0%, #050505 100%);
+            color: #00f2ff;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        .stars-layer {
-            position: absolute; width: 100%; height: 100%;
-            background: transparent url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.4; z-index: -1; pointer-events: none;
+        #canvas-bg { position: fixed; top: 0; left: 0; z-index: -1; }
+
+        .container {
+            background: rgba(10, 25, 41, 0.8);
+            border: 2px solid #00f2ff;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+            padding: 25px;
+            border-radius: 20px;
+            width: 420px;
+            backdrop-filter: blur(12px);
+            z-index: 10;
         }
 
-        .saturn {
-            position: absolute; top: 10%; left: 10%; width: 80px; height: 80px;
-            background: radial-gradient(circle at 30% 30%, #f4e4bc, #b38b59);
-            border-radius: 50%; z-index: 1; cursor: pointer;
-            box-shadow: inset -10px -10px 20px #000;
-        }
-        .saturn::after {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            width: 150px; height: 35px; border: 6px solid rgba(189, 152, 105, 0.3);
-            border-radius: 50%; transform: translate(-50%, -50%) rotate(20deg);
+        #chat-box {
+            height: 380px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 10px;
         }
 
-        .earth {
-            position: absolute; bottom: -50px; right: -50px; width: 220px; height: 220px;
-            background: radial-gradient(circle at 40% 40%, #2b67af, #06284d);
-            border-radius: 50%; z-index: 1; cursor: pointer;
-            box-shadow: 0 0 30px rgba(43, 103, 175, 0.4);
-            animation: rotateEarth 120s linear infinite;
+        .msg {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 242, 255, 0.05);
+            border-left: 3px solid #ff00ff;
+            border-radius: 0 10px 10px 0;
         }
 
-        .asteroid {
-            position: absolute; background: #333; z-index: 1;
-            clip-path: polygon(20% 0%, 80% 10%, 100% 40%, 70% 90%, 20% 100%, 0% 50%);
-            opacity: 0.6;
-        }
-        .ast-1 { width: 40px; height: 40px; top: 30%; right: 20%; animation: drift 40s infinite linear; }
-        .ast-2 { width: 25px; height: 25px; bottom: 40%; left: 15%; animation: drift 50s infinite linear reverse; }
+        .msg-author { font-size: 0.75em; color: #ff00ff; font-weight: bold; }
+        .msg-time { font-size: 0.65em; color: rgba(255, 255, 255, 0.4); float: right; }
+        .msg-text { color: #fff; margin-top: 5px; }
 
-        .rocket { position: absolute; font-size: 35px; z-index: 2; animation: flyRocket 25s linear infinite; opacity: 0.8; }
-        .ufo { position: absolute; top: 20%; right: 15%; font-size: 40px; z-index: 2; animation: ufoFloat 12s ease-in-out infinite; }
-
-        #cursor-canvas { position: absolute; top: 0; left: 0; z-index: 100; pointer-events: none; }
-        
-        .scanner-line {
-            position: absolute; width: 100%; height: 2px;
-            background: rgba(0, 210, 255, 0.5); box-shadow: 0 0 15px #00d2ff;
-            z-index: 5; top: -10px; animation: scan 15s linear infinite;
+        input {
+            width: calc(100% - 24px);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #00f2ff;
+            color: #fff;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            outline: none;
         }
-
-        .stats-panel {
-            position: absolute; top: 20px; left: 20px; z-index: 20;
-            background: rgba(0, 210, 255, 0.1); border: 1px solid #00d2ff;
-            padding: 10px; border-radius: 10px; font-size: 11px; backdrop-filter: blur(5px);
-        }
-
-        .main-layout {
-            position: relative; z-index: 10; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; height: 100vh; gap: 20px;
-        }
-
-        .glass-panel {
-            background: rgba(10, 20, 40, 0.85); backdrop-filter: blur(20px);
-            padding: 25px; width: 85%; max-width: 400px;
-            border-radius: 20px; border: 1px solid rgba(0, 210, 255, 0.3);
-        }
-
-        h1 { 
-            color: #00d2ff; font-size: 20px; letter-spacing: 5px; margin: 0 0 15px 0; text-align: center;
-            overflow: hidden; border-right: 2px solid #00d2ff; white-space: nowrap; width: 0;
-            animation: typing 3s steps(20) forwards, blink 0.7s infinite;
-        }
-
-        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { 
-            background: rgba(0,0,0,0.7); border: 1px solid #00d2ff; border-radius: 8px;
-            padding: 12px; color: #00d2ff; outline: none; font-size: 13px;
-        }
-        
-        .task-input { flex: 1; }
-        .nick-input { width: 80px; border-color: #a855f7; color: #a855f7; }
-        .comm-input { flex: 1; }
 
         button {
-            border: none; border-radius: 8px; font-weight: bold; cursor: pointer; 
-            transition: 0.2s; text-transform: uppercase;
-        }
-        .btn-main { background: #00d2ff; color: #001; padding: 10px 20px; }
-        .btn-comm { width: 100%; background: #a855f7; color: white; padding: 14px; margin-top: 5px; }
-
-        ul { list-style: none; padding: 0; max-height: 120px; overflow-y: auto; }
-        li { 
-            background: rgba(0, 210, 255, 0.05); padding: 12px; margin-bottom: 8px;
-            border-radius: 8px; border-left: 4px solid #00d2ff; font-size: 13px; cursor: pointer;
-        }
-
-        .comment-box { max-height: 110px; overflow-y: auto; margin-bottom: 10px; border: 1px solid rgba(168, 85, 247, 0.2); padding: 5px; border-radius: 5px; }
-        .comment-item { font-size: 12px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
-        .c-nick { color: #a855f7; font-weight: bold; margin-right: 8px; }
-
-        #mute-btn {
-            position: absolute; top: 15px; right: 15px; z-index: 101;
-            background: rgba(255,255,255,0.1); border: none; color: white;
-            border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #00f2ff;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
         }
 
-        @keyframes rotateEarth { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes drift { from { transform: rotate(0deg) translate(0,0); } to { transform: rotate(360deg) translate(20px, 10px); } }
-        @keyframes flyRocket {
-            0% { transform: translate(-100px, 100vh) rotate(45deg); opacity: 0; }
-            100% { transform: translate(100vw, -100px) rotate(45deg); opacity: 0; }
-        }
-        @keyframes ufoFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(10deg); } }
-        @keyframes typing { from { width: 0 } to { width: 100% } }
-        @keyframes blink { from { border-color: transparent } to { border-color: #00d2ff } }
-        @keyframes scan { 0% { top: -10px; } 100% { top: 100%; } }
+        button:hover { background: #ff00ff; color: #fff; transform: scale(1.02); }
+        .hidden { display: none; }
+        .secondary-btn { background: transparent; color: #00f2ff; border: 1px solid #00f2ff; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <canvas id="cursor-canvas"></canvas>
-    <div class="stars-layer"></div>
-    <div class="scanner-line"></div>
-    
-    <div class="stats-panel">
-        <div>T-CLOCK: <span id="clock">00:00:00</span></div>
-        <div>MISSIONS: <span id="taskCount">0</span></div>
-        <div>NET-STATE: <span id="netStatus" style="color: #00ff00;">ONLINE</span></div>
+<canvas id="canvas-bg"></canvas>
+
+<div class="container">
+    <div id="auth-screen">
+        <h2 style="text-align: center; letter-spacing: 2px;">STATION LOGIN</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleSignIn()">ENTER</button>
+        <button onclick="handleSignUp()" class="secondary-btn">REGISTER NEW PILOT</button>
     </div>
 
-    <div class="saturn" id="saturn"></div>
-    <div class="earth" id="earth"></div>
-    <div class="asteroid ast-1"></div>
-    <div class="asteroid ast-2"></div>
-    <div class="rocket">🚀</div>
-    <div class="ufo">🛸</div>
-    
-    <button id="mute-btn">🔈</button>
-
-    <div class="main-layout">
-        <div class="glass-panel">
-            <h1>TO DO LOG</h1>
-            <div class="input-row">
-                <input type="text" id="taskInput" class="task-input" placeholder=">> WHAT'S THE MISSION COMMANDER?">
-                <button id="addBtn" class="btn-main">ADD</button>
-            </div>
-            <ul id="taskList"></ul>
-        </div>
-
-        <div class="glass-panel">
-            <h2 style="font-size: 10px; color: #a855f7; letter-spacing: 3px; margin: 0 0 10px 0;">COMMUNICATION</h2>
-            <div id="commentList" class="comment-box"></div>
-            <div class="input-row">
-                <input type="text" id="nicknameInput" class="nick-input" placeholder="NAME...">
-                <input type="text" id="commentInput" class="comm-input" placeholder="GLOBAL MESSAGE...">
-            </div>
-            <button id="sendCommentBtn" class="btn-comm">SEND SIGNAL</button>
-        </div>
+    <div id="chat-screen" class="hidden">
+        <div id="chat-box"></div>
+        <input type="text" id="msg-input" placeholder="Transmit message...">
+        <button onclick="sendMessage()">SEND</button>
+        <button onclick="handleSignOut()" style="margin-top:10px; background:#ff4d4d; color:white;">LOGOUT</button>
     </div>
+</div>
 
-    <audio id="bgMusic" loop src="https://www.soundjay.com/free-music/iron-man-01.mp3"></audio>
-    <audio id="staticSound" src="https://www.soundjay.com/mechanical/radio-static-1.mp3"></audio>
+<script>
+    const SB_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+    const SB_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-    <script>
+    const authScreen = document.getElementById('auth-screen');
+    const chatScreen = document.getElementById('chat-screen');
+    const chatBox = document.getElementById('chat-box');
 
-        const SB_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
-        const SB_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            authScreen.classList.add('hidden');
+            chatScreen.classList.remove('hidden');
+            loadMessages();
+            subscribeToMessages();
+        } else {
+            authScreen.classList.remove('hidden');
+            chatScreen.classList.add('hidden');
+        }
+    });
 
-        const canvas = document.getElementById('cursor-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
+    async function handleSignUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) alert(error.message);
+        else alert("Пилот зарегистрирован! Теперь введите данные и нажмите ENTER.");
+    }
 
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize);
-        resize();
+    async function handleSignIn() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+    }
 
-        window.addEventListener('mousemove', (e) => {
-            for(let i=0; i<3; i++) {
-                particles.push({
-                    x: e.clientX, y: e.clientY,
-                    size: Math.random() * 2.5 + 1,
-                    spX: (Math.random() - 0.5) * 2,
-                    spY: (Math.random() - 0.5) * 2,
-                    alpha: 1
-                });
-            }
+    async function handleSignOut() { await supabase.auth.signOut(); }
+
+    async function loadMessages() {
+        const { data } = await supabase.from('comments').select('*').order('created_at', { ascending: true });
+        chatBox.innerHTML = '';
+        if(data) data.forEach(renderMessage);
+        scrollToBottom();
+    }
+
+    function renderMessage(msg) {
+        const div = document.createElement('div');
+        div.className = 'msg';
+        const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const author = msg.nickname || 'Pilot';
+        
+        div.innerHTML = `
+            <span class="msg-time">${time}</span>
+            <span class="msg-author">🚀 ${author}</span>
+            <div class="msg-text">${msg.message}</div>
+        `;
+        chatBox.appendChild(div);
+        scrollToBottom();
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('msg-input');
+        const user = (await supabase.auth.getUser()).data.user;
+        
+        if (input.value.trim() && user) {
+            await supabase.from('comments').insert([{ 
+                message: input.value, 
+                nickname: user.email.split('@')[0] 
+            }]);
+            input.value = '';
+        }
+    }
+
+    function subscribeToMessages() {
+        supabase.channel('public:comments')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+                renderMessage(payload.new);
+            }).subscribe();
+    }
+
+    function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
+
+    // Клавиша Enter
+    document.getElementById('msg-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // УЛУЧШЕННЫЙ КОСМОС
+    const canvas = document.getElementById('canvas-bg');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.onresize = resize;
+    resize();
+
+    for(let i=0; i<200; i++) {
+        stars.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            r: Math.random() < 0.1 ? Math.random()*3 + 1 : Math.random()*1.5 + 0.5,
+            d: Math.random()*0.4 + 0.1
         });
+    }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach((p, i) => {
-                p.x += p.spX; p.y += p.spY; p.alpha -= 0.02;
-                ctx.fillStyle = `rgba(0, 210, 255, ${p.alpha})`;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-                if(p.alpha <= 0) particles.splice(i, 1);
-            });
-            requestAnimationFrame(draw);
-        }
-        draw();
-
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toTimeString().split(' ')[0];
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        const staticSound = document.getElementById('staticSound');
-        document.getElementById('earth').onclick = () => staticSound.play();
-        document.getElementById('saturn').onclick = () => staticSound.play();
-
-        const bgMusic = document.getElementById('bgMusic');
-        const muteBtn = document.getElementById('mute-btn');
-        muteBtn.onclick = () => {
-            if(bgMusic.paused) { bgMusic.play(); muteBtn.innerText = '🔊'; }
-            else { bgMusic.pause(); muteBtn.innerText = '🔈'; }
-        };
-
-        const taskBtn = document.getElementById('addBtn');
-        const taskInput = document.getElementById('taskInput');
-        const taskList = document.getElementById('taskList');
-        const commentBtn = document.getElementById('sendCommentBtn');
-        const nickInput = document.getElementById('nicknameInput');
-        const commInput = document.getElementById('commentInput');
-        const commList = document.getElementById('commentList');
-
-        function saveTasks() {
-            const t = Array.from(document.querySelectorAll('#taskList li')).map(l => l.innerText);
-            localStorage.setItem('tasks', JSON.stringify(t));
-            document.getElementById('taskCount').innerText = t.length;
-        }
-
-        function addTask(val) {
-            if(!val) return;
-            const li = document.createElement('li');
-            li.innerText = val;
-            li.onclick = () => { li.remove(); saveTasks(); };
-            taskList.appendChild(li);
-        }
-
-        async function loadComments() {
-            const { data, error } = await _supabase
-                .from('comments')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            if (!error && data) {
-                commList.innerHTML = '';
-                data.reverse().forEach(c => renderComment(c.nickname, c.message));
-            }
-        }
-
-        function renderComment(n, m) {
-            const div = document.createElement('div');
-            div.className = 'comment-item';
-            div.innerHTML = `<span class="c-nick">${n || 'PILOT'}:</span><span class="c-txt">${m}</span>`;
-            commList.appendChild(div);
-            commList.scrollTop = commList.scrollHeight;
-        }
-
-        async function sendGlobalComment() {
-            const nick = nickInput.value || 'Anonymous';
-            const msg = commInput.value;
-            if(!msg.trim()) return;
-
-            const { error } = await _supabase
-                .from('comments')
-                .insert([{ nickname: nick, message: msg }]);
-
-            if (!error) {
-                commInput.value = '';
-                loadComments(); 
-            }
-        }
-
-        _supabase
-            .channel('schema-db-changes')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
-                renderComment(payload.new.nickname, payload.new.message);
-            })
-            .subscribe();
-
-        taskBtn.onclick = () => { addTask(taskInput.value); saveTasks(); taskInput.value = ''; };
-        taskInput.onkeypress = (e) => { if(e.key === 'Enter') taskBtn.click(); };
-
-        commentBtn.onclick = sendGlobalComment;
-        commInput.onkeypress = (e) => { if(e.key === 'Enter') sendGlobalComment(); };
-
-        const st = JSON.parse(localStorage.getItem('tasks') || '[]');
-        st.forEach(addTask);
-        document.getElementById('taskCount').innerText = st.length;
-        loadComments();
-    </script>
+    function draw() {
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+        stars.forEach(s => {
+            ctx.beginPath();
+            ctx.fillStyle = "white";
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+            ctx.fill();
+            s.y += s.d;
+            if(s.y > canvas.height) s.y = -10;
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
+</script>
 </body>
 </html>
