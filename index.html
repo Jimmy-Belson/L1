@@ -2,34 +2,29 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v4.0</title>
+    <title>GALACTIC COMMAND CENTER</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --n: #00f2ff; --p: #ff00ff; --bg: #010812; --gl: rgba(10, 25, 47, 0.8); }
+        :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --gl: rgba(5, 15, 25, 0.85); }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; }
         .ui { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
         
-        /* Боковая панель */
-        .sidebar { width: 300px; background: var(--gl); border-right: 1px solid var(--n); padding: 25px; pointer-events: auto; backdrop-filter: blur(10px); display: flex; flex-direction: column; }
-        
-        /* Главный хаб */
-        .hub { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
-        .terminal { width: 550px; background: var(--gl); border: 2px solid var(--n); padding: 30px; pointer-events: auto; position: relative; box-shadow: 0 0 20px rgba(0, 242, 255, 0.1); }
-        .terminal::after { content: "SECURE_MODE"; position: absolute; top: -12px; right: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 5px; border: 1px solid var(--p); }
+        .sidebar { width: 320px; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
+        .terminal { width: 580px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(10px); box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
+        .terminal::before { content: "SYSTEM_ACTIVE"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
 
-        /* Чат */
-        #chat-box { height: 380px; overflow-y: auto; margin-bottom: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); }
-        .msg { background: rgba(0, 242, 255, 0.05); padding: 10px; margin-bottom: 10px; border-left: 3px solid var(--p); cursor: pointer; }
-        .msg:hover { background: rgba(255, 0, 0, 0.1); border-left-color: #ff4d4d; }
-        .msg-nick { color: var(--p); font-size: 11px; margin-bottom: 4px; display: block; }
+        #chat-box { height: 400px; overflow-y: auto; margin-bottom: 20px; scrollbar-width: thin; scrollbar-color: var(--n) transparent; }
+        .msg { background: rgba(0, 242, 255, 0.03); padding: 12px; margin-bottom: 12px; border-left: 2px solid var(--n); transition: 0.3s; }
+        .msg:hover { background: rgba(255, 0, 255, 0.08); border-left-color: var(--p); transform: translateX(5px); }
+        .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
 
-        input { background: rgba(0,0,0,0.6); border: 1px solid var(--n); color: #fff; padding: 12px; width: calc(100% - 26px); font-family: inherit; outline: none; margin-bottom: 8px; }
-        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 1px; }
-        button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
+        input { background: rgba(0,0,0,0.7); border: 1px solid var(--n); color: #fff; padding: 14px; width: calc(100% - 30px); font-family: inherit; outline: none; margin-bottom: 10px; border-radius: 2px; }
+        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; transition: 0.4s; }
+        button:hover { background: var(--n); color: #000; box-shadow: 0 0 25px var(--n); }
 
-        h2 { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; text-shadow: 0 0 10px var(--n); }
+        h2 { font-family: 'Orbitron', sans-serif; letter-spacing: 4px; font-size: 1.1rem; margin-bottom: 25px; color: #fff; text-shadow: 0 0 15px var(--n); }
         .hidden { display: none; }
     </style>
 </head>
@@ -39,33 +34,31 @@
 
 <div class="ui">
     <div class="sidebar">
-        <h2>SYSTEM_LOG</h2>
-        <input type="text" id="todo-in" placeholder="+ ADD OBJECTIVE">
-        <div id="todo-list">
-            <div class="msg" style="font-size: 12px;" onclick="this.remove()">SCANNING_VOID... [OK]</div>
-        </div>
-        <div style="margin-top: auto; font-size: 11px; opacity: 0.7; line-height: 2;">
-            SECTOR: 004-X<br>
-            HULL_INTEGRITY: 100%<br>
-            POS: <span id="ufo-coords">0,0</span>
+        <h2>DEEP_SPACE</h2>
+        <input type="text" id="todo-in" placeholder="> NEW_OBJECTIVE">
+        <div id="todo-list"></div>
+        
+        <div style="margin-top: auto; font-size: 10px; border-top: 1px solid rgba(0,242,255,0.2); padding-top: 20px; opacity: 0.8;">
+            <div style="color: var(--p)">STATUS: VOYAGER_READY</div>
+            <div>COORDS: <span id="pos-val">1285.44.0</span></div>
+            <div>OBJECTS_DETECTED: <span id="obj-count">0</span></div>
         </div>
     </div>
 
-    <div class="hub">
+    <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center;">
         <div class="terminal">
             <div id="auth-ui">
-                <h2 style="text-align: center;">IDENTIFICATION</h2>
-                <input type="email" id="email" placeholder="PILOT_ID">
-                <input type="password" id="pass" placeholder="PASSWORD">
-                <button onclick="handleAuth('in')">LOGIN</button>
-                <button onclick="handleAuth('up')" style="margin-top:5px; border-color:var(--p); color:var(--p);">REGISTER</button>
+                <h2 style="text-align: center;">IDENT_REQUIRED</h2>
+                <input type="email" id="email" placeholder="USER_EMAIL">
+                <input type="password" id="pass" placeholder="ACCESS_CODE">
+                <button onclick="auth('in')">ESTABLISH_CONNECTION</button>
             </div>
 
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="msg-in" placeholder="ENTER MESSAGE...">
-                    <button onclick="sendMsg()" style="width: 80px;">SEND</button>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="msg-in" placeholder="SEND DATA SIGNAL...">
+                    <button onclick="send()" style="width: 100px;">SEND</button>
                 </div>
             </div>
         </div>
@@ -73,93 +66,157 @@
 </div>
 
 <script>
-    // Настройки Supabase
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const client = window.supabase.createClient(URL, KEY);
+    const sb = window.supabase.createClient(URL, KEY);
 
-    // Логика чата
-    client.auth.onAuthStateChange((_, session) => {
-        document.getElementById('auth-ui').classList.toggle('hidden', !!session);
-        document.getElementById('chat-ui').classList.toggle('hidden', !session);
-        if(session) syncChat();
+    // Логика Supabase
+    sb.auth.onAuthStateChange((_, s) => {
+        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
+        document.getElementById('chat-ui').classList.toggle('hidden', !s);
+        if(s) load();
     });
 
-    async function handleAuth(mode) {
+    async function auth(t) {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = mode === 'in' ? await client.auth.signInWithPassword({email:e, password:p}) : await client.auth.signUp({email:e, password:p});
+        const { error } = await sb.auth.signInWithPassword({email:e, password:p});
         if(error) alert(error.message);
     }
 
-    async function syncChat() {
-        const { data } = await client.from('comments').select('*').order('created_at', { ascending: true });
+    async function load() {
+        const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
         const box = document.getElementById('chat-box');
         box.innerHTML = '';
         if(data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
             d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
-            d.onclick = async () => { if(confirm("Удалить?")) { await client.from('comments').delete().eq('id', m.id); syncChat(); } };
             box.appendChild(d);
         });
         box.scrollTop = box.scrollHeight;
     }
 
-    async function sendMsg() {
+    async function send() {
         const i = document.getElementById('msg-in');
-        const { data: { user } } = await client.auth.getUser();
+        const { data: { user } } = await sb.auth.getUser();
         if(i.value && user) {
-            const val = i.value; i.value = '';
-            await client.from('comments').insert([{ message: val, nickname: user.email.split('@')[0] }]);
-            syncChat();
+            await sb.from('comments').insert([{ message: i.value, nickname: user.email.split('@')[0] }]);
+            i.value = ''; load();
         }
     }
-    client.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, syncChat).subscribe();
+    sb.channel('chat').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
-    // --- КОСМИЧЕСКИЙ ДВИЖОК ---
+    // --- ГРАФИЧЕСКИЙ ДВИЖОК "ORBITRON" ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let stars = [], objects = [];
+    let stars = [], stones = [], astronauts = [], ufo = { x: -200, y: 150, light: 0 };
 
     function init() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        stars = []; objects = [];
-        for(let i=0; i<300; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5 });
-        // Добавляем камешки
-        for(let i=0; i<10; i++) objects.push({ type: 'stone', x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*0.5+0.2, r: Math.random()*8+4 });
-        // Добавляем космонавтов
-        for(let i=0; i<2; i++) objects.push({ type: 'man', x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.2, vy: 0.1, rot: 0 });
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        stars = []; stones = []; astronauts = [];
+        for(let i=0; i<250; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.2 });
+        for(let i=0; i<8; i++) stones.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*0.4+0.1, r: Math.random()*15+5, rot: Math.random()*6, nodes: 5+Math.floor(Math.random()*4) });
+        for(let i=0; i<2; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.15, vy: 0.1, rot: 0 });
     }
 
-    function draw() {
-        ctx.fillStyle = '#010812';
-        ctx.fillRect(0,0,canvas.width, canvas.height);
+    function drawPlanet() {
+        const x = canvas.width * 0.85;
+        const y = canvas.height * 0.8;
+        // Кольца
+        ctx.strokeStyle = 'rgba(0, 242, 255, 0.15)';
+        ctx.lineWidth = 15;
+        ctx.beginPath(); ctx.ellipse(x, y, 180, 40, Math.PI/6, 0, Math.PI*2); ctx.stroke();
         
-        // Звезды
-        ctx.fillStyle = '#fff';
-        stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill(); });
-
-        objects.forEach(o => {
-            if(o.type === 'stone') {
-                ctx.fillStyle = '#2c3e50';
-                o.y += o.s; if(o.y > canvas.height) o.y = -20;
-                ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 7); ctx.fill();
-            } else {
-                o.x += o.vx; o.y += o.vy; o.rot += 0.01;
-                if(o.x > canvas.width) o.x = -30;
-                ctx.save();
-                ctx.translate(o.x, o.y); ctx.rotate(o.rot);
-                ctx.fillStyle = 'white'; ctx.fillRect(-8, -10, 16, 20); // Тело
-                ctx.fillStyle = '#333'; ctx.fillRect(-5, -7, 10, 6); // Шлем
-                ctx.restore();
-            }
-        });
-
-        requestAnimationFrame(draw);
+        // Планета
+        const grad = ctx.createRadialGradient(x-30, y-30, 10, x, y, 80);
+        grad.addColorStop(0, '#00f2ff');
+        grad.addColorStop(0.4, '#005577');
+        grad.addColorStop(1, '#01050a');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(x, y, 80, 0, Math.PI*2); ctx.fill();
     }
 
-    init(); draw();
+    function drawUFO() {
+        ufo.x += 1; if(ufo.x > canvas.width + 200) ufo.x = -200;
+        ufo.light = Math.sin(Date.now()/500);
+
+        ctx.save();
+        ctx.translate(ufo.x, ufo.y + Math.sin(Date.now()/1000)*10);
+        
+        // Луч
+        const lGrad = ctx.createLinearGradient(0, 0, 0, 150);
+        lGrad.addColorStop(0, `rgba(0, 242, 255, ${0.2 + ufo.light*0.1})`);
+        lGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = lGrad;
+        ctx.beginPath(); ctx.moveTo(-10, 10); ctx.lineTo(-40, 150); ctx.lineTo(40, 150); ctx.lineTo(10, 10); ctx.fill();
+
+        // Корпус
+        ctx.fillStyle = '#444';
+        ctx.beginPath(); ctx.ellipse(0, 0, 50, 15, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(0, 242, 255, 0.5)';
+        ctx.beginPath(); ctx.arc(0, -5, 18, Math.PI, 0); ctx.fill(); // Купол
+        
+        // Пришелец (силуэт)
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(0, -8, 4, 0, Math.PI*2); ctx.fill(); 
+
+        // Огни
+        ctx.fillStyle = (Date.now()%600 < 300) ? '#ff00ff' : '#00f2ff';
+        for(let i=-40; i<=40; i+=20) { ctx.beginPath(); ctx.arc(i, 2, 2, 0, Math.PI*2); ctx.fill(); }
+        ctx.restore();
+    }
+
+    function drawAstronaut(a) {
+        a.x += a.vx; a.y += a.vy; a.rot += 0.005;
+        if(a.x > canvas.width + 50) a.x = -50;
+        ctx.save();
+        ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+        
+        ctx.fillStyle = 'white';
+        ctx.fillRect(-10, -12, 20, 25); // Тело
+        ctx.fillStyle = '#111';
+        ctx.fillRect(-7, -9, 14, 8); // Стекло шлема
+        ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 1;
+        ctx.strokeRect(-7, -9, 14, 8); // Блик на шлеме
+        
+        ctx.fillStyle = 'white';
+        ctx.fillRect(-14, -5, 4, 12); // Рука
+        ctx.fillRect(10, -5, 4, 12); 
+        ctx.fillStyle = '#888';
+        ctx.fillRect(-8, -15, 16, 5); // Ранец
+        ctx.restore();
+    }
+
+    function drawStone(s) {
+        s.y += s.s; s.rot += 0.01;
+        if(s.y > canvas.height + 50) s.y = -50;
+        ctx.save();
+        ctx.translate(s.x, s.y); ctx.rotate(s.rot);
+        ctx.fillStyle = '#1a2533';
+        ctx.beginPath();
+        for(let i=0; i<s.nodes; i++) {
+            let ang = (i/s.nodes)*Math.PI*2;
+            let r = s.r + (Math.sin(i*s.x)*3);
+            ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+
+    function loop() {
+        ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        stars.forEach(s => { ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); });
+        drawPlanet();
+        stones.forEach(drawStone);
+        astronauts.forEach(drawAstronaut);
+        drawUFO();
+
+        document.getElementById('pos-val').innerText = `${Math.floor(ufo.x)} . ${Math.floor(ufo.y)} . 0`;
+        requestAnimationFrame(loop);
+    }
+
+    init(); loop();
     window.onresize = init;
 </script>
 </body>
