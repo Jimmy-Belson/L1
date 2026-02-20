@@ -117,7 +117,7 @@
         if (data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
-            d.innerHTML = `<span class="msg-nick">${m.nickname}</span> ж ${m.message}`;
+            d.innerHTML = `<span class="msg-nick">${m.nickname}</span> ${m.message}`;
             box.appendChild(d);
         });
         box.scrollTop = box.scrollHeight;
@@ -134,7 +134,7 @@
             const box = document.getElementById('chat-box');
             const d = document.createElement('div');
             d.className = 'msg'; d.style.opacity = '0.5';
-            d.innerHTML = `<span class="msg-nick">${nick}</span> ж ${val}`;
+            d.innerHTML = `<span class="msg-nick">${nick}</span> ${val}`;
             box.appendChild(d);
             box.scrollTop = box.scrollHeight;
 
