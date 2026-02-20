@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v5.7</title>
+    <title>ORBITRON TERMINAL v5.8</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -15,8 +15,7 @@
         .terminal::before { content: "COMM_LINK_STABLE"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
         
         #todo-list { margin-top: 15px; height: 200px; overflow-y: auto; }
-        .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; animation: slideIn 0.3s ease-out forwards; }
-        .todo-item:hover { border-color: var(--p); color: var(--p); padding-left: 15px; }
+        .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; }
 
         #chat-box { 
             height: 350px; 
@@ -24,36 +23,24 @@
             margin-bottom: 20px; 
             scrollbar-width: thin; 
             scrollbar-color: var(--n) transparent;
-            overflow-anchor: none;
+            display: flex;
+            flex-direction: column;
+            overflow-anchor: auto !important; /* Важно для автоскролла */
         }
         
-        @keyframes slideIn {
-            0% { 
-                opacity: 0; 
-                transform: translateY(10px); 
-                max-height: 0;
-                margin-bottom: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                filter: blur(4px); 
-            }
-            100% { 
-                opacity: 1; 
-                transform: translateY(0); 
-                max-height: 200px;
-                margin-bottom: 12px;
-                padding-top: 12px;
-                padding-bottom: 12px;
-                filter: blur(0); 
-            }
+        @keyframes msgReveal {
+            from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
 
         .msg { 
             background: rgba(0, 242, 255, 0.03); 
             border-left: 2px solid var(--n); 
-            overflow: hidden;
-            animation: slideIn 0.3s ease-out forwards;
-            will-change: transform, opacity, max-height;
+            padding: 12px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+            animation: msgReveal 0.3s ease-out forwards;
+            will-change: transform, opacity;
         }
 
         .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
@@ -116,14 +103,15 @@
             const g = c.createGain();
             o.connect(g); g.connect(c.destination);
             o.type = 'sine'; o.frequency.value = f;
-            g.gain.setValueAtTime(0.1, c.currentTime);
+            g.gain.setValueAtTime(0.05, c.currentTime);
             g.gain.exponentialRampToValueAtTime(0.01, c.currentTime + 0.1);
             o.start(); o.stop(c.currentTime + 0.1);
         } catch(e) {}
     };
 
-    const scrollToBottom = (b) => {
-        b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' });
+    const scrollDown = () => {
+        const b = document.getElementById('chat-box');
+        if(b) b.scrollTop = b.scrollHeight;
     };
 
     window.addTodo = function() {
@@ -165,7 +153,7 @@
             d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
             b.appendChild(d);
         });
-        scrollToBottom(b);
+        scrollDown();
     }
 
     window.send = async function() {
@@ -180,7 +168,7 @@
             d.className = 'msg'; d.style.borderLeftColor = 'var(--p)';
             d.innerHTML = `<span class="msg-nick">${n}</span>${v}`;
             b.appendChild(d);
-            scrollToBottom(b);
+            scrollDown();
             sb.from('comments').insert([{ message: v, nickname: n }])
               .then(({ error }) => { if(!error) d.style.borderLeftColor = 'var(--n)'; });
         }
