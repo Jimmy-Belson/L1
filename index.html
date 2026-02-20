@@ -2,217 +2,201 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galactic Command Center v2.0</title>
+    <title>TERMINAL - DEEP SPACE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff00ff; --glass: rgba(10, 25, 41, 0.85); }
-        body { margin: 0; background: #020205; color: var(--neon); font-family: 'Courier New', monospace; overflow: hidden; display: flex; height: 100vh; }
+        :root { --n: #00f2ff; --p: #ff00ff; --b: #020205; }
+        body, html { margin: 0; padding: 0; background: var(--b); color: var(--n); font-family: 'Courier New', monospace; height: 100vh; overflow: hidden; }
         
-        #canvas-bg { position: fixed; top: 0; left: 0; z-index: -1; }
+        #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
+        .ui-layer { position: relative; z-index: 10; display: flex; height: 100vh; background: radial-gradient(circle, transparent 20%, var(--b) 80%); }
 
-        .sidebar { width: 320px; background: var(--glass); border-right: 1px solid var(--neon); padding: 25px; backdrop-filter: blur(15px); display: flex; flex-direction: column; z-index: 10; box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5); }
-        .main-hub { flex-grow: 1; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        /* ЛЕВАЯ ПАНЕЛЬ */
+        .sidebar { width: 300px; background: rgba(0, 10, 20, 0.9); border-right: 2px solid var(--n); padding: 20px; box-shadow: 5px 0 20px rgba(0, 242, 255, 0.2); }
+        .todo-item { border: 1px solid rgba(0, 242, 255, 0.3); padding: 8px; margin: 10px 0; font-size: 0.8em; cursor: pointer; display: flex; justify-content: space-between; }
+        .todo-item:hover { border-color: var(--p); background: rgba(255, 0, 255, 0.1); }
 
-        .container { background: var(--glass); border: 1px solid var(--neon); box-shadow: 0 0 50px rgba(0, 242, 255, 0.2); padding: 30px; border-radius: 5px; width: 480px; position: relative; }
-        .container::before { content: ""; position: absolute; top: -2px; left: -2px; right: -2px; height: 10px; background: var(--neon); clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%); }
+        /* ОСНОВНОЙ БЛОК */
+        .main { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
+        .terminal { width: 500px; background: rgba(0, 5, 10, 0.8); border: 1px solid var(--n); padding: 20px; position: relative; backdrop-filter: blur(5px); }
+        .terminal::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 2px); pointer-events: none; }
 
-        #chat-box { height: 420px; overflow-y: auto; margin-bottom: 20px; padding-right: 10px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); }
-        .msg { margin-bottom: 15px; padding: 12px; background: rgba(0, 242, 255, 0.03); border-left: 2px solid var(--pink); position: relative; }
-        .msg-author { font-size: 0.8em; color: var(--pink); text-transform: uppercase; letter-spacing: 1px; }
-        .msg-text { color: #e0faff; margin-top: 5px; line-height: 1.4; }
+        #chat-box { height: 350px; overflow-y: auto; padding: 10px; border-bottom: 1px solid var(--n); margin-bottom: 15px; }
+        .msg { padding: 8px; border-left: 2px solid var(--p); margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
+        .msg:hover { background: rgba(255, 0, 0, 0.2); border-left-color: red; }
+        .msg:hover::after { content: " [DELETE?]"; color: red; font-size: 0.7em; }
+        .msg-nick { color: var(--p); font-weight: bold; font-size: 0.8em; }
 
-        .todo-item { background: rgba(255, 255, 255, 0.03); padding: 10px; margin: 8px 0; border: 1px solid rgba(0, 242, 255, 0.2); display: flex; justify-content: space-between; font-size: 0.85em; transition: 0.3s; }
-        .todo-item:hover { background: rgba(0, 242, 255, 0.1); border-color: var(--neon); }
+        input { background: #000; border: 1px solid var(--n); color: var(--n); padding: 10px; width: calc(100% - 22px); outline: none; margin-bottom: 10px; }
+        button { background: var(--n); color: #000; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        button:hover { background: var(--p); color: #fff; }
 
-        input { background: rgba(0, 0, 0, 0.7); border: 1px solid var(--neon); color: #fff; padding: 12px; margin-bottom: 10px; width: calc(100% - 26px); outline: none; }
-        button { width: 100%; padding: 15px; background: transparent; color: var(--neon); border: 1px solid var(--neon); cursor: pointer; font-weight: bold; letter-spacing: 2px; transition: 0.3s; position: relative; overflow: hidden; }
-        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
-        
         .hidden { display: none; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--neon); }
+        .scanline { position: fixed; top: 0; width: 100%; height: 2px; background: rgba(0, 242, 255, 0.1); z-index: 100; animation: scan 4s linear infinite; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
     </style>
 </head>
 <body>
 
+<div class="scanline"></div>
 <canvas id="canvas-bg"></canvas>
 
-<div class="sidebar">
-    <h2 style="letter-spacing: 4px; border-bottom: 1px solid var(--neon); padding-bottom: 10px;">MISSION LOG</h2>
-    <div id="todo-list" style="margin-top: 20px;">
-        <input type="text" id="todo-input" placeholder="+ ADD OBJECTIVE" style="width: 85%; font-size: 0.7em;">
-        <div class="todo-item"><span>STABILIZE CORE</span><span style="color: var(--pink);">[!]</span></div>
-        <div class="todo-item"><span>DOCKING COMPLETE</span><span style="color: #0f0;">[OK]</span></div>
-    </div>
-    <div style="margin-top: auto; font-size: 0.7em; line-height: 2;">
-        STATUS: <span style="color: #0f0;">CONNECTED</span><br>
-        SECTOR: X-99<br>
-        HULL: 100%
-    </div>
-</div>
-
-<div class="main-hub">
-    <div class="container">
-        <div id="auth-screen">
-            <h1 style="text-align: center; font-size: 1.5em; letter-spacing: 5px;">ACCESS GATE</h1>
-            <input type="email" id="email" placeholder="PILOT EMAIL">
-            <input type="password" id="password" placeholder="SECURITY CODE">
-            <button onclick="handleSignIn()">LOGIN</button>
-            <button onclick="handleSignUp()" style="margin-top:10px; border-color: var(--pink); color: var(--pink);">REGISTER</button>
+<div class="ui-layer">
+    <div class="sidebar">
+        <h3>MISSIONS_LOG</h3>
+        <input type="text" id="todo-in" placeholder="ADD TASK...">
+        <div id="todo-list">
+            <div class="todo-item">CALIBRATE SENSORS <span>[OK]</span></div>
+            <div class="todo-item">VOID SCANNING <span>[..]</span></div>
         </div>
+        <div style="margin-top: 100px; font-size: 0.7em; opacity: 0.5;">
+            LATENCY: 14ms<br>
+            UPLINK: ACTIVE<br>
+            <span id="coords">0.00, 0.00</span>
+        </div>
+    </div>
 
-        <div id="chat-screen" class="hidden">
-            <div id="chat-box"></div>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="msg-input" placeholder="SEND SIGNAL...">
-                <button onclick="sendMessage()" style="width: 80px;">>>></button>
+    <div class="main">
+        <div class="terminal">
+            <div id="auth-ui">
+                <h2 style="text-align:center">SECURE LOGIN</h2>
+                <input type="email" id="email" placeholder="PILOT_MAIL">
+                <input type="password" id="pass" placeholder="PASSWORD">
+                <button onclick="auth('in')">LOGIN</button>
+                <button onclick="auth('up')" style="background:none; color:var(--p); margin-top:5px;">REGISTER</button>
             </div>
-            <button onclick="handleSignOut()" style="margin-top: 15px; font-size: 0.6em; border-color: #ff4d4d; color: #ff4d4d;">DISCONNECT</button>
+
+            <div id="chat-ui" class="hidden">
+                <div id="chat-box"></div>
+                <input type="text" id="msg-in" placeholder="ENTER MESSAGE...">
+                <button onclick="send()">TRANSMIT</button>
+                <button onclick="out()" style="background:none; color:red; border:1px solid red; margin-top:10px; font-size:0.7em;">ABORT SESSION</button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const G_URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
-    const G_KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
-    const sb = window.supabase.createClient(G_URL, G_KEY);
+    const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
+    const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
+    const sb = window.supabase.createClient(URL, KEY);
 
-    const authScreen = document.getElementById('auth-screen');
-    const chatScreen = document.getElementById('chat-screen');
-    const chatBox = document.getElementById('chat-box');
-
-    sb.auth.onAuthStateChange((event, session) => {
-        if (session) {
-            authScreen.classList.add('hidden');
-            chatScreen.classList.remove('hidden');
-            loadMessages();
-            subscribe();
-        } else {
-            authScreen.classList.remove('hidden');
-            chatScreen.classList.add('hidden');
-        }
+    // --- AUTH & CHAT ---
+    sb.auth.onAuthStateChange((_, s) => {
+        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
+        document.getElementById('chat-ui').classList.toggle('hidden', !s);
+        if(s) load();
     });
 
-    async function handleSignUp() {
-        const e = document.getElementById('email').value;
-        const p = document.getElementById('password').value;
-        const { error } = await sb.auth.signUp({ email: e, password: p });
-        if (error) alert(error.message); else alert("Pilot registered!");
+    async function auth(type) {
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = type === 'in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
+        if(error) alert(error.message);
     }
+    async function out() { await sb.auth.signOut(); }
 
-    async function handleSignIn() {
-        const e = document.getElementById('email').value;
-        const p = document.getElementById('password').value;
-        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
-        if (error) alert(error.message);
-    }
-
-    async function handleSignOut() { await sb.auth.signOut(); }
-
-    async function loadMessages() {
+    async function load() {
         const { data } = await sb.from('comments').select('*').order('created_at', { ascending: true });
-        chatBox.innerHTML = '';
-        if(data) data.forEach(msg => render(msg));
+        const box = document.getElementById('chat-box');
+        box.innerHTML = '';
+        if(data) data.forEach(m => addMsg(m));
+        box.scrollTop = box.scrollHeight;
     }
 
-    function render(msg) {
-        const div = document.createElement('div');
-        div.className = 'msg';
-        div.innerHTML = `<div class="msg-author">PILOT_${msg.nickname || 'Unknown'}</div><div class="msg-text">${msg.message}</div>`;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
+    function addMsg(m) {
+        const d = document.createElement('div');
+        d.className = 'msg';
+        d.innerHTML = `<span class="msg-nick">${m.nickname}:</span> <span style="color:#fff">${m.message}</span>`;
+        d.onclick = async () => {
+            if(confirm("Delete message?")) {
+                await sb.from('comments').delete().eq('id', m.id);
+                load();
+            }
+        };
+        document.getElementById('chat-box').appendChild(d);
     }
 
-    async function sendMessage() {
-        const input = document.getElementById('msg-input');
+    async function send() {
+        const i = document.getElementById('msg-in');
         const { data: { user } } = await sb.auth.getUser();
-        if (input.value.trim() && user) {
-            await sb.from('comments').insert([{ message: input.value, nickname: user.email.split('@')[0] }]);
-            input.value = '';
+        if(i.value && user) {
+            const txt = i.value; i.value = '';
+            await sb.from('comments').insert([{ message: txt, nickname: user.email.split('@')[0] }]);
+            load();
         }
     }
 
-    function subscribe() {
-        sb.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, p => render(p.new)).subscribe();
-    }
+    sb.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, load).subscribe();
 
-    // --- COSMIC ENGINE ---
+    // --- GRAPHICS ENGINE ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let stars = [], asteroids = [];
-    let ufo = { x: -200, y: 100, speed: 2, angle: 0 };
+    let stars = [], ast = [];
+    let ufo = { x: -100, y: 200, s: 2.5 };
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.onresize = resize; resize();
 
-    for(let i=0; i<1000; i++) {
-        stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.2, o: Math.random() });
+    for(let i=0; i<800; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5, o: Math.random() });
+    for(let i=0; i<10; i++) ast.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*10+2, s: Math.random()*1.5+0.5 });
+
+    function drawPlanet(x, y, r, c1, c2) {
+        ctx.save();
+        let g = ctx.createRadialGradient(x - r*0.3, y - r*0.3, r*0.1, x, y, r);
+        g.addColorStop(0, c1); g.addColorStop(1, c2);
+        ctx.fillStyle = g;
+        ctx.shadowBlur = 30; ctx.shadowColor = c1;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
     }
 
-    for(let i=0; i<15; i++) {
-        asteroids.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*15+5, s: Math.random()*2+1, rot: 0, rs: Math.random()*0.05 });
+    function drawUFO(x, y) {
+        ctx.fillStyle = "#555"; // Металлический корпус
+        ctx.beginPath(); ctx.ellipse(x, y, 35, 10, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "rgba(0, 242, 255, 0.5)"; // Голубой купол
+        ctx.beginPath(); ctx.arc(x, y-4, 12, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = (Date.now() % 400 > 200) ? "#0f0" : "#f00"; // Мигание огней
+        ctx.beginPath(); ctx.arc(x-20, y, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x+20, y, 2, 0, Math.PI*2); ctx.fill();
     }
 
-    function drawPlanet(x, y, r, color, ring) {
-        ctx.shadowBlur = 40; ctx.shadowColor = color;
-        let g = ctx.createRadialGradient(x-r/3, y-r/3, r/10, x, y, r);
-        g.addColorStop(0, '#fff'); g.addColorStop(0.2, color); g.addColorStop(1, '#000');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-        if(ring) {
-            ctx.strokeStyle = "rgba(255,255,255,0.2)";
-            ctx.lineWidth = 10;
-            ctx.beginPath(); ctx.ellipse(x, y, r*2, r*0.4, Math.PI/6, 0, Math.PI*2); ctx.stroke();
-        }
-    }
-
-    function drawUFO() {
-        ufo.x += ufo.speed; ufo.angle += 0.05; ufo.y += Math.sin(ufo.angle)*1;
-        if(ufo.x > canvas.width + 300) ufo.x = -300;
-
-        ctx.fillStyle = "#777"; // Корпус
-        ctx.beginPath(); ctx.ellipse(ufo.x, ufo.y, 40, 12, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "rgba(0, 242, 255, 0.4)"; // Купол
-        ctx.beginPath(); ctx.arc(ufo.x, ufo.y-5, 15, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = (Math.floor(Date.now()/200)%2) ? "#0f0" : "#f00"; // Мигалки
-        ctx.beginPath(); ctx.arc(ufo.x-20, ufo.y, 2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(ufo.x+20, ufo.y, 2, 0, Math.PI*2); ctx.fill();
-    }
-
-    function draw() {
+    function renderFrame() {
         ctx.fillStyle = "#020205"; ctx.fillRect(0,0,canvas.width, canvas.height);
         
         stars.forEach(s => {
             ctx.fillStyle = `rgba(255,255,255,${s.o})`;
             ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+            s.o += (Math.random()-0.5)*0.05;
         });
 
-        drawPlanet(canvas.width*0.8, canvas.height*0.2, 60, "#ff3300", true);
-        drawPlanet(canvas.width*0.2, canvas.height*0.8, 40, "#0066ff", false);
+        drawPlanet(canvas.width*0.8, canvas.height*0.2, 70, "#ff4400", "#220000");
+        drawPlanet(canvas.width*0.2, canvas.height*0.7, 50, "#0088ff", "#000511");
 
-        ctx.fillStyle = "#444";
-        asteroids.forEach(a => {
-            a.y += a.s; a.rot += a.rs;
-            if(a.y > canvas.height + 50) a.y = -50;
-            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.fillRect(-a.r/2, -a.r/2, a.r, a.r); ctx.restore();
+        ast.forEach(a => {
+            a.y += a.s; if(a.y > canvas.height) a.y = -20;
+            ctx.fillStyle = "#444";
+            ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI*2); ctx.fill();
         });
 
-        drawUFO();
-        requestAnimationFrame(draw);
+        ufo.x += ufo.s; if(ufo.x > canvas.width + 100) ufo.x = -100;
+        drawUFO(ufo.x, ufo.y);
+
+        document.getElementById('coords').innerText = `${ufo.x.toFixed(2)}, ${ufo.y.toFixed(2)}`;
+        requestAnimationFrame(renderFrame);
     }
-    draw();
+    renderFrame();
 
-    document.getElementById('todo-input').addEventListener('keypress', (e) => {
+    // To-Do Logic
+    document.getElementById('todo-in').onkeypress = (e) => {
         if(e.key === 'Enter' && e.target.value) {
-            const div = document.createElement('div');
-            div.className = 'todo-item';
-            div.innerHTML = `<span>${e.target.value.toUpperCase()}</span><span style="color:var(--neon)">[WAIT]</span>`;
-            document.getElementById('todo-list').prepend(div);
+            const d = document.createElement('div');
+            d.className = 'todo-item';
+            d.innerHTML = `${e.target.value.toUpperCase()} <span>[..]</span>`;
+            d.onclick = () => d.remove();
+            document.getElementById('todo-list').prepend(d);
             e.target.value = '';
         }
-    });
+    }
 </script>
 </body>
 </html>
