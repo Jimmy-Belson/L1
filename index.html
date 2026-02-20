@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v5.3</title>
+    <title>ORBITRON TERMINAL v5.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -17,8 +17,7 @@
         .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.2); padding: 8px; margin-bottom: 5px; font-size: 12px; cursor: pointer; transition: 0.2s; }
         .todo-item:hover { border-color: var(--p); color: var(--p); padding-left: 15px; }
         #chat-box { height: 350px; overflow-y: auto; margin-bottom: 20px; scrollbar-width: thin; scrollbar-color: var(--n) transparent; }
-        .msg { background: rgba(0, 242, 255, 0.03); padding: 12px; margin-bottom: 12px; border-left: 2px solid var(--n); transition: 0.3s; }
-        .msg:hover { background: rgba(255, 0, 255, 0.08); border-left-color: var(--p); transform: translateX(5px); }
+        .msg { background: rgba(0, 242, 255, 0.03); padding: 12px; margin-bottom: 12px; border-left: 2px solid var(--n); transition: 0.2s; }
         .msg-nick { color: var(--p); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
         input { background: rgba(0,0,0,0.7); border: 1px solid var(--n); color: #fff; padding: 14px; width: calc(100% - 32px); font-family: inherit; outline: none; margin-bottom: 10px; }
         button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
@@ -70,7 +69,17 @@
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
     let sb;
-    try { sb = window.supabase.createClient(URL, KEY); } catch (e) { console.error("Client init failed"); }
+    try { sb = window.supabase.createClient(URL, KEY); } catch (e) { console.error(e); }
+
+    const beep = () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'square'; osc.frequency.value = 800;
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start(); osc.stop(ctx.currentTime + 0.05);
+    };
 
     window.addTodo = function() {
         const input = document.getElementById('todo-in');
@@ -90,7 +99,6 @@
             ? await sb.auth.signInWithPassword({ email: e, password: p })
             : await sb.auth.signUp({ email: e, password: p });
         if (error) alert(error.message);
-        else if (mode === 'up') alert("Check your email for confirmation!");
     };
 
     sb.auth.onAuthStateChange((_, s) => {
@@ -109,7 +117,7 @@
         if (data) data.forEach(m => {
             const d = document.createElement('div');
             d.className = 'msg';
-            d.innerHTML = `<span class="msg-nick">${m.nickname}</span>${m.message}`;
+            d.innerHTML = `<span class="msg-nick">${m.nickname}</span> ж ${m.message}`;
             box.appendChild(d);
         });
         box.scrollTop = box.scrollHeight;
@@ -120,9 +128,18 @@
         const i = document.getElementById('msg-in');
         const { data: { user } } = await sb.auth.getUser();
         if (i.value && user) {
-            const val = i.value; i.value = '';
-            await sb.from('comments').insert([{ message: val, nickname: user.email.split('@')[0] }]);
-            load();
+            const val = i.value; const nick = user.email.split('@')[0];
+            i.value = ''; beep();
+
+            const box = document.getElementById('chat-box');
+            const d = document.createElement('div');
+            d.className = 'msg'; d.style.opacity = '0.5';
+            d.innerHTML = `<span class="msg-nick">${nick}</span> ж ${val}`;
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
+
+            sb.from('comments').insert([{ message: val, nickname: nick }])
+              .then(({ error }) => { if(!error) d.style.opacity = '1'; });
         }
     };
 
@@ -153,8 +170,7 @@
 
     function drawUFO() {
         ufo.x += 0.8; if(ufo.x > canvas.width + 100) ufo.x = -100;
-        const bob = Math.sin(Date.now()/600)*15;
-        ctx.save(); ctx.translate(ufo.x, ufo.y + bob);
+        ctx.save(); ctx.translate(ufo.x, ufo.y + Math.sin(Date.now()/600)*15);
         const pulse = Math.abs(Math.sin(Date.now()/300));
         const thruster = ctx.createRadialGradient(0, 10, 5, 0, 15, 25*pulse);
         thruster.addColorStop(0, 'rgba(0, 242, 255, 0.9)'); thruster.addColorStop(1, 'transparent');
@@ -162,7 +178,6 @@
         ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-35, 120); ctx.lineTo(35, 120); ctx.fill();
         ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.ellipse(0, 0, 50, 14, 0, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.stroke();
         const time = Date.now() / 400;
         for(let i=0; i<8; i++) {
             const angle = (i / 8) * Math.PI * 2;
@@ -171,8 +186,8 @@
         }
         ctx.fillStyle = 'rgba(100, 200, 255, 0.5)'; ctx.beginPath(); ctx.arc(0, -6, 18, Math.PI, 0); ctx.fill();
         ctx.restore();
-        const ux = document.getElementById('ufo-x'), uy = document.getElementById('ufo-y');
-        if(ux) ux.innerText = Math.floor(ufo.x); if(uy) uy.innerText = Math.floor(ufo.y);
+        document.getElementById('ufo-x').innerText = Math.floor(ufo.x);
+        document.getElementById('ufo-y').innerText = Math.floor(ufo.y);
     }
 
     function loop() {
@@ -191,12 +206,10 @@
             ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.roundRect(-10, -12, 20, 24, 5); ctx.fill();
             ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(0, -14, 8, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(0, -14, 6, 4, 0, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-2, -15, 1.5, 0, Math.PI*2); ctx.fill();
             ctx.restore();
         });
         drawUFO();
-        const cl = document.getElementById('clock');
-        if(cl) cl.innerText = new Date().toLocaleTimeString();
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
         requestAnimationFrame(loop);
     }
     init(); loop(); window.onresize = init;
