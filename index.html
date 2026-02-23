@@ -2,67 +2,45 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v6.8</title>
+    <title>ORBITRON TERMINAL v6.9</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --gl: rgba(5, 15, 25, 0.9); }
-        
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         
-        /* Фон всегда сзади */
         #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Главный контейнер интерфейса поверх всего */
         .ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; pointer-events: none; }
-        
-        .sidebar { 
-            width: 320px; height: 100%; background: var(--gl); border-right: 1px solid var(--n); 
-            padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); 
-            display: flex; flex-direction: column; 
-        }
-
+        .sidebar { width: 320px; height: 100%; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; }
         .main-content { flex-grow: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
-        
-        .terminal { 
-            width: 650px; background: var(--gl); border: 1px solid var(--n); padding: 30px; 
-            pointer-events: auto; position: relative; backdrop-filter: blur(12px); 
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.1); border-radius: 4px; 
-        }
+        .terminal { width: 650px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); border-radius: 4px; transition: 0.1s; }
 
-        /* Глитч-эффект */
         @keyframes glitch {
             0% { transform: translate(0); }
-            20% { transform: translate(-3px, 2px); filter: hue-rotate(90deg); }
-            40% { transform: translate(-3px, -2px); }
-            60% { transform: translate(3px, 2px); filter: hue-rotate(-90deg); }
+            20% { transform: translate(-4px, 2px); filter: hue-rotate(90deg) brightness(1.5); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(4px, 2px); filter: hue-rotate(-90deg); }
             100% { transform: translate(0); }
         }
         .glitch-active { animation: glitch 0.2s linear 2; }
 
-        #chat-box { 
-            height: 400px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;
-            scrollbar-width: thin; scrollbar-color: var(--n) transparent;
-            display: flex; flex-direction: column;
-        }
-
-        .msg { background: rgba(0, 242, 255, 0.04); border-left: 2px solid var(--n); padding: 12px; margin-bottom: 10px; animation: msgReveal 0.3s ease-out forwards; }
+        #chat-box { height: 400px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; }
+        .msg { background: rgba(0, 242, 255, 0.05); border-left: 2px solid var(--n); padding: 12px; margin-bottom: 10px; animation: msgReveal 0.3s ease-out; }
         @keyframes msgReveal { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-
-        .msg-header { font-size: 10px; margin-bottom: 4px; display: flex; gap: 8px; }
-        .msg-time { opacity: 0.5; }
         .msg-nick { color: var(--p); font-weight: bold; text-transform: uppercase; }
+        .msg-time { opacity: 0.5; font-size: 10px; margin-right: 8px; }
 
         input { background: rgba(0,0,0,0.8); border: 1px solid var(--n); color: #fff; padding: 14px; width: 100%; font-family: inherit; outline: none; margin-bottom: 10px; }
         button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
         button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
 
-        #radar { width: 100%; height: 100px; border: 1px solid rgba(0,242,255,0.2); margin-bottom: 20px; position: relative; overflow: hidden; }
-        #radar-sweep { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background: conic-gradient(from 0deg, var(--n) 0deg, transparent 90deg); opacity: 0.1; animation: rotate 4s linear infinite; }
+        #radar { width: 100%; height: 120px; border: 1px solid var(--n); margin-bottom: 20px; position: relative; overflow: hidden; background: repeating-radial-gradient(circle, transparent 0, transparent 20px, rgba(0,242,255,0.05) 21px); }
+        #radar-sweep { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background: conic-gradient(from 0deg, var(--n) 0deg, transparent 90deg); opacity: 0.2; animation: rotate 4s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        h2 { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin: 0 0 15px 0; letter-spacing: 2px; }
+        h2 { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin-bottom: 15px; letter-spacing: 2px; }
         .hidden { display: none; }
     </style>
 </head>
@@ -76,11 +54,12 @@
         <div id="radar"><div id="radar-sweep"></div></div>
         
         <h2>TASKS</h2>
-        <input type="text" id="todo-in" placeholder="> NEW_LOG" onkeypress="if(event.key==='Enter') addTodo()">
+        <input type="text" id="todo-in" placeholder="> ADD_MISSION" onkeypress="if(event.key==='Enter') addTodo()">
         <div id="todo-list" style="overflow-y:auto; flex-grow:1;"></div>
         
         <div style="margin-top: 20px; font-size: 10px; border-top: 1px solid rgba(0,242,255,0.2); padding-top: 15px;">
             <div id="sys-status" style="color: var(--p)">LINK: STANDBY</div>
+            <div>SECTOR: <span id="ufo-coords">0.0</span></div>
             <div id="clock">00:00:00</div>
         </div>
     </div>
@@ -98,7 +77,7 @@
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="msg-in" placeholder="SIGNAL TEXT..." onkeypress="if(event.key==='Enter') send()">
+                    <input type="text" id="msg-in" placeholder="TYPE SIGNAL..." onkeypress="if(event.key==='Enter') send()">
                     <button onclick="send()" style="width: 100px;">SEND</button>
                 </div>
             </div>
@@ -121,22 +100,17 @@
 
     const beep = (f=800) => {
         try {
-            const c = new(window.AudioContext||window.webkitAudioContext)();
+            const c = new(AudioContext||webkitAudioContext)();
             const o = c.createOscillator(); const g = c.createGain();
             o.connect(g); g.connect(c.destination);
             o.type='square'; o.frequency.value=f;
-            g.gain.setValueAtTime(0.02, c.currentTime);
+            g.gain.setValueAtTime(0.01, c.currentTime);
             o.start(); o.stop(c.currentTime+0.1);
         } catch(e){}
     };
 
-    const notify = (t, b) => {
-        if(Notification.permission==="granted" && document.hidden) new Notification(t, {body:b});
-    };
-
     window.addTodo = () => {
-        const i = document.getElementById('todo-in');
-        if(!i.value) return;
+        const i = document.getElementById('todo-in'); if(!i.value) return;
         const d = document.createElement('div');
         d.className = 'msg'; d.style.fontSize = '11px'; d.innerHTML = `> ${i.value.toUpperCase()}`;
         d.onclick = function(){ this.remove(); };
@@ -168,7 +142,7 @@
         const d = document.createElement('div');
         d.className = 'msg';
         const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "--:--";
-        d.innerHTML = `<div class="msg-header"><span class="msg-time">[${t}]</span><span class="msg-nick">${m.nickname}</span></div><div>${m.message}</div>`;
+        d.innerHTML = <div><span class="msg-time">[${t}]</span><span class="msg-nick">${m.nickname}:</span> ${m.message}</div>;
         b.appendChild(d);
     }
 
@@ -188,29 +162,61 @@
         if(user && user.email.split('@')[0] !== p.new.nickname) {
             appendMsg(p.new);
             document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
-            triggerGlitch(); beep(600); notify("NEW SIGNAL", p.new.message);
+            triggerGlitch(); beep(600);
+            if(document.hidden && Notification.permission==="granted") new Notification("NEW SIGNAL", {body: p.new.message});
         }
     }).subscribe();
 
-    // --- CANVAS ---
+    // --- NEW ENGINE ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let stars = [], stones = [];
+    let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
 
     function init() {
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        stars = []; stones = [];
-        for(let i=0; i<100; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5});
-        for(let i=0; i<5; i++) stones.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:15, s:0.5});
+        stars = []; stones = []; astronauts = [];
+        for(let i=0; i<150; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5});
+        for(let i=0; i<6; i++) stones.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:15+Math.random()*10, s:0.3+Math.random()*0.4, p:Array.from({length:6}, (_,j)=>({x:Math.cos(j*1.04)*20, y:Math.sin(j*1.04)*20}))});
+        for(let i=0; i<2; i++) astronauts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:0.2, vy:0.1, r:0});
+    }
+
+    function drawPlanet() {
+        const x = canvas.width*0.8, y = canvas.height*0.2;
+        const g = ctx.createRadialGradient(x-30,y-30,10,x,y,100);
+        g.addColorStop(0,'#00f2ff'); g.addColorStop(1,'#01050a');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,100,0,7); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,242,255,0.1)'; ctx.beginPath(); ctx.ellipse(x,y,250,50,0.5,0,7); ctx.stroke();
+    }
+
+    function drawUFO() {
+        ufo.x += 0.8; if(ufo.x > canvas.width+100) ufo.x = -100;
+        let ty = ufo.y + Math.sin(Date.now()/500)*20;
+        ctx.fillStyle = 'rgba(0,242,255,0.05)'; ctx.beginPath(); ctx.moveTo(ufo.x, ty); ctx.lineTo(ufo.x-40, ty+150); ctx.lineTo(ufo.x+40, ty+150); ctx.fill();
+        ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(ufo.x, ty, 40, 10, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = (Math.floor(Date.now()/300)%2===0) ? '#f0f' : '#0ff';
+        for(let i=-2; i<=2; i++) { ctx.beginPath(); ctx.arc(ufo.x+(i*15), ty+2, 2, 0, 7); ctx.fill(); }
+        document.getElementById('ufo-coords').innerText = Math.floor(ufo.x) + "." + Math.floor(ty);
+    }
+
+    function drawAstronaut(a) {
+        a.x += a.vx; a.y += a.vy; a.r += 0.01; if(a.x > canvas.width+50) a.x = -50;
+        ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.r);
+        ctx.fillStyle = '#eee'; ctx.fillRect(-10,-10,20,25); // Тело
+        ctx.fillStyle = '#222'; ctx.fillRect(-7,-8,14,7); // Визор
+        ctx.fillStyle = '#555'; ctx.fillRect(-14,-5,4,15); // Ранец
+        ctx.restore();
     }
 
     function loop() {
         ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.fillStyle = 'white'; stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); });
-        ctx.fillStyle = '#1a2533'; stones.forEach(s => { 
-            s.y += s.s; if(s.y > canvas.height) s.y = -20;
-            ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+        ctx.fillStyle = 'white'; stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill(); });
+        drawPlanet();
+        stones.forEach(s => { 
+            s.y += s.s; if(s.y > canvas.height+50) s.y = -50;
+            ctx.save(); ctx.translate(s.x, s.y); ctx.fillStyle = '#1a2533'; ctx.beginPath();
+            s.p.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y)); ctx.fill(); ctx.restore();
         });
+        drawUFO(); astronauts.forEach(drawAstronaut);
         document.getElementById('clock').innerText = new Date().toLocaleTimeString();
         requestAnimationFrame(loop);
     }
