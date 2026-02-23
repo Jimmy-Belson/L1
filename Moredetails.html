@@ -2,189 +2,255 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>TO DO LIST!!!</title>
+    <title>ORBITRON v9.0 - VOID FOCUS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Segoe UI', sans-serif;
-            background: radial-gradient(circle at center, #1e3a8a 0%, #070b14 100%);
+        :root {
+            --n: #00f2ff; --p: #ff00ff; --bg: #01050a;
+            --glass: rgba(0, 242, 255, 0.04);
+            --border: rgba(0, 242, 255, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background: var(--bg); color: var(--n); 
+            font-family: 'Share Tech Mono', monospace; 
+            height: 100vh; overflow: hidden; 
+        }
+
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        /* --- СЕТКА МАКЕТА --- */
+        .viewport {
+            position: relative; z-index: 10;
+            display: grid;
+            /* Сайдбар слева (300px), остальное пространство для чата */
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 60px 1fr;
+            height: 100vh; gap: 20px; padding: 20px;
+        }
+
+        .panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            display: flex; flex-direction: column;
             overflow: hidden;
-            color: white;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
+        .header { grid-column: 1 / 3; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: none; border: none; border-bottom: 1px solid var(--border); }
 
-        .stars-container {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
+        /* --- ЧАТ (ЦЕНТРИРОВАННЫЙ И УЗКИЙ) --- */
+        .chat-panel { 
+            grid-column: 2; 
+            display: flex; flex-direction: column;
+            /* Ключевые изменения для центрирования и сужения: */
+            max-width: 600px;   /* Делаем уже */
+            width: 100%;        /* Растягиваем до max-width */
+            justify-self: center; /* Центрируем в своей ячейке сетки */
         }
 
-        .stars-dust {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            background: transparent;
-            box-shadow: 
-                100px 100px #fff, 300px 200px #fff, 500px 50px #fff, 800px 400px #fff, 1200px 100px #fff,
-                1400px 600px #fff, 200px 800px #fff, 600px 300px #fff, 1000px 700px #fff, 400px 900px #fff,
-                50px 450px #fff, 750px 850px #fff, 1150px 150px #fff, 1550px 450px #fff, 950px 50px #fff,
-                120px 350px #fff, 450px 550px #fff, 850px 150px #fff, 1350px 750px #fff, 150px 950px #fff,
-                650px 650px #fff, 1050px 350px #fff, 250px 150px #fff, 1450px 50px #fff, 550px 850px #fff;
-            animation: twinkle 3s infinite alternate;
+        #chat-stream {
+            flex: 1; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+            scrollbar-width: none;
+        }
+        .msg { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
+        .msg-nick { font-size: 9px; color: var(--p); font-family: 'Orbitron'; margin-bottom: 3px; letter-spacing: 1px; }
+        .msg-text { background: rgba(0,242,255,0.05); padding: 10px 15px; border-radius: 0 10px 10px 10px; border: 1px solid rgba(0,242,255,0.1); color: #e0faff; }
+
+        /* TODO PANEL */
+        .todo-panel { grid-column: 1; }
+        #todo-list { flex: 1; overflow-y: auto; padding: 15px; }
+        .task { 
+            padding: 10px; border-bottom: 1px solid rgba(0,242,255,0.1); 
+            cursor: pointer; transition: 0.3s; font-size: 12px;
+            display: flex; align-items: center;
+        }
+        .task:before { content: ">"; margin-right: 10px; color: var(--p); }
+        .task:hover { 
+            color: var(--p); background: rgba(255,0,255,0.1);
+            text-decoration: line-through; padding-left: 20px; border-bottom-color: var(--p);
         }
 
-        .stars-huge {
-            position: absolute;
-            width: 4px; 
-            height: 4px;
-            border-radius: 50%;
-            background: white;
-            box-shadow: 
-                200px 400px 10px 2px #00d2ff,   
-                800px 200px 10px 2px #a855f7,   
-                1300px 500px 15px 3px #fff,     
-                400px 700px 12px 2px #00d2ff,
-                1100px 800px 10px 2px #a855f7,
-                150px 150px 8px 2px #fff;
-            animation: pulse 4s infinite ease-in-out;
+        /* INPUTS */
+        .input-bar { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+        input { 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border); 
+            color: #fff; padding: 12px; font-family: inherit; flex: 1; outline: none; 
         }
-
-        @keyframes twinkle { from { opacity: 0.3; } to { opacity: 1; } }
-        @keyframes pulse { 
-            0%, 100% { transform: scale(1); filter: brightness(1); } 
-            50% { transform: scale(1.5); filter: brightness(1.5); } 
+        input:focus { border-color: var(--n); box-shadow: 0 0 10px var(--glass); }
+        button { 
+            background: transparent; border: 1px solid var(--n); color: var(--n); 
+            padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 10px; transition: 0.3s;
         }
+        button:hover { background: var(--n); color: #000; box-shadow: 0 0 20px var(--n); }
 
-        .rocket {
-            position: absolute;
-            font-size: 45px; 
-            z-index: 1;
-            filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.6));
-        }
-
-        .r1 { animation: fly 10s linear infinite; bottom: -100px; left: 5%; }
-        .r2 { animation: fly 15s linear infinite; bottom: -100px; left: 25%; animation-delay: 2s; }
-        .r3 { animation: fly 12s linear infinite; bottom: -100px; left: 50%; animation-delay: 5s; }
-        .r4 { animation: fly 18s linear infinite; bottom: -100px; left: 75%; animation-delay: 1s; }
-        .r5 { animation: fly 14s linear infinite; bottom: -100px; left: 90%; animation-delay: 8s; }
-
-        @keyframes fly {
-            0% { transform: translate(0, 0) rotate(45deg); opacity: 0; }
-            10% { opacity: 1; }
-            95% { opacity: 1; }
-            100% { transform: translate(500px, -1200px) rotate(45deg); opacity: 0; }
-        }
-
-        .todo-container {
-            position: relative;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(15px);
-            padding: 50px;
-            width: 480px;
-            border-radius: 45px;
-            border: 3px solid #00d2ff; 
-            box-shadow: 0 0 40px rgba(0, 210, 255, 0.5);
-            text-align: center;
-            z-index: 10;
-        }
-
-        h1 { font-size: 32px; letter-spacing: 4px; margin-bottom: 30px; }
-
-        .input-section { display: flex; gap: 15px; margin-bottom: 25px; }
-
-        input {
-            flex: 1;
-            padding: 18px;
-            border-radius: 20px;
-            border: 2px solid rgba(0, 210, 255, 0.4);
-            background: rgba(0, 0, 0, 0.4);
-            color: white;
-            outline: none;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 15px 35px;
-            background: #00d2ff;
-            color: #000;
-            border: none;
-            border-radius: 20px;
-            font-weight: 900;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background: #fff;
-            box-shadow: 0 0 25px #00d2ff;
-            transform: scale(1.1);
-        }
-
-        ul { list-style: none; padding: 0; }
-        li {
-            background: rgba(255, 255, 255, 0.1);
-            margin-bottom: 12px;
-            padding: 18px;
-            border-radius: 20px;
-            text-align: left;
-            cursor: pointer;
-            transition: 0.3s;
-            border-left: 5px solid #a855f7; 
-        }
-
-        li:hover {
-            background: rgba(168, 85, 247, 0.2);
-            transform: translateX(15px);
-        }
+        #auth-gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+        .hidden { display: none !important; }
+        .viewport::after { content: ""; position: fixed; inset: 0; pointer-events: none; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.1) 50%); background-size: 100% 4px; z-index: 1000; opacity: 0.1; }
     </style>
 </head>
 <body>
 
-    <div class="stars-container">
-        <div class="stars-dust"></div>
-        <div class="stars-huge"></div>
+<canvas id="starfield"></canvas>
+
+<div id="auth-gate">
+    <div style="width: 350px; text-align: center; border: 1px solid var(--n); padding: 50px; backdrop-filter: blur(10px);">
+        <h1 style="font-family:'Orbitron'; margin-bottom:30px; letter-spacing:5px;">OMNI_v9.0</h1>
+        <input type="email" id="email" placeholder="PILOT_ID" style="width:100%; margin-bottom:10px;">
+        <input type="password" id="pass" placeholder="PASSWORD" style="width:100%; margin-bottom:25px;">
+        <button onclick="Core.Auth('in')" style="width:100%;">INITIALIZE</button>
     </div>
+</div>
 
-    <div class="rocket r1">🚀</div>
-    <div class="rocket r2">🚀</div>
-    <div class="rocket r3">🚀</div>
-    <div class="rocket r4">🚀</div>
-    <div class="rocket r5">🚀</div>
+<div class="viewport">
+    <header class="header">
+        <div style="font-family:'Orbitron'; font-weight:700; letter-spacing:3px;">ORBITRON_SYSTEM // FOCUS</div>
+        <div id="clock">00:00:00</div>
+    </header>
 
-    <div class="todo-container">
-        <h1>TO DO LIST :)</h1>
-        <div class="input-section">
-            <input type="text" id="taskInput" placeholder="What do you need to do brosky?">
-            <button id="addBtn">ADD</button>
+    <aside class="panel todo-panel">
+        <div style="padding:15px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border); letter-spacing:2px;">MISSION_LOGS</div>
+        <div class="input-bar">
+            <input type="text" id="todo-in" placeholder="NEW TASK...">
         </div>
-        <ul id="taskList"></ul>
-    </div>
+        <div id="todo-list"></div>
+    </aside>
 
-    <script>
-        const btn = document.getElementById('addBtn');
-        const input = document.getElementById('taskInput');
-        const list = document.getElementById('taskList');
+    <main class="panel chat-panel">
+        <div style="padding:15px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border); letter-spacing:2px;">SECURE_COMMS_LINK</div>
+        <div id="chat-stream"></div>
+        <div class="input-bar">
+            <input type="text" id="chat-in" placeholder="ENTER TELEMETRY DATA...">
+            <button onclick="Core.Chat.send()">SEND</button>
+        </div>
+    </main>
+</div>
 
-        btn.onclick = function() {
-            if (input.value.trim() !== "") {
-                const li = document.createElement('li');
-                li.textContent = input.value;
-                li.onclick = function() {
-                    this.style.opacity = '0';
-                    this.style.transform = 'translateX(100px)';
-                    setTimeout(() => { this.remove(); }, 300);
-                };
-                list.appendChild(li);
-                input.value = "";
+<script>
+const Core = {
+    sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
+    user: null,
+
+    init() {
+        this.Canvas.init();
+        this.AuthListener();
+        this.UI();
+        setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
+        this.loop();
+    },
+
+    Auth: async (t) => {
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = await (t === 'in' ? Core.sb.auth.signInWithPassword({email:e, password:p}) : Core.sb.auth.signUp({email:e, password:p}));
+        if(error) alert(error.message);
+    },
+
+    AuthListener() {
+        this.sb.auth.onAuthStateChange((_, s) => {
+            if(s) {
+                this.user = s.user;
+                document.getElementById('auth-gate').classList.add('hidden');
+                this.Chat.load();
+            }
+        });
+    },
+
+    Chat: {
+        async load() {
+            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: true});
+            if(data) data.forEach(m => this.render(m));
+        },
+        render(m) {
+            const s = document.getElementById('chat-stream');
+            const d = document.createElement('div');
+            d.className = 'msg';
+            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`;
+            s.appendChild(d);
+            s.scrollTop = s.scrollHeight;
+        },
+        async send() {
+            const i = document.getElementById('chat-in');
+            if(!i.value || !Core.user) return;
+            const n = Core.user.email.split('@')[0], v = i.value; 
+            i.value = '';
+            this.render({nickname: n, message: v, created_at: new Date()});
+            await Core.sb.from('comments').insert([{message: v, nickname: n}]);
+        }
+    },
+
+    UI() {
+        const ti = document.getElementById('todo-in');
+        ti.onkeypress = (e) => {
+            if(e.key === 'Enter' && ti.value) {
+                const d = document.createElement('div');
+                d.className = 'task'; d.innerText = ti.value.toUpperCase();
+                d.onclick = () => d.remove();
+                document.getElementById('todo-list').prepend(d);
+                ti.value = '';
             }
         };
+        const ci = document.getElementById('chat-in');
+        ci.onkeypress = (e) => { if(e.key === 'Enter') Core.Chat.send(); };
+    },
 
-        input.onkeypress = (e) => { if (e.key === "Enter") btn.click(); };
-    </script>
+    Canvas: {
+        init() {
+            this.cvs = document.getElementById('starfield');
+            this.ctx = this.cvs.getContext('2d');
+            this.res(); window.onresize = () => this.res();
+            this.stars = Array.from({length: 200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.5}));
+            this.rocks = Array.from({length: 12}, () => ({
+                x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height,
+                s: 5 + Math.random()*15, r: Math.random()*Math.PI*2, vs: 0.01 + Math.random()*0.02
+            }));
+            this.ufo = {x: -100, y: 400, p: []};
+        },
+        res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        draw() {
+            const ctx = this.ctx, cvs = this.cvs;
+            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width, cvs.height);
+            ctx.fillStyle = '#fff';
+            this.stars.forEach(s => {
+                s.x -= s.v; if(s.x < 0) s.x = cvs.width;
+                ctx.globalAlpha = Math.random(); ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, 7); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = 'rgba(0,242,255,0.3)';
+            this.rocks.forEach(r => {
+                r.x -= 0.3; r.r += r.vs; if(r.x < -50) r.x = cvs.width + 50;
+                ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.r); ctx.beginPath();
+                for(let i=0; i<6; i++) { let a = i * Math.PI/3; ctx.lineTo(Math.cos(a)*r.s, Math.sin(a)*r.s); }
+                ctx.closePath(); ctx.stroke(); ctx.restore();
+            });
+            const px = cvs.width * 0.85, py = cvs.height * 0.25;
+            let glow = ctx.createRadialGradient(px, py, 100, px, py, 150);
+            glow.addColorStop(0, 'rgba(0,242,255,0.2)'); glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(px, py, 150, 0, 7); ctx.fill();
+            let g = ctx.createRadialGradient(px-30, py-30, 10, px, py, 100);
+            g.addColorStop(0, '#00f2ff'); g.addColorStop(0.5, '#004466'); g.addColorStop(1, '#01050a');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 100, 0, 7); ctx.fill();
+            ctx.strokeStyle = 'rgba(0,242,255,0.1)'; ctx.beginPath(); ctx.ellipse(px, py, 180, 40, 0.4, 0, 7); ctx.stroke();
+            let u = this.ufo; u.x += 1.2; if(u.x > cvs.width + 100) u.x = -100;
+            let uy = u.y + Math.sin(Date.now()/600)*40;
+            if(Date.now() % 5 === 0) u.p.push({x: u.x - 40, y: uy, a: 1});
+            u.p.forEach((p, idx) => {
+                p.x -= 1; p.a -= 0.01; ctx.fillStyle = `rgba(0, 242, 255, ${p.a})`;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, 7); ctx.fill(); if(p.a <= 0) u.p.splice(idx, 1);
+            });
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 50, 12, 0, 0, 7); ctx.fill();
+            ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2; ctx.stroke();
+        }
+    },
+
+    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+};
+
+window.onload = () => Core.init();
+</script>
 </body>
 </html>
