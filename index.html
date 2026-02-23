@@ -2,18 +2,31 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v6.0</title>
+    <title>ORBITRON TERMINAL v6.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --gl: rgba(5, 15, 25, 0.85); }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #canvas-bg { position: fixed; top: 0; left: 0; z-index: 1; }
+        
+        /* Эффект глитча для всего терминала */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); filter: hue-rotate(-90deg); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-active { animation: glitch 0.2s linear 2; }
+
         .ui { position: relative; z-index: 10; display: flex; height: 100vh; pointer-events: none; }
         .sidebar { width: 320px; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
-        .terminal { width: 620px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; }
-        .terminal::before { content: "DEEP_SPACE_NETWORK_ACTIVE"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
+        .terminal { width: 620px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); border-radius: 4px; transition: 0.1s; }
         
+        .terminal::before { content: "COMM_LINK_SECURE"; position: absolute; top: -10px; left: 20px; background: var(--bg); color: var(--p); font-size: 10px; padding: 0 10px; border: 1px solid var(--p); }
+
         #chat-box { 
             height: 380px; 
             overflow-y: auto; 
@@ -24,11 +37,6 @@
             flex-direction: column;
             overflow-anchor: auto;
         }
-        
-        @keyframes msgReveal {
-            from { opacity: 0; transform: translateX(-10px); filter: blur(3px); }
-            to { opacity: 1; transform: translateX(0); filter: blur(0); }
-        }
 
         .msg { 
             background: rgba(0, 242, 255, 0.03); 
@@ -37,25 +45,28 @@
             margin-bottom: 10px;
             flex-shrink: 0;
             animation: msgReveal 0.3s ease-out forwards;
-            line-height: 1.4;
         }
 
-        .msg-header { font-size: 10px; margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+        @keyframes msgReveal {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .msg-header { font-size: 10px; margin-bottom: 4px; display: flex; gap: 8px; }
         .msg-time { color: rgba(0, 242, 255, 0.5); }
-        .msg-nick { color: var(--p); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .msg-nick { color: var(--p); text-transform: uppercase; font-weight: bold; }
 
         input { background: rgba(0,0,0,0.7); border: 1px solid var(--n); color: #fff; padding: 14px; width: calc(100% - 32px); font-family: inherit; outline: none; margin-bottom: 10px; }
-        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; transition: 0.2s; }
-        button:hover { background: var(--n); color: #000; box-shadow: 0 0 25px var(--n); }
-        .btn-alt { border-color: var(--p); color: var(--p); }
-        .btn-alt:hover { background: var(--p); color: #000; box-shadow: 0 0 25px var(--p); }
+        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 14px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        button:hover { background: var(--n); color: #000; box-shadow: 0 0 20px var(--n); }
         
         #todo-list { margin-top: 15px; height: 180px; overflow-y: auto; }
         .todo-item { background: rgba(0, 242, 255, 0.05); border: 1px solid rgba(0, 242, 255, 0.1); padding: 8px; margin-bottom: 5px; font-size: 11px; cursor: pointer; }
-        .todo-item:hover { border-color: var(--p); color: var(--p); }
 
-        h2 { font-family: 'Orbitron', sans-serif; letter-spacing: 3px; font-size: 1.1rem; margin-bottom: 20px; text-shadow: 0 0 10px var(--n); }
         .hidden { display: none; }
+        #radar { width: 100%; height: 100px; border: 1px solid rgba(0,242,255,0.2); margin-bottom: 20px; position: relative; overflow: hidden; background: radial-gradient(circle, rgba(0,242,255,0.05) 0%, transparent 70%); }
+        #radar-sweep { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background: conic-gradient(from 0deg, var(--n) 0deg, transparent 90deg); opacity: 0.1; animation: rotate 4s linear infinite; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -64,24 +75,28 @@
 
 <div class="ui">
     <div class="sidebar">
+        <h2>RADAR_SENSORS</h2>
+        <div id="radar"><div id="radar-sweep"></div></div>
+        
         <h2>OBJECTIVES</h2>
         <input type="text" id="todo-in" placeholder="> NEW_TASK" onkeypress="if(event.key==='Enter') addTodo()">
         <div id="todo-list"></div>
+        
         <div style="margin-top: auto; font-size: 10px; border-top: 1px solid rgba(0,242,255,0.2); padding-top: 20px;">
-            <div style="color: var(--p)">SYSTEM: ONLINE</div>
-            <div>SECTOR: <span id="ufo-x">0</span>.<span id="ufo-y">0</span></div>
+            <div id="sys-status" style="color: var(--p)">SYSTEM: SCANNING...</div>
+            <div>COORDS: X.<span id="ufo-x">0</span> Y.<span id="ufo-y">0</span></div>
             <div id="clock">00:00:00</div>
         </div>
     </div>
 
     <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center;">
-        <div class="terminal">
+        <div class="terminal" id="main-terminal">
             <div id="auth-ui">
                 <h2 style="text-align: center;">IDENT_REQUIRED</h2>
                 <input type="email" id="email" placeholder="PILOT_ID">
                 <input type="password" id="pass" placeholder="PASSWORD">
                 <button onclick="auth('in')">ESTABLISH_CONNECTION</button>
-                <button onclick="auth('up')" class="btn-alt">JOIN_THE_FLEET</button>
+                <button onclick="auth('up')" style="border-color:var(--p); color:var(--p)">JOIN_THE_FLEET</button>
             </div>
             <div id="chat-ui" class="hidden">
                 <div id="chat-box"></div>
@@ -101,21 +116,28 @@
     let sb;
     try { sb = window.supabase.createClient(URL, KEY); } catch (e) {}
 
-    const beep = (f = 800) => {
+    const triggerGlitch = () => {
+        const term = document.getElementById('main-terminal');
+        term.classList.add('glitch-active');
+        setTimeout(() => term.classList.remove('glitch-active'), 400);
+    };
+
+    const beep = (f = 800, vol = 0.05) => {
         try {
             const c = new (window.AudioContext || window.webkitAudioContext)();
             const o = c.createOscillator(); const g = c.createGain();
             o.connect(g); g.connect(c.destination);
-            o.type = 'sine'; o.frequency.value = f;
-            g.gain.setValueAtTime(0.05, c.currentTime);
+            o.type = 'square'; o.frequency.value = f;
+            g.gain.setValueAtTime(vol, c.currentTime);
             g.gain.exponentialRampToValueAtTime(0.01, c.currentTime + 0.1);
             o.start(); o.stop(c.currentTime + 0.1);
         } catch(e) {}
     };
 
-    const getTime = () => {
-        const d = new Date();
-        return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0');
+    const notify = (title, body) => {
+        if (Notification.permission === "granted" && document.hidden) {
+            new Notification(title, { body });
+        }
     };
 
     window.addTodo = function() {
@@ -135,13 +157,17 @@
         const { error } = m === 'in' 
             ? await sb.auth.signInWithPassword({ email: e, password: p })
             : await sb.auth.signUp({ email: e, password: p });
-        if (error) alert(error.message);
+        if (error) { beep(200); triggerGlitch(); alert(error.message); }
     };
 
     sb.auth.onAuthStateChange((_, s) => {
         document.getElementById('auth-ui').classList.toggle('hidden', !!s);
         document.getElementById('chat-ui').classList.toggle('hidden', !s);
-        if (s) { beep(1000); load(true); }
+        if (s) { 
+            beep(1000); load(true); 
+            if (Notification.permission !== "denied") Notification.requestPermission();
+            document.getElementById('sys-status').innerText = "SYSTEM: LINKED";
+        }
     });
 
     async function load(full = false) {
@@ -151,31 +177,17 @@
         if (!b || !data) return;
         if (full) {
             b.innerHTML = ''; 
-            data.forEach(m => appendMsg(m, false));
-        } else {
-            data.forEach(m => {
-                const exists = Array.from(b.querySelectorAll('.msg')).some(el => el.innerText.includes(m.message));
-                if (!exists) appendMsg(m, true);
-            });
+            data.forEach(m => appendMsg(m));
         }
         b.scrollTop = b.scrollHeight;
     }
 
-    function appendMsg(m, animate) {
+    function appendMsg(m) {
         const b = document.getElementById('chat-box');
         const d = document.createElement('div');
         d.className = 'msg';
-        if (!animate) d.style.animation = 'none';
-        
-        const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : getTime();
-        
-        d.innerHTML = `
-            <div class="msg-header">
-                <span class="msg-time">[${time}]</span>
-                <span class="msg-nick">${m.nickname}</span>
-            </div>
-            <div class="msg-text">${m.message}</div>
-        `;
+        const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--";
+        d.innerHTML = `<div class="msg-header"><span class="msg-time">[${time}]</span><span class="msg-nick">${m.nickname}</span></div><div class="msg-text">${m.message}</div>`;
         b.appendChild(d);
     }
 
@@ -186,19 +198,27 @@
         if (i.value && user) {
             const v = i.value; const n = user.email.split('@')[0];
             i.value = ''; beep(800);
-            appendMsg({ nickname: n, message: v }, true);
+            appendMsg({ nickname: n, message: v });
             document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
             await sb.from('comments').insert([{ message: v, nickname: n }]);
         }
     };
 
-    sb.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (p) => {
+    sb.channel('chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, async (p) => {
         const b = document.getElementById('chat-box');
-        const exists = Array.from(b.querySelectorAll('.msg')).some(el => el.innerText.includes(p.new.message));
-        if (!exists) { appendMsg(p.new, true); b.scrollTop = b.scrollHeight; }
+        const { data: { user } } = await sb.auth.getUser();
+        const isMyMsg = user && user.email.split('@')[0] === p.new.nickname;
+        
+        if (!isMyMsg) { 
+            appendMsg(p.new); 
+            b.scrollTop = b.scrollHeight;
+            triggerGlitch(); // Глитч при входящем!
+            beep(600, 0.1); 
+            notify("SIGNAL FROM " + p.new.nickname, p.new.message);
+        }
     }).subscribe();
 
-
+    // --- CANVAS ENGINE ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
@@ -206,53 +226,29 @@
     function init() {
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         stars = []; stones = []; astronauts = [];
-        for(let i=0; i<150; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.2 });
-        for(let i=0; i<5; i++) stones.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: 0.2+Math.random()*0.3, r: 10+Math.random()*15, rot: Math.random()*Math.PI });
-        for(let i=0; i<2; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.2, vy: 0.1, rot: 0 });
+        for(let i=0; i<100; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.2 });
+        for(let i=0; i<4; i++) stones.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: 0.3, r: 12, rot: Math.random()*7 });
+        for(let i=0; i<2; i++) astronauts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.1, vy: 0.05, rot: 0 });
     }
 
     function drawPlanet() {
-        const x = canvas.width * 0.8, y = canvas.height * 0.2;
-        ctx.save();
-        ctx.shadowBlur = 50; ctx.shadowColor = 'rgba(0, 242, 255, 0.2)';
-        const g = ctx.createRadialGradient(x-30, y-30, 10, x, y, 100);
-        g.addColorStop(0, '#00f2ff'); g.addColorStop(0.4, '#004466'); g.addColorStop(1, '#01050a');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 100, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = 'rgba(0, 242, 255, 0.1)'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.ellipse(x, y, 220, 50, Math.PI/4, 0, Math.PI*2); ctx.stroke();
-        ctx.restore();
+        ctx.fillStyle = '#004466'; ctx.beginPath(); ctx.arc(canvas.width*0.8, canvas.height*0.2, 80, 0, 7); ctx.fill();
     }
 
     function drawAstronaut(a) {
-        a.x += a.vx; a.y += a.vy; a.rot += 0.005;
-        if(a.x > canvas.width + 50) a.x = -50;
+        a.x += a.vx; a.y += a.vy; a.rot += 0.005; if(a.x > canvas.width+50) a.x=-50;
         ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-
-        ctx.fillStyle = '#555'; ctx.fillRect(-15, -10, 8, 20);
-
-        ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.roundRect(-10, -12, 22, 28, 5); ctx.fill();
-
-        ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(1, -15, 10, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(4, -15, 7, 5, 0, 0, Math.PI*2); ctx.fill();
-
-        ctx.strokeStyle = '#eee'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(-5, 15); ctx.lineTo(-8, 25); ctx.moveTo(5, 15); ctx.lineTo(8, 25); ctx.stroke();
+        ctx.fillStyle = '#eee'; ctx.fillRect(-10,-10,20,20);
+        ctx.fillStyle = '#222'; ctx.fillRect(2,-8,6,6);
         ctx.restore();
     }
 
     function drawUFO() {
-        ufo.x += 0.7; if(ufo.x > canvas.width + 100) ufo.x = -100;
-        let ty = ufo.y + Math.sin(Date.now()/500)*20;
-        ctx.save(); ctx.translate(ufo.x, ty);
-
-        ctx.fillStyle = 'rgba(0, 242, 255, 0.05)';
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-40, 150); ctx.lineTo(40, 150); ctx.fill();
-        ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(0, 0, 45, 12, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = 'rgba(0, 242, 255, 0.5)'; ctx.beginPath(); ctx.arc(0, -5, 15, Math.PI, 0); ctx.fill();
-        let s = Math.floor(Date.now()/300)%2 === 0;
-        ctx.fillStyle = s ? '#00f2ff' : '#004466';
-        for(let i=-2; i<=2; i++){ ctx.beginPath(); ctx.arc(i*15, 2, 2, 0, 7); ctx.fill(); }
-        ctx.restore();
+        ufo.x += 0.5; if(ufo.x > canvas.width+100) ufo.x=-100;
+        let ty = ufo.y + Math.sin(Date.now()/600)*15;
+        ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(ufo.x, ty, 40, 10, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = (Math.floor(Date.now()/400)%2===0) ? '#f0f' : '#0ff';
+        ctx.beginPath(); ctx.arc(ufo.x, ty-5, 2, 0, 7); ctx.fill();
         document.getElementById('ufo-x').innerText = Math.floor(ufo.x);
         document.getElementById('ufo-y').innerText = Math.floor(ty);
     }
@@ -261,11 +257,7 @@
         ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,canvas.width, canvas.height);
         stars.forEach(s => { ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); });
         drawPlanet();
-        stones.forEach(s => {
-            s.y += s.s; s.rot += 0.002; if(s.y > canvas.height + 50) s.y = -50;
-            ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.rot); ctx.fillStyle = '#1a2533'; 
-            ctx.beginPath(); for(let i=0;i<6;i++) ctx.lineTo(Math.cos(i*1.05)*s.r, Math.sin(i*1.05)*s.r); ctx.fill(); ctx.restore();
-        });
+        stones.forEach(s => { s.y+=s.s; ctx.fillStyle='#1a2533'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); if(s.y>canvas.height+50) s.y=-50; });
         astronauts.forEach(drawAstronaut);
         drawUFO();
         document.getElementById('clock').innerText = new Date().toLocaleTimeString();
