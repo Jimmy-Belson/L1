@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v7.0</title>
+    <title>ORBITRON TERMINAL v7.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -28,14 +28,14 @@
         #chat-box { height: 400px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; padding-right: 10px; }
         .msg { background: rgba(0, 242, 255, 0.05); border-left: 2px solid var(--n); padding: 10px; margin-bottom: 8px; animation: msgReveal 0.3s ease-out; }
         @keyframes msgReveal { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        .msg-nick { color: var(--p); font-weight: bold; }
+        /* msg-nick теперь получает цвет через JS */
+        .msg-nick { font-weight: bold; text-transform: uppercase; }
         .msg-time { opacity: 0.5; font-size: 10px; margin-right: 5px; }
 
         input { background: rgba(0,0,0,0.8); border: 1px solid var(--n); color: #fff; padding: 14px; width: 100%; font-family: inherit; outline: none; margin-bottom: 10px; }
         button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; }
         button:hover { background: var(--n); color: #000; }
 
-        /* Фикс Радара */
         #radar { width: 100%; height: 120px; border: 1px solid var(--n); margin-bottom: 20px; position: relative; overflow: hidden; background: black; }
         #radar-sweep { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background: conic-gradient(from 0deg, var(--n) 0deg, transparent 90deg); opacity: 0.2; animation: rotate 4s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -85,6 +85,16 @@
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
     let sb = window.supabase.createClient(URL, KEY);
 
+    // НОВАЯ ФУНКЦИЯ: Генерация цвета ника
+    const getNickColor = (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        // Ограничиваем цвета ярким неоновым спектром
+        return `hsl(${Math.abs(hash) % 360}, 100%, 75%)`;
+    };
+
     const triggerGlitch = () => {
         const t = document.getElementById('main-terminal');
         t.classList.add('glitch-active');
@@ -122,7 +132,11 @@
         const d = document.createElement('div');
         d.className = 'msg';
         const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "--:--";
-        d.innerHTML = <div><span class="msg-time">[${t}]</span><span class="msg-nick">${m.nickname}:</span> ${m.message}</div>;
+        
+        // Используем функцию цвета для ника
+        const userColor = getNickColor(m.nickname);
+        
+        d.innerHTML = <div><span class="msg-time">[${t}]</span><span class="msg-nick" style="color: ${userColor}">${m.nickname}:</span> ${m.message}</div>;
         b.appendChild(d); b.scrollTop = b.scrollHeight;
     }
 
@@ -144,7 +158,7 @@
         }
     }).subscribe();
 
-    // CANVAS ENGINE
+    // CANVAS ENGINE (БЕЗ ИЗМЕНЕНИЙ)
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
