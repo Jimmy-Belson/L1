@@ -2,30 +2,47 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v7.4</title>
+    <title>ORBITRON TERMINAL v7.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --gl: rgba(5, 15, 25, 0.9); }
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
+        
         #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
         .ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; pointer-events: none; }
         .sidebar { width: 320px; height: 100%; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; }
         .main-content { flex-grow: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
-        .terminal { width: 650px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); border-radius: 4px; }
-        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-4px, 2px); filter: hue-rotate(45deg); } 100% { transform: translate(0); } }
+        
+        .terminal { 
+            width: 650px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; 
+            position: relative; backdrop-filter: blur(12px); border-radius: 4px; box-shadow: 0 0 30px rgba(0,242,255,0.1); 
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-4px, 2px); filter: hue-rotate(45deg); }
+            40% { transform: translate(4px, -2px); }
+            100% { transform: translate(0); }
+        }
         .glitch-active { animation: glitch 0.2s linear 2; }
+
         #chat-box { height: 400px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; padding-right: 10px; }
         .msg { background: rgba(0, 242, 255, 0.05); border-left: 2px solid var(--n); padding: 10px; margin-bottom: 8px; animation: msgReveal 0.3s ease-out; }
         @keyframes msgReveal { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         .msg-nick { font-weight: bold; text-transform: uppercase; }
+        .msg-time { opacity: 0.5; font-size: 10px; margin-right: 8px; }
+
         input { background: rgba(0,0,0,0.8); border: 1px solid var(--n); color: #fff; padding: 14px; width: 100%; font-family: inherit; outline: none; margin-bottom: 10px; }
-        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; }
-        button:hover { background: var(--n); color: #000; }
+        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
+        button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
+
         #radar { width: 100%; height: 120px; border: 1px solid var(--n); margin-bottom: 20px; position: relative; overflow: hidden; background: black; }
         #radar-sweep { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background: conic-gradient(from 0deg, var(--n) 0deg, transparent 90deg); opacity: 0.2; animation: rotate 4s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
         .hidden { display: none; }
     </style>
 </head>
@@ -48,7 +65,7 @@
     <div class="main-content">
         <div class="terminal" id="main-terminal">
             <div id="auth-ui">
-                <h2 style="text-align: center;">IDENT_REQUIRED</h2>
+                <h2 style="text-align: center; font-family: 'Orbitron';">IDENT_REQUIRED</h2>
                 <input type="email" id="email" placeholder="PILOT_ID">
                 <input type="password" id="pass" placeholder="PASSWORD">
                 <button onclick="auth('in')">LOGIN</button>
@@ -66,69 +83,70 @@
 </div>
 
 <script>
-// ВНИМАНИЕ: В этом скрипте полностью отсутствуют символы сравнения < и >
 (function() {
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
     const sb = window.supabase.createClient(URL, KEY);
 
+    // Цветные ники (Наслаиваем адаптивно)
     const getNickColor = (str) => {
         let hash = 0;
-        Array.from(str).forEach(char => {
-            hash = char.charCodeAt(0) + ((hash << 5) - hash);
-        });
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
         return `hsl(${Math.abs(hash) % 360}, 100%, 75%)`;
     };
 
     const triggerGlitch = () => {
         const t = document.getElementById('main-terminal');
-        if(t) { t.classList.add('glitch-active'); setTimeout(() => t.classList.remove('glitch-active'), 400); }
+        t.classList.add('glitch-active');
+        setTimeout(() => t.classList.remove('glitch-active'), 400);
     };
 
     window.addTodo = () => {
-        const i = document.getElementById('todo-in'); if(!i || !i.value) return;
+        const i = document.getElementById('todo-in'); if(!i.value) return;
         const d = document.createElement('div');
-        d.className = 'msg'; d.style.fontSize='11px'; d.innerText = '> ' + i.value.toUpperCase();
+        d.className = 'msg'; d.style.fontSize='11px'; d.innerHTML = `> ${i.value.toUpperCase()}`;
         d.onclick = function(){ this.remove(); };
         document.getElementById('todo-list').appendChild(d); i.value = '';
     };
 
     window.auth = async (m) => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = m === 'in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
+        const { error } = m==='in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
         if(error) alert(error.message);
     };
 
-    sb.auth.onAuthStateChange((event, session) => {
-        const aUI = document.getElementById('auth-ui'), cUI = document.getElementById('chat-ui');
-        if(aUI && cUI) {
-            const isS = Boolean(session);
-            aUI.classList.toggle('hidden', isS);
-            cUI.classList.toggle('hidden', !isS);
-            if(isS) { load(true); document.getElementById('sys-status').innerText = "SYSTEM: ONLINE"; }
+    sb.auth.onAuthStateChange((_, s) => {
+        document.getElementById('auth-ui').classList.toggle('hidden', !!s);
+        document.getElementById('chat-ui').classList.toggle('hidden', !s);
+        if(s) { 
+            load(true); 
+            document.getElementById('sys-status').innerText = "SYSTEM: ONLINE";
+            if(Notification.permission!=="denied") Notification.requestPermission(); 
         }
     });
 
-    async function load(full = false) {
+    async function load(full=false) {
         const { data } = await sb.from('comments').select('*').order('created_at', {ascending: true});
         const b = document.getElementById('chat-box');
-        if(full && data && b) { b.innerHTML = ''; data.forEach(appendMsg); b.scrollTop = b.scrollHeight; }
+        if(full && data) { b.innerHTML = ''; data.forEach(appendMsg); b.scrollTop = b.scrollHeight; }
     }
 
     function appendMsg(m) {
-        const b = document.getElementById('chat-box'); if(!b) return;
+        const b = document.getElementById('chat-box');
         const d = document.createElement('div');
         d.className = 'msg';
         const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "--:--";
-        const color = getNickColor(m.nickname || 'Unknown');
-        d.innerHTML = '<div><span style="opacity:0.5; font-size:10px;">['+t+']</span> <span class="msg-nick" style="color:'+color+'">'+m.nickname+':</span> '+m.message+'</div>';
+        const userColor = getNickColor(m.nickname || "Unknown");
+        d.innerHTML = <div><span class="msg-time">[${t}]</span><span class="msg-nick" style="color: ${userColor}">${m.nickname}:</span> ${m.message}</div>;
         b.appendChild(d); b.scrollTop = b.scrollHeight;
     }
 
     window.send = async () => {
         const i = document.getElementById('msg-in');
         const { data: { user } } = await sb.auth.getUser();
-        if(i && i.value && user) {
+        if(i.value && user) {
             const v = i.value, n = user.email.split('@')[0];
             i.value = ''; appendMsg({nickname:n, message:v});
             await sb.from('comments').insert([{message:v, nickname:n}]);
@@ -137,51 +155,82 @@
 
     sb.channel('chat').on('postgres_changes', {event:'INSERT', schema:'public', table:'comments'}, async (p) => {
         const { data: { user } } = await sb.auth.getUser();
-        if(user && user.email.split('@')[0] !== p.new.nickname) { appendMsg(p.new); triggerGlitch(); }
+        if(user && user.email.split('@')[0] !== p.new.nickname) {
+            appendMsg(p.new); triggerGlitch();
+            if(document.hidden && Notification.permission==="granted") new Notification("NEW SIGNAL", {body: p.new.message});
+        }
     }).subscribe();
 
+    // --- CANVAS ENGINE (ПОЛНАЯ ВОССТАНОВЛЕННАЯ ГРАФИКА) ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
 
     function init() {
-        if(!canvas) return;
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         stars = []; stones = []; astronauts = [];
-        Array.from({length: 100}).forEach(() => stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5}));
-        Array.from({length: 5}).forEach(() => stones.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:0.5, p:[{x:-15,y:-10},{x:15,y:-12},{x:20,y:10},{x:0,y:15},{x:-18,y:8}]}));
-        Array.from({length: 2}).forEach(() => astronauts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:0.2, vy:0.1, rot:0}));
+        for(let i=0; i<100; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5});
+        for(let i=0; i<5; i++) stones.push({
+            x: Math.random()*canvas.width, 
+            y: Math.random()*canvas.height, 
+            s: 0.2 + Math.random()*0.5,
+            p: [{x:-15,y:-10},{x:15,y:-12},{x:20,y:10},{x:0,y:15},{x:-18,y:8}]
+        });
+        for(let i=0; i<2; i++) astronauts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:0.2, vy:0.1, rot:0});
     }
 
     function drawPlanet() {
-        ctx.fillStyle = '#004466'; ctx.beginPath(); ctx.arc(canvas.width*0.8, canvas.height*0.2, 80, 0, 7); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,242,255,0.1)'; ctx.beginPath(); ctx.ellipse(canvas.width*0.8, canvas.height*0.2, 200, 40, 0.5, 0, 7); ctx.stroke();
+        // Тело планеты
+        ctx.fillStyle = '#004466'; ctx.beginPath(); ctx.arc(canvas.width*0.8, canvas.height*0.2, 80, 0, Math.PI*2); ctx.fill();
+        // Атмосфера/Кольцо
+        ctx.strokeStyle = 'rgba(0,242,255,0.15)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(canvas.width*0.8, canvas.height*0.2, 200, 40, 0.5, 0, Math.PI*2); ctx.stroke();
     }
 
     function drawUFO() {
-        ufo.x += 0.7; if(ufo.x > canvas.width + 100) ufo.x = -100;
+        ufo.x += 0.7; if(ufo.x > canvas.width+150) ufo.x = -150;
         let ty = ufo.y + Math.sin(Date.now()/500)*15;
-        ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(ufo.x, ty, 35, 8, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(ufo.x, ty-3, 10, 3.1, 0); ctx.fill();
+        // Корпус
+        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(ufo.x, ty, 40, 10, 0, 0, Math.PI*2); ctx.fill();
+        // Купол
+        ctx.fillStyle = 'rgba(0, 242, 255, 0.5)'; ctx.beginPath(); ctx.arc(ufo.x, ty-5, 12, Math.PI, 0); ctx.fill();
+        // Огни
+        ctx.fillStyle = (Math.floor(Date.now()/200)%2===0) ? '#0ff' : '#f0f';
+        ctx.beginPath(); ctx.arc(ufo.x, ty+2, 2, 0, 7); ctx.fill();
     }
 
     function loop() {
         ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.fillStyle = 'white'; stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill(); });
+        
+        // Звезды
+        ctx.fillStyle = 'white'; 
+        stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill(); });
+        
         drawPlanet();
+
+        // Астероиды (Сложные формы)
         stones.forEach(s => { 
-            s.y += s.s; if(s.y > canvas.height + 50) s.y = -50;
+            s.y += s.s; if(s.y > canvas.height+50) s.y = -50;
             ctx.save(); ctx.translate(s.x, s.y); ctx.fillStyle = '#1a2533'; ctx.beginPath();
-            s.p.forEach((p,idx) => idx === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y)); ctx.fill(); ctx.restore();
+            s.p.forEach((p,idx)=>idx===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); 
+            ctx.closePath(); ctx.fill(); ctx.restore();
         });
+
+        // Астронавты
         astronauts.forEach(a => {
-            a.x += a.vx; a.y += a.vy; a.rot += 0.01; if(a.x > canvas.width + 50) a.x = -50;
-            ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); ctx.fillStyle='#eee'; ctx.fillRect(-8,-10,16,20); ctx.restore();
+            a.x+=a.vx; a.y+=a.vy; a.rot+=0.01; if(a.x>canvas.width+50) a.x=-50;
+            ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); 
+            ctx.fillStyle='#eee'; ctx.fillRect(-8,-10,16,20); // Скафандр
+            ctx.fillStyle='#333'; ctx.fillRect(-4,-7,8,5);    // Визор
+            ctx.restore();
         });
+
         drawUFO();
-        const clk = document.getElementById('clock'); if(clk) clk.innerText = new Date().toLocaleTimeString();
+
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
         requestAnimationFrame(loop);
     }
+
     init(); loop(); window.onresize = init;
 })();
 </script>
