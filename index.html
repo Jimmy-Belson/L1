@@ -2,497 +2,365 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v8.2 - TITAN</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>ORBITRON TERMINAL v8.4 - OVERLOAD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --n: #00f2ff; 
-            --p: #ff00ff; 
-            --bg: #01050a; 
-            --gl: rgba(5, 15, 25, 0.95);
-            --border: rgba(0, 242, 255, 0.3);
+            --n: #00f2ff; --p: #ff00ff; --bg: #01050a; 
+            --gl: rgba(5, 15, 25, 0.95); --border: rgba(0, 242, 255, 0.4);
+            --shadow: 0 0 20px rgba(0, 242, 255, 0.2);
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-        body { 
-            background: var(--bg); 
-            color: var(--n); 
-            font-family: 'Share Tech Mono', monospace; 
-            height: 100vh; 
-            overflow: hidden; 
-            cursor: crosshair;
-        }
-
-        /* --- CRT SCANLINE OVERLAYS --- */
-        .crt-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-            z-index: 999; background-size: 100% 2px, 2px 100%; pointer-events: none;
+        /* CRT Effects */
+        .crt::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 1000; background-size: 100% 3px, 3px 100%; pointer-events: none;
         }
         .vignette {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.7) 100%);
-            z-index: 1000; pointer-events: none;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+            z-index: 1001; pointer-events: none;
         }
 
         #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* --- LAYOUT --- */
-        .ui-wrapper {
+        /* UI Structure */
+        .ui-grid {
             position: relative; z-index: 10;
             display: grid;
             grid-template-columns: 350px 1fr 300px;
-            grid-template-rows: 1fr 180px;
-            height: 100vh;
-            gap: 10px;
-            padding: 15px;
+            grid-template-rows: 1fr 150px;
+            height: 100vh; gap: 15px; padding: 20px;
             pointer-events: none;
         }
 
         .panel {
-            background: var(--gl);
-            border: 1px solid var(--border);
-            pointer-events: auto;
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.05);
-        }
-
-        /* --- SIDEBAR TABS --- */
-        .sidebar-header {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-        }
-        .tab-btn {
-            flex: 1; padding: 12px;
-            background: transparent; border: none;
-            color: var(--n); font-family: 'Orbitron'; font-size: 10px;
-            cursor: pointer; opacity: 0.5; transition: 0.3s;
-        }
-        .tab-btn.active { opacity: 1; background: rgba(0, 242, 255, 0.1); border-bottom: 2px solid var(--n); }
-
-        .sidebar-content { flex-grow: 1; overflow-y: auto; padding: 15px; }
-
-        /* --- MAIN TERMINAL --- */
-        .center-content {
-            grid-column: 2;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .terminal-window {
-            width: 100%; max-width: 800px;
-            height: 600px;
-            background: rgba(5, 15, 25, 0.8);
-            border: 1px solid var(--n);
+            background: var(--gl); border: 1px solid var(--border);
+            pointer-events: auto; backdrop-filter: blur(12px);
+            display: flex; flex-direction: column;
+            box-shadow: var(--shadow);
             position: relative;
-            display: flex; flex-direction: column;
-            box-shadow: 0 0 40px rgba(0,0,0,0.5);
         }
-        .terminal-header {
-            background: var(--n); color: #000;
-            padding: 5px 15px; font-family: 'Orbitron'; font-weight: bold; font-size: 12px;
-            display: flex; justify-content: space-between;
+        .panel::after {
+            content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+            border-top: 2px solid var(--n); border-left: 2px solid var(--n);
         }
 
-        /* --- MESSAGES --- */
-        #chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .message-row { 
-            display: flex; flex-direction: column;
-            animation: msgEnter 0.3s ease-out;
+        /* Tabs */
+        .tab-bar { display: flex; background: rgba(0,0,0,0.3); }
+        .tab { 
+            flex: 1; padding: 15px; text-align: center; cursor: pointer; 
+            font-family: 'Orbitron'; font-size: 11px; border-bottom: 1px solid var(--border);
+            transition: 0.3s; opacity: 0.5;
         }
-        @keyframes msgEnter { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        .msg-meta { font-size: 10px; color: var(--p); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
-        .msg-text { 
-            background: rgba(0, 242, 255, 0.05); 
-            padding: 12px; border: 1px solid rgba(0, 242, 255, 0.1); 
-            border-left: 3px solid var(--n);
-            color: #fff; font-size: 14px;
-        }
+        .tab.active { opacity: 1; border-bottom: 2px solid var(--n); background: rgba(0,242,255,0.05); }
 
-        /* --- BOTTOM LOGS --- */
-        .bottom-console {
-            grid-column: 1 / 4;
-            padding: 10px;
-            font-size: 11px;
-            color: #555;
-            overflow: hidden;
-            display: flex; flex-direction: column-reverse;
-        }
+        /* Chat */
+        #chat-window { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .msg-block { margin-bottom: 15px; border-left: 2px solid var(--border); padding-left: 15px; }
+        .msg-header { font-size: 10px; color: var(--p); margin-bottom: 5px; font-weight: bold; }
+        .msg-content { color: #e0faff; line-height: 1.4; }
 
-        /* --- COMPONENTS --- */
-        .inventory-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            padding: 10px; margin-bottom: 10px;
+        /* Inputs */
+        .input-group { padding: 20px; display: flex; gap: 10px; border-top: 1px solid var(--border); }
+        input[type="text"], input[type="email"], input[type="password"] {
+            background: rgba(0,0,0,0.6); border: 1px solid var(--border);
+            color: var(--n); padding: 12px; font-family: inherit; flex-grow: 1; outline: none;
         }
-        .status-bar { height: 4px; background: #222; margin-top: 5px; position: relative; }
-        .status-fill { height: 100%; background: var(--n); box-shadow: 0 0 10px var(--n); }
-
-        input, button {
-            background: transparent; border: 1px solid var(--n);
-            color: var(--n); padding: 12px; font-family: 'Share Tech Mono';
-            outline: none;
+        input:focus { border-color: var(--n); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
+        button {
+            background: transparent; border: 1px solid var(--n); color: var(--n);
+            padding: 10px 20px; font-family: 'Orbitron'; cursor: pointer; transition: 0.3s;
         }
-        button:hover { background: var(--n); color: #000; cursor: pointer; }
+        button:hover { background: var(--n); color: #000; }
 
         .hidden { display: none; }
-        .glitch { animation: shake 0.2s infinite; }
-        @keyframes shake { 0.2% { transform: translate(1px, 1px); } 40% { transform: translate(-1px, -1px); } }
-
+        #sys-logs { 
+            grid-column: 1 / 4; font-size: 11px; padding: 10px; 
+            color: #666; display: flex; flex-direction: column-reverse; overflow: hidden;
+        }
+        
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+        .progress-bg { height: 4px; background: #111; width: 100%; margin-top: 4px; }
+        .progress-fill { height: 100%; background: var(--n); box-shadow: 0 0 10px var(--n); }
     </style>
 </head>
-<body>
+<body class="crt">
 
-<canvas id="canvas-bg"></canvas>
-<div class="crt-overlay"></div>
 <div class="vignette"></div>
+<canvas id="canvas-bg"></canvas>
 
-<div class="ui-wrapper">
+<div class="ui-grid">
     <aside class="panel">
-        <div class="sidebar-header">
-            <button class="tab-btn active" onclick="switchTab('main')">MAIN</button>
-            <button class="tab-btn" onclick="switchTab('crew')">CREW</button>
-            <button class="tab-btn" onclick="switchTab('sys')">SYSTEM</button>
+        <div class="tab-bar">
+            <div class="tab active" onclick="ui.switchTab('logs')">LOGS</div>
+            <div class="tab" onclick="ui.switchTab('crew')">CREW</div>
         </div>
-        
-        <div id="tab-main" class="sidebar-content">
-            <h2 style="font-size: 12px; margin-bottom: 15px;">MISSION_OBJECTIVES</h2>
-            <input type="text" id="todo-in" placeholder="> ADD TASK" style="width: 100%; margin-bottom: 15px;">
-            <div id="todo-list"></div>
+        <div id="tab-logs" class="sidebar-body" style="padding:20px;">
+            <h3 style="font-size:10px; margin-bottom:15px; letter-spacing:2px;">MISSION_DATA</h3>
+            <input type="text" id="todo-input" placeholder="> RECORD ENTRY..." style="width:100%; margin-bottom:15px;">
+            <div id="todo-container"></div>
         </div>
-
-        <div id="tab-crew" class="sidebar-content hidden">
-            <h2 style="font-size: 12px; margin-bottom: 15px;">ACTIVE_PERSONNEL</h2>
-            <div class="inventory-card">
-                <div style="display:flex; justify-content:space-between; font-size:11px;">
-                    <span>CMD. STARK</span>
-                    <span style="color:var(--p)">VITAL OK</span>
-                </div>
-                <div class="status-bar"><div class="status-fill" style="width: 85%"></div></div>
-            </div>
-            <div class="inventory-card">
-                <div style="display:flex; justify-content:space-between; font-size:11px;">
-                    <span>LT. RIPLEY</span>
-                    <span style="color:var(--n)">VITAL OK</span>
-                </div>
-                <div class="status-bar"><div class="status-fill" style="width: 92%"></div></div>
-            </div>
-        </div>
-
-        <div id="tab-sys" class="sidebar-content hidden">
-            <h2 style="font-size: 12px; margin-bottom: 15px;">CORE_METRICS</h2>
-            <div id="metric-content" style="font-size: 10px; line-height: 1.8;">
-                CPU_LOAD: 24%<br>
-                MEM_USAGE: 1.4GB / 32GB<br>
-                SUPABASE_PING: 42ms<br>
-                O2_GEN: ACTIVE<br>
-                SHIELD_INTEGRITY: 100%
-            </div>
+        <div id="tab-crew" class="sidebar-body hidden" style="padding:20px;">
+            <div class="stat-row"><span>O2 RESERVE</span><span>94%</span></div>
+            <div class="progress-bg"><div class="progress-fill" style="width:94%"></div></div>
+            <div style="margin-top:20px;" class="stat-row"><span>FUEL CELLS</span><span>67%</span></div>
+            <div class="progress-bg"><div class="progress-fill" style="width:67%; background:var(--p); box-shadow: 0 0 10px var(--p);"></div></div>
         </div>
     </aside>
 
-    <main class="center-content">
-        <div class="terminal-window" id="terminal-node">
-            <div class="terminal-header">
-                <span>ORBITRON_v8.2_SECURE_LINK</span>
-                <span id="top-clock">00:00:00</span>
+    <main style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div class="panel" style="width:100%; max-width:800px; height:600px;">
+            <div id="auth-gate" style="padding:60px;">
+                <h1 style="font-family:'Orbitron'; text-align:center; margin-bottom:40px; letter-spacing:5px;">ACCESS_GATE</h1>
+                <input type="email" id="user-email" placeholder="PILOT_ID" style="width:100%; margin-bottom:15px;">
+                <input type="password" id="user-pass" placeholder="SECURITY_KEY" style="width:100%; margin-bottom:25px;">
+                <button onclick="engine.auth('in')" style="width:100%; padding:15px;">INITIALIZE_LINK</button>
+                <button onclick="engine.auth('up')" style="width:100%; margin-top:10px; border:none; font-size:10px; color:var(--p);">REGISTER_NEW_PILOT</button>
             </div>
             
-            <div id="auth-screen" style="padding: 60px;">
-                <h1 style="text-align:center; font-family:'Orbitron'; font-size:24px; margin-bottom:40px;">USER_AUTH</h1>
-                <input type="email" id="email" placeholder="PILOT_ID" style="width:100%; margin-bottom:15px;">
-                <input type="password" id="pass" placeholder="ACCESS_CODE" style="width:100%; margin-bottom:30px;">
-                <button onclick="handleAuth('in')" style="width:100%; font-size:18px;">ESTABLISH_CONNECTION</button>
-                <button onclick="handleAuth('up')" style="width:100%; margin-top:10px; border:none; font-size:10px; color:var(--p);">NEW_PILOT_REGISTRATION</button>
-            </div>
-
-            <div id="chat-screen" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
-                <div id="chat-box"></div>
-                <div style="padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
-                    <input type="text" id="msg-in" placeholder="ENTER TELEMETRY DATA OR COMMANDS..." style="flex-grow:1;">
-                    <button onclick="sendMsg()" style="width: 120px;">TRANSMIT</button>
+            <div id="terminal-interface" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+                <div id="chat-window"></div>
+                <div class="input-group">
+                    <input type="text" id="chat-input" placeholder="READY FOR COMMANDS...">
+                    <button onclick="engine.sendMsg()">TRANSMIT</button>
                 </div>
             </div>
         </div>
     </main>
 
-    <aside class="panel" style="grid-column: 3;">
-        <div style="padding: 20px; border-bottom: 1px solid var(--border);">
-            <h2 style="font-family:'Orbitron'; font-size:10px;">SECTOR_SCAN</h2>
-            <div id="mini-map" style="height: 150px; background: #000; margin-top: 10px; border: 1px solid var(--border); position: relative;">
-                <div style="position:absolute; top:50%; left:50%; width:4px; height:4px; background:var(--p); border-radius:50%;"></div>
-            </div>
-        </div>
-        <div style="padding: 20px;">
-            <h2 style="font-family:'Orbitron'; font-size:10px;">NAVIGATION</h2>
-            <div style="font-size: 11px; margin-top: 10px; opacity: 0.7;">
-                X_POS: <span id="pos-x">0</span><br>
-                Y_POS: <span id="pos-y">0</span><br>
-                VELOCITY: 17,500 km/h
-            </div>
+    <aside class="panel" style="padding:20px;">
+        <h2 style="font-family:'Orbitron'; font-size:11px; margin-bottom:20px; color:var(--p);">SCANNER_OUTPUT</h2>
+        <div id="telemetry" style="font-size:12px; line-height:2;">
+            SECTOR: X-99<br>
+            OBJ_DETECTED: 14<br>
+            RAD_LEVEL: NOMINAL<br>
+            LOCAL_TIME: <span id="sys-time">00:00:00</span>
         </div>
     </aside>
 
-    <footer class="panel bottom-console" id="log-stream">
-        <div>[SYSTEM] INITIALIZING ORBITRON v8.2... DONE.</div>
+    <footer class="panel" id="sys-logs">
+        <div>[SYSTEM] KERNEL_LOADED: BUILD_8.4</div>
     </footer>
 </div>
 
 <script>
 /**
- * ORBITRON CORE ENGINE v8.2
- * Modular structure for high-density code.
+ * ORBITRON CORE ENGINE v8.4
+ * Полная переработка графики и логики.
  */
 
-(function() {
-    // --- CONFIG & STATE ---
-    const CONFIG = {
-        URL: 'https://ebjsxlympwocluxgmwcu.supabase.co',
-        KEY: 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
-    };
-    
-    const sb = window.supabase.createClient(CONFIG.URL, CONFIG.KEY);
-    const state = {
-        user: null,
-        mouse: { x: 0, y: 0, tx: 0, ty: 0 },
-        ufo: { x: -100, y: 200, fast: false, particles: [] },
-        astronauts: []
-    };
-
-    // --- SYSTEM LOGS ---
-    function sysLog(msg, type = 'INFO') {
-        const stream = document.getElementById('log-stream');
-        const entry = document.createElement('div');
-        entry.innerHTML = `<span style="color:var(--n)">[${new Date().toLocaleTimeString()}]</span> [${type}] ${msg}`;
-        stream.prepend(entry);
-        if(stream.children.length > 10) stream.lastChild.remove();
+const ui = {
+    switchTab: (name) => {
+        document.getElementById('tab-logs').classList.toggle('hidden', name !== 'logs');
+        document.getElementById('tab-crew').classList.toggle('hidden', name !== 'crew');
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText.toLowerCase() === name));
+        engine.log('INTERFACE_SWITCH: ' + name.toUpperCase());
     }
+};
 
-    // --- UI TABS ---
-    window.switchTab = (tab) => {
-        ['main', 'crew', 'sys'].forEach(t => {
-            document.getElementById('tab-'+t).classList.add('hidden');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        });
-        document.getElementById('tab-'+tab).classList.remove('hidden');
-        event.target.classList.add('active');
-        sysLog('SWITCHED TO TAB: ${tab.toUpperCase()}');
-    };
+const engine = {
+    sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
+    user: null,
 
-    // --- AUTH ---
-    window.handleAuth = async (type) => {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('pass').value;
-        sysLog(`ATTEMPTING ${type === 'in' ? 'LOGIN' : 'SIGNUP'} FOR: ${email}`);
-        
+    log: (msg) => {
+        const l = document.getElementById('sys-logs');
+        const d = document.createElement('div');
+        d.innerHTML = `<span style="color:var(--n)">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+        l.prepend(d);
+        if(l.children.length > 8) l.lastChild.remove();
+    },
+
+    auth: async (type) => {
+        const e = document.getElementById('user-email').value;
+        const p = document.getElementById('user-pass').value;
+        engine.log('AUTH_REQUEST: ' + (type === 'in' ? 'LOGIN' : 'SIGNUP'));
         const { data, error } = type === 'in' 
-            ? await sb.auth.signInWithPassword({ email, password: pass })
-            : await sb.auth.signUp({ email, password: pass });
+            ? await engine.sb.auth.signInWithPassword({email:e, password:p})
+            : await engine.sb.auth.signUp({email:e, password:p});
+        if(error) { alert(error.message); engine.log('AUTH_ERROR: ' + error.message); }
+    },
 
-        if(error) {
-            sysLog(error.message, 'ERROR');
-            alert(error.message);
-        }
-    };
-
-    sb.auth.onAuthStateChange((event, session) => {
-        if(session) {
-            state.user = session.user;
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('chat-screen').classList.remove('hidden');
-            sysLog(`CONNECTION ESTABLISHED. WELCOME, ${state.user.email}`);
-            loadMessages();
-        }
-    });
-
-    // --- CHAT & MESSAGING ---
-    async function loadMessages() {
-        const { data } = await sb.from('comments').select('*').order('created_at', {ascending: true});
-        if(data) {
-            const box = document.getElementById('chat-box');
-            box.innerHTML = '';
-            data.forEach(m => renderMessage(m));
-            box.scrollTop = box.scrollHeight;
-        }
-    }
-
-    function renderMessage(m) {
-        const box = document.getElementById('chat-box');
-        const row = document.createElement('div');
-        row.className = 'message-row';
-        const nick = m.nickname || 'PILOT_UNKNOWN';
-        row.innerHTML = `
-            <div class="msg-meta">${nick} // ${new Date(m.created_at).toLocaleTimeString()}</div>
-            <div class="msg-text">${m.message}</div>
-        `;
-        box.appendChild(row);
-        box.scrollTop = box.scrollHeight;
-    }
-
-    window.sendMsg = async () => {
-        const input = document.getElementById('msg-in');
-        if(!input.value) return;
-
-        // Command processing
-        if(input.value.startsWith('/')) {
-            processCommand(input.value);
-            input.value = '';
-            return;
-        }
-
-        const nick = state.user.email.split('@')[0];
-        const msg = input.value;
-        input.value = '';
+    sendMsg: async () => {
+        const i = document.getElementById('chat-input');
+        if(!i.value || !engine.user) return;
+        const nick = engine.user.email.split('@')[0];
+        const text = i.value; i.value = '';
         
         // Optimistic UI
-        renderMessage({ nickname: nick, message: msg, created_at: new Date() });
-        
-        const { error } = await sb.from('comments').insert([{ message: msg, nickname: nick }]);
-        if(error) sysLog(error.message, 'DB_ERR');
-    };
+        engine.renderMessage({ nickname: nick, message: text, created_at: new Date() });
+        await engine.sb.from('comments').insert([{ message: text, nickname: nick }]);
+    },
 
-    function processCommand(cmd) {
-        const c = cmd.toLowerCase();
-        if(c === '/glitch') {
-            document.getElementById('terminal-node').classList.add('glitch');
-            setTimeout(() => document.getElementById('terminal-node').classList.remove('glitch'), 1000);
-            sysLog("GLITCH_TEST INITIATED", "SYS");
-        }
-        if(c === '/clear') document.getElementById('chat-box').innerHTML = '';
+    renderMessage: (m) => {
+        const w = document.getElementById('chat-window');
+        const b = document.createElement('div');
+        b.className = 'msg-block';
+        b.innerHTML = `
+            <div class="msg-header">${(m.nickname || 'PILOT').toUpperCase()} // ${new Date(m.created_at).toLocaleTimeString()}</div>
+            <div class="msg-content">${m.message}</div>
+        `;
+        w.appendChild(b);
+        w.scrollTop = w.scrollHeight;
     }
+};
 
-    // --- CANVAS ENGINE ---
-    const canvas = document.getElementById('canvas-bg');
-    const ctx = canvas.getContext('2d');
-    
-    function initCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        state.astronauts = Array.from({length: 3}, () => ({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            angle: Math.random() * Math.PI * 2,
-            vRot: 0.002,
-            id: Math.floor(Math.random() * 9000 + 1000)
-        }));
+// --- GRAPHICS ENGINE ---
+const canvas = document.getElementById('canvas-bg');
+const ctx = canvas.getContext('2d');
+
+class Star {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.s = Math.random() * 2;
+        this.p = Math.random() * 3;
     }
-
-    function drawPlanet(px, py) {
-        // Atmosphere Glow
-        const glow = ctx.createRadialGradient(px, py, 60, px, py, 90);
-        glow.addColorStop(0, 'rgba(0, 242, 255, 0.2)');
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
-        ctx.beginPath(); ctx.arc(px, py, 90, 0, Math.PI*2); ctx.fill();
-
-        // Base
-        const grad = ctx.createRadialGradient(px-20, py-20, 10, px, py, 70);
-        grad.addColorStop(0, '#004466');
-        grad.addColorStop(0.7, '#001122');
-        grad.addColorStop(1, '#00050a');
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(px, py, 70, 0, Math.PI*2); ctx.fill();
-
-        // Detail (Clouds / City Lights)
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        for(let i=0; i<5; i++) {
-            ctx.beginPath(); 
-            ctx.ellipse(px + Math.cos(Date.now()/5000 + i)*30, py + Math.sin(Date.now()/5000 + i)*20, 15, 5, i, 0, 7);
-            ctx.fill();
-        }
+    draw(mx, my) {
+        ctx.fillStyle = "#fff";
+        ctx.globalAlpha = Math.random();
+        ctx.beginPath();
+        ctx.arc(this.x + mx * this.p, this.y + my * this.p, this.s/2, 0, 7);
+        ctx.fill();
     }
+}
 
-    function drawAstronaut(a) {
+class Astronaut {
+    constructor() {
+        this.x = Math.random() * 500;
+        this.y = Math.random() * 500;
+        this.v = 0.2;
+        this.angle = 0;
+    }
+    draw() {
+        this.x += this.v; this.angle += 0.005;
         ctx.save();
-        ctx.translate(a.x, a.y);
-        ctx.rotate(a.angle);
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
         
-        // Tether (animation to side of screen)
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(50, 50, 100, -50, 500, 200); ctx.stroke();
-
-        // Detailed Body
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.roundRect(-8, -10, 16, 22, 4); ctx.fill(); // Torso
-        ctx.beginPath(); ctx.arc(0, -12, 8, 0, 7); ctx.fill(); // Helmet
+        // Body & Suit
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.roundRect(-10, -12, 20, 28, 5); ctx.fill(); // Torso
+        ctx.beginPath(); ctx.arc(0, -15, 10, 0, 7); ctx.fill(); // Helmet
         
-        // Visor with Reflection
-        ctx.fillStyle = '#05101a';
-        ctx.beginPath(); ctx.roundRect(-5, -15, 10, 6, 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(-3, -14, 2, 2);
-
-        // ID Label
-        ctx.rotate(-a.angle);
-        ctx.fillStyle = 'rgba(0, 242, 255, 0.5)';
-        ctx.font = '9px Orbitron';
-        ctx.fillText(`UNIT_${a.id}`, 15, -10);
+        // Visor
+        ctx.fillStyle = "#05101a";
+        ctx.beginPath(); ctx.roundRect(-7, -19, 14, 8, 3); ctx.fill();
+        
+        // Limbs (Arms & Legs)
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(-18, 5); ctx.stroke(); // L Arm
+        ctx.beginPath(); ctx.moveTo(10, -5); ctx.lineTo(18, 5); ctx.stroke();  // R Arm
+        ctx.beginPath(); ctx.moveTo(-5, 15); ctx.lineTo(-10, 30); ctx.stroke(); // L Leg
+        ctx.beginPath(); ctx.moveTo(5, 15); ctx.lineTo(10, 30); ctx.stroke();  // R Leg
+        
+        // Backpack
+        ctx.fillStyle = "#ddd"; ctx.fillRect(-12, -8, 4, 15);
         
         ctx.restore();
     }
+}
 
-    function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Parallax Stars
-        ctx.fillStyle = '#fff';
-        for(let i=0; i<100; i++) {
-            let x = (i * 137.5) % canvas.width;
-            let y = (i * 50) % canvas.height;
-            ctx.globalAlpha = 0.5 + Math.sin(Date.now()/1000 + i)*0.5;
-            ctx.beginPath(); ctx.arc(x, y, 0.8, 0, 7); ctx.fill();
+class Asteroid {
+    constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.points = [];
+        for(let i=0; i<8; i++) {
+            this.points.push({
+                x: Math.cos(i * Math.PI/4) * (15 + Math.random()*10),
+                y: Math.sin(i * Math.PI/4) * (15 + Math.random()*10)
+            });
         }
-        ctx.globalAlpha = 1;
-
-        // Background Planet
-        drawPlanet(canvas.width * 0.8, canvas.height * 0.3);
-
-        // Astronauts logic
-        state.astronauts.forEach(a => {
-            a.x += a.vx; a.y += a.vy; a.angle += a.vRot;
-            if(a.x < -100) a.x = canvas.width + 100;
-            if(a.x > canvas.width + 100) a.x = -100;
-            drawAstronaut(a);
-        });
-
-        // UFO & Particles
-        let u = state.ufo;
-        u.x += u.fast ? 4 : 1.2;
-        if(u.x > canvas.width + 200) u.x = -200;
-        let uy = u.y + Math.sin(Date.now()/400)*15;
-        
-        // Thruster Particles
-        if(Math.random() > 0.5) u.particles.push({x: u.x - 40, y: uy, l: 1, s: Math.random()*2});
-        u.particles.forEach((p, i) => {
-            p.x -= 2; p.l -= 0.02;
-            ctx.fillStyle = `rgba(0, 242, 255, ${p.l})`;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
-            if(p.l <= 0) u.particles.splice(i, 1);
-        });
-
-        // UFO Body
-        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.ellipse(u.x, uy, 45, 12, 0, 0, 7); ctx.fill();
-        ctx.strokeStyle = var_n = '#0ff'; ctx.stroke();
-        
-        document.getElementById('top-clock').innerText = new Date().toLocaleTimeString();
-        document.getElementById('pos-x').innerText = Math.floor(u.x);
-        document.getElementById('pos-y').innerText = Math.floor(uy);
-
-        requestAnimationFrame(render);
     }
+    draw(mx, my) {
+        ctx.save();
+        ctx.translate(this.x + mx*2, this.y + my*2);
+        ctx.strokeStyle = "rgba(0, 242, 255, 0.3)";
+        ctx.beginPath();
+        ctx.moveTo(this.points[0].x, this.points[0].y);
+        this.points.forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath(); ctx.stroke();
+        ctx.restore();
+    }
+}
 
-    // --- INITIALIZE ---
-    window.addEventListener('resize', initCanvas);
-    initCanvas();
-    render();
-    sysLog("ALL SYSTEMS OPERATIONAL", "READY");
+const world = {
+    stars: Array.from({length: 150}, () => new Star()),
+    rocks: Array.from({length: 10}, () => new Asteroid()),
+    pilot: new Astronaut(),
+    mx: 0, my: 0,
+    
+    init() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        window.addEventListener('mousemove', (e) => {
+            this.mx = (e.clientX - canvas.width/2) / 50;
+            this.my = (e.clientY - canvas.height/2) / 50;
+        });
+    },
 
-})();
+    render() {
+        ctx.fillStyle = "#01050a"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        this.stars.forEach(s => s.draw(this.mx, this.my));
+        this.rocks.forEach(r => r.draw(this.mx, this.my));
+        
+        // Planet
+        const px = canvas.width * 0.8 + this.mx * 3;
+        const py = canvas.height * 0.3 + this.my * 3;
+        
+        // Atmosphere
+        const glow = ctx.createRadialGradient(px, py, 60, px, py, 110);
+        glow.addColorStop(0, 'rgba(0, 242, 255, 0.15)'); glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(px, py, 110, 0, 7); ctx.fill();
+        
+        // Surface
+        const surf = ctx.createRadialGradient(px-30, py-30, 10, px, py, 80);
+        surf.addColorStop(0, '#004466'); surf.addColorStop(1, '#000810');
+        ctx.fillStyle = surf; ctx.beginPath(); ctx.arc(px, py, 80, 0, 7); ctx.fill();
+
+        this.pilot.draw();
+        
+        document.getElementById('sys-time').innerText = new Date().toLocaleTimeString();
+        requestAnimationFrame(() => this.render());
+    }
+};
+
+// --- INITIALIZE ALL ---
+engine.sb.auth.onAuthStateChange((_, s) => {
+    if(s) {
+        engine.user = s.user;
+        document.getElementById('auth-gate').classList.add('hidden');
+        document.getElementById('terminal-interface').classList.remove('hidden');
+        engine.log('LINK_ESTABLISHED: ' + engine.user.email);
+        
+        // Load messages
+        engine.sb.from('comments').select('*').order('created_at', {ascending:true})
+            .then(({data}) => data && data.forEach(m => engine.renderMessage(m)));
+    }
+});
+
+// To-Do Logic (Isolated)
+document.getElementById('todo-input').onkeypress = (e) => {
+    if(e.key === 'Enter' && e.target.value) {
+        const val = e.target.value.toUpperCase(); e.target.value = '';
+        const d = document.createElement('div');
+        d.style = "padding:10px; border-bottom:1px solid #111; font-size:11px; cursor:pointer;";
+        d.innerText =  $;{val};
+        d.onclick = () => d.remove();
+        document.getElementById('todo-container').prepend(d);
+    }
+};
+
+world.init();
+world.render();
 </script>
 </body>
 </html>
