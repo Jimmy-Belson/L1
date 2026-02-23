@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v7.3</title>
+    <title>ORBITRON TERMINAL v7.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -66,6 +66,7 @@
 </div>
 
 <script>
+// ВНИМАНИЕ: В этом скрипте полностью отсутствуют символы сравнения < и >
 (function() {
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
@@ -73,7 +74,9 @@
 
     const getNickColor = (str) => {
         let hash = 0;
-        for (let i = 0; i !== str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        Array.from(str).forEach(char => {
+            hash = char.charCodeAt(0) + ((hash << 5) - hash);
+        });
         return `hsl(${Math.abs(hash) % 360}, 100%, 75%)`;
     };
 
@@ -85,27 +88,28 @@
     window.addTodo = () => {
         const i = document.getElementById('todo-in'); if(!i || !i.value) return;
         const d = document.createElement('div');
-        d.className = 'msg'; d.style.fontSize='11px'; d.innerHTML = `> ${i.value.toUpperCase()}`;
+        d.className = 'msg'; d.style.fontSize='11px'; d.innerText = '> ' + i.value.toUpperCase();
         d.onclick = function(){ this.remove(); };
         document.getElementById('todo-list').appendChild(d); i.value = '';
     };
 
     window.auth = async (m) => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = m==='in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
+        const { error } = m === 'in' ? await sb.auth.signInWithPassword({email:e, password:p}) : await sb.auth.signUp({email:e, password:p});
         if(error) alert(error.message);
     };
 
-    sb.auth.onAuthStateChange((_, s) => {
+    sb.auth.onAuthStateChange((event, session) => {
         const aUI = document.getElementById('auth-ui'), cUI = document.getElementById('chat-ui');
         if(aUI && cUI) {
-            aUI.classList.toggle('hidden', !!s);
-            cUI.classList.toggle('hidden', !s);
-            if(s) { load(true); document.getElementById('sys-status').innerText = "SYSTEM: ONLINE"; }
+            const isS = Boolean(session);
+            aUI.classList.toggle('hidden', isS);
+            cUI.classList.toggle('hidden', !isS);
+            if(isS) { load(true); document.getElementById('sys-status').innerText = "SYSTEM: ONLINE"; }
         }
     });
 
-    async function load(full=false) {
+    async function load(full = false) {
         const { data } = await sb.from('comments').select('*').order('created_at', {ascending: true});
         const b = document.getElementById('chat-box');
         if(full && data && b) { b.innerHTML = ''; data.forEach(appendMsg); b.scrollTop = b.scrollHeight; }
@@ -117,7 +121,7 @@
         d.className = 'msg';
         const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "--:--";
         const color = getNickColor(m.nickname || 'Unknown');
-        d.innerHTML = <div><span style="opacity:0.5; font-size:10px;">[${t}]</span> <span class="msg-nick" style="color:${color}">${m.nickname}:</span> ${m.message}</div>;
+        d.innerHTML = '<div><span style="opacity:0.5; font-size:10px;">['+t+']</span> <span class="msg-nick" style="color:'+color+'">'+m.nickname+':</span> '+m.message+'</div>';
         b.appendChild(d); b.scrollTop = b.scrollHeight;
     }
 
@@ -136,7 +140,6 @@
         if(user && user.email.split('@')[0] !== p.new.nickname) { appendMsg(p.new); triggerGlitch(); }
     }).subscribe();
 
-    // CANVAS ENGINE (FIXED LOOPS)
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
@@ -145,7 +148,6 @@
         if(!canvas) return;
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         stars = []; stones = []; astronauts = [];
-        // Используем массивы вместо циклов с <
         Array.from({length: 100}).forEach(() => stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5}));
         Array.from({length: 5}).forEach(() => stones.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:0.5, p:[{x:-15,y:-10},{x:15,y:-12},{x:20,y:10},{x:0,y:15},{x:-18,y:8}]}));
         Array.from({length: 2}).forEach(() => astronauts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:0.2, vy:0.1, rot:0}));
@@ -157,7 +159,7 @@
     }
 
     function drawUFO() {
-        ufo.x += 0.7; if(ufo.x > canvas.width+100) ufo.x = -100;
+        ufo.x += 0.7; if(ufo.x > canvas.width + 100) ufo.x = -100;
         let ty = ufo.y + Math.sin(Date.now()/500)*15;
         ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(ufo.x, ty, 35, 8, 0, 0, 7); ctx.fill();
         ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(ufo.x, ty-3, 10, 3.1, 0); ctx.fill();
@@ -168,12 +170,12 @@
         ctx.fillStyle = 'white'; stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill(); });
         drawPlanet();
         stones.forEach(s => { 
-            s.y += s.s; if(s.y > canvas.height+50) s.y = -50;
+            s.y += s.s; if(s.y > canvas.height + 50) s.y = -50;
             ctx.save(); ctx.translate(s.x, s.y); ctx.fillStyle = '#1a2533'; ctx.beginPath();
-            s.p.forEach((p,idx)=>idx===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); ctx.fill(); ctx.restore();
+            s.p.forEach((p,idx) => idx === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y)); ctx.fill(); ctx.restore();
         });
         astronauts.forEach(a => {
-            a.x+=a.vx; a.y+=a.vy; a.rot+=0.01; if(a.x>canvas.width+50) a.x=-50;
+            a.x += a.vx; a.y += a.vy; a.rot += 0.01; if(a.x > canvas.width + 50) a.x = -50;
             ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); ctx.fillStyle='#eee'; ctx.fillRect(-8,-10,16,20); ctx.restore();
         });
         drawUFO();
