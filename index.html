@@ -2,43 +2,30 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON TERMINAL v7.2</title>
+    <title>ORBITRON TERMINAL v7.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --gl: rgba(5, 15, 25, 0.9); }
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
-        
         #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
         .ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; pointer-events: none; }
         .sidebar { width: 320px; height: 100%; background: var(--gl); border-right: 1px solid var(--n); padding: 30px; pointer-events: auto; backdrop-filter: blur(15px); display: flex; flex-direction: column; }
         .main-content { flex-grow: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
-        .terminal { width: 650px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); border-radius: 4px; box-shadow: 0 0 30px rgba(0,242,255,0.1); }
-
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-4px, 2px); filter: hue-rotate(45deg); }
-            40% { transform: translate(4px, -2px); }
-            100% { transform: translate(0); }
-        }
+        .terminal { width: 650px; background: var(--gl); border: 1px solid var(--n); padding: 30px; pointer-events: auto; position: relative; backdrop-filter: blur(12px); border-radius: 4px; }
+        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-4px, 2px); filter: hue-rotate(45deg); } 100% { transform: translate(0); } }
         .glitch-active { animation: glitch 0.2s linear 2; }
-
         #chat-box { height: 400px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; padding-right: 10px; }
         .msg { background: rgba(0, 242, 255, 0.05); border-left: 2px solid var(--n); padding: 10px; margin-bottom: 8px; animation: msgReveal 0.3s ease-out; }
         @keyframes msgReveal { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         .msg-nick { font-weight: bold; text-transform: uppercase; }
-        .msg-time { opacity: 0.5; font-size: 10px; margin-right: 5px; }
-
         input { background: rgba(0,0,0,0.8); border: 1px solid var(--n); color: #fff; padding: 14px; width: 100%; font-family: inherit; outline: none; margin-bottom: 10px; }
-        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
-        button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
-
+        button { background: transparent; color: var(--n); border: 1px solid var(--n); padding: 12px; width: 100%; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 11px; text-transform: uppercase; }
+        button:hover { background: var(--n); color: #000; }
         #radar { width: 100%; height: 120px; border: 1px solid var(--n); margin-bottom: 20px; position: relative; overflow: hidden; background: black; }
         #radar-sweep { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background: conic-gradient(from 0deg, var(--n) 0deg, transparent 90deg); opacity: 0.2; animation: rotate 4s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
         .hidden { display: none; }
     </style>
 </head>
@@ -79,25 +66,20 @@
 </div>
 
 <script>
-// Весь JS код теперь строго здесь, без примеси HTML тегов внутри
 (function() {
     const URL = 'https://ebjsxlympwocluxgmwcu.supabase.co';
     const KEY = 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj';
     const sb = window.supabase.createClient(URL, KEY);
 
-    // Цветные ники
     const getNickColor = (str) => {
         let hash = 0;
-        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        for (let i = 0; i !== str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
         return `hsl(${Math.abs(hash) % 360}, 100%, 75%)`;
     };
 
     const triggerGlitch = () => {
         const t = document.getElementById('main-terminal');
-        if(t) {
-            t.classList.add('glitch-active');
-            setTimeout(() => t.classList.remove('glitch-active'), 400);
-        }
+        if(t) { t.classList.add('glitch-active'); setTimeout(() => t.classList.remove('glitch-active'), 400); }
     };
 
     window.addTodo = () => {
@@ -119,11 +101,7 @@
         if(aUI && cUI) {
             aUI.classList.toggle('hidden', !!s);
             cUI.classList.toggle('hidden', !s);
-            if(s) { 
-                load(true); 
-                document.getElementById('sys-status').innerText = "SYSTEM: ONLINE";
-                if(Notification.permission!=="denied") Notification.requestPermission(); 
-            }
+            if(s) { load(true); document.getElementById('sys-status').innerText = "SYSTEM: ONLINE"; }
         }
     });
 
@@ -134,13 +112,12 @@
     }
 
     function appendMsg(m) {
-        const b = document.getElementById('chat-box');
-        if(!b) return;
+        const b = document.getElementById('chat-box'); if(!b) return;
         const d = document.createElement('div');
         d.className = 'msg';
         const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "--:--";
         const color = getNickColor(m.nickname || 'Unknown');
-        d.innerHTML = <div><span class="msg-time">[${t}]</span><span class="msg-nick" style="color:${color}">${m.nickname}:</span> ${m.message}</div>;
+        d.innerHTML = <div><span style="opacity:0.5; font-size:10px;">[${t}]</span> <span class="msg-nick" style="color:${color}">${m.nickname}:</span> ${m.message}</div>;
         b.appendChild(d); b.scrollTop = b.scrollHeight;
     }
 
@@ -156,13 +133,10 @@
 
     sb.channel('chat').on('postgres_changes', {event:'INSERT', schema:'public', table:'comments'}, async (p) => {
         const { data: { user } } = await sb.auth.getUser();
-        if(user && user.email.split('@')[0] !== p.new.nickname) {
-            appendMsg(p.new); triggerGlitch();
-            if(document.hidden && Notification.permission==="granted") new Notification("NEW SIGNAL", {body: p.new.message});
-        }
+        if(user && user.email.split('@')[0] !== p.new.nickname) { appendMsg(p.new); triggerGlitch(); }
     }).subscribe();
 
-    // CANVAS ENGINE
+    // CANVAS ENGINE (FIXED LOOPS)
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [], stones = [], astronauts = [], ufo = { x: -100, y: 150 };
@@ -171,9 +145,10 @@
         if(!canvas) return;
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         stars = []; stones = []; astronauts = [];
-        for(let i=0; i<100; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5});
-        for(let i=0; i<5; i++) stones.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:0.5, p:[{x:-15,y:-10},{x:15,y:-12},{x:20,y:10},{x:0,y:15},{x:-18,y:8}]});
-        for(let i=0; i<2; i++) astronauts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:0.2, vy:0.1, rot:0});
+        // Используем массивы вместо циклов с <
+        Array.from({length: 100}).forEach(() => stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5}));
+        Array.from({length: 5}).forEach(() => stones.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:0.5, p:[{x:-15,y:-10},{x:15,y:-12},{x:20,y:10},{x:0,y:15},{x:-18,y:8}]}));
+        Array.from({length: 2}).forEach(() => astronauts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:0.2, vy:0.1, rot:0}));
     }
 
     function drawPlanet() {
@@ -202,8 +177,7 @@
             ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); ctx.fillStyle='#eee'; ctx.fillRect(-8,-10,16,20); ctx.restore();
         });
         drawUFO();
-        const clk = document.getElementById('clock');
-        if(clk) clk.innerText = new Date().toLocaleTimeString();
+        const clk = document.getElementById('clock'); if(clk) clk.innerText = new Date().toLocaleTimeString();
         requestAnimationFrame(loop);
     }
     init(); loop(); window.onresize = init;
