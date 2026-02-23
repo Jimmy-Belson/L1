@@ -2,541 +2,264 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON OMNI v8.7</title>
+    <title>ORBITRON v8.8 - FIXED</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- CSS VARIABLES & SYSTEM SETUP --- */
         :root {
-            --neon: #00f2ff;
-            --neon-glow: rgba(0, 242, 255, 0.4);
-            --plasma: #ff00ff;
-            --void: #01050a;
+            --n: #00f2ff; --p: #ff00ff; --bg: #01050a;
             --glass: rgba(0, 242, 255, 0.05);
-            --glass-heavy: rgba(5, 15, 25, 0.6);
-            --font-main: 'Share Tech Mono', monospace;
-            --font-ui: 'Orbitron', sans-serif;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --border: rgba(0, 242, 255, 0.2);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
         body { 
-            background: var(--void); 
-            color: var(--neon); 
-            font-family: var(--font-main); 
-            height: 100vh; 
-            overflow: hidden; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: var(--bg); color: var(--n); 
+            font-family: 'Share Tech Mono', monospace; 
+            height: 100vh; width: 100vw; overflow: hidden; 
         }
 
-        /* --- BACKGROUND ENGINE --- */
-        #render-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* --- UI LAYER: GRID SYSTEM --- */
+        /* ОСНОВНОЙ КОНТЕЙНЕР - ТЕПЕРЬ СТРОГО 100% ВЫСОТЫ */
         .viewport {
-            position: relative;
-            z-index: 10;
-            width: 100vw;
-            height: 100vh;
+            position: relative; z-index: 10;
             display: grid;
-            grid-template-columns: 320px 1fr 300px;
-            grid-template-rows: 80px 1fr 120px;
-            gap: 15px;
-            padding: 20px;
-            pointer-events: none; /* Пропускает клики на фон, если не перекрыто панелями */
+            grid-template-columns: 300px 1fr 250px;
+            grid-template-rows: 60px 1fr 80px;
+            height: 100vh; width: 100vw;
+            gap: 15px; padding: 15px;
         }
 
-        /* --- REUSABLE MODULES --- */
-        .module {
+        .panel {
             background: var(--glass);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 242, 255, 0.15);
-            pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            transition: var(--transition);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden; /* Важно: не дает контенту раздувать панель */
         }
 
-        .module::before {
-            content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
-            border-top: 2px solid var(--neon); border-left: 2px solid var(--neon);
-        }
+        /* HEADER */
+        .header { grid-column: 1 / 4; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
 
-        .module-header {
-            padding: 10px 15px;
-            font-family: var(--font-ui);
-            font-size: 10px;
-            letter-spacing: 2px;
-            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
-            background: rgba(0, 242, 255, 0.05);
-            color: var(--plasma);
-        }
-
-        /* --- CHAT MODULE (CENTER) --- */
-        .chat-module {
-            grid-column: 2;
-            grid-row: 2;
-        }
-
+        /* ЧАТ - ИСПРАВЛЕННЫЙ ВЫХОД ЗА ЭКРАН */
+        .chat-main { grid-column: 2; grid-row: 2; position: relative; }
+        
         #chat-stream {
-            flex-grow: 1;
-            overflow-y: auto;
+            flex: 1; /* Занимает всё доступное место в панели */
+            overflow-y: auto; /* Скролл внутри */
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--neon) transparent;
+            display: flex; flex-direction: column; gap: 12px;
+            scrollbar-width: thin; scrollbar-color: var(--n) transparent;
         }
 
-        .msg-node {
-            max-width: 85%;
-            animation: msgFade 0.4s ease forwards;
-        }
+        .msg { animation: slideIn 0.2s ease; max-width: 90%; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-5px); } }
+        .msg-nick { font-size: 9px; color: var(--p); font-family: 'Orbitron'; margin-bottom: 2px; }
+        .msg-text { background: rgba(255,255,255,0.03); border-left: 2px solid var(--n); padding: 8px 12px; color: #fff; }
 
-        @keyframes msgFade {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
+        /* ИНПУТЫ */
+        .input-bar { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--border); }
+        input { background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: #fff; padding: 10px; font-family: inherit; flex: 1; outline: none; }
+        button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 8px 15px; cursor: pointer; font-family: 'Orbitron'; font-size: 10px; }
+        button:hover { background: var(--n); color: #000; }
 
-        .msg-meta { font-size: 10px; opacity: 0.6; margin-bottom: 4px; display: flex; gap: 10px; }
-        .msg-text { 
-            background: rgba(0, 242, 255, 0.05); 
-            padding: 12px 18px; 
-            border-left: 2px solid var(--neon);
-            color: #fff;
-            line-height: 1.5;
-        }
+        /* TODO */
+        .todo-side { grid-column: 1; grid-row: 2; }
+        #todo-cont { flex: 1; overflow-y: auto; padding: 10px; }
+        .t-item { font-size: 11px; padding: 6px; border-bottom: 1px solid rgba(0,242,255,0.1); cursor: pointer; }
 
-        /* --- TODO MODULE (LEFT) --- */
-        .todo-module {
-            grid-column: 1;
-            grid-row: 2;
-        }
+        /* FOOTER LOGS */
+        .logs-bot { grid-column: 1 / 4; grid-row: 3; font-size: 10px; opacity: 0.6; padding: 10px; display: flex; flex-direction: column-reverse; }
 
-        #todo-list {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto;
-        }
-
-        .task-item {
-            padding: 10px;
-            border-bottom: 1px solid rgba(0, 242, 255, 0.05);
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .task-item:hover { background: rgba(0, 242, 255, 0.05); color: #fff; }
-
-        /* --- INPUTS & BUTTONS --- */
-        .input-bar {
-            padding: 15px;
-            display: flex;
-            gap: 10px;
-            background: rgba(0,0,0,0.3);
-        }
-
-        input {
-            background: rgba(0, 10, 20, 0.8);
-            border: 1px solid rgba(0, 242, 255, 0.3);
-            color: #fff;
-            padding: 12px;
-            font-family: inherit;
-            outline: none;
-            flex-grow: 1;
-            transition: var(--transition);
-        }
-
-        input:focus { border-color: var(--neon); box-shadow: 0 0 15px var(--neon-glow); }
-
-        button {
-            background: transparent;
-            border: 1px solid var(--neon);
-            color: var(--neon);
-            padding: 10px 20px;
-            font-family: var(--font-ui);
-            font-size: 10px;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: var(--transition);
-        }
-
-        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
-
-        /* --- AUTH OVERLAY --- */
-        #auth-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background: var(--void);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .auth-card {
-            width: 400px;
-            padding: 40px;
-            background: var(--glass-heavy);
-            border: 1px solid var(--neon);
-            text-align: center;
-        }
-
-        /* --- FOOTER LOGS --- */
-        .footer-logs {
-            grid-column: 1 / 4;
-            grid-row: 3;
-            font-size: 11px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column-reverse;
-            overflow: hidden;
-            opacity: 0.7;
-        }
-
+        #auth-screen { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; }
         .hidden { display: none !important; }
-
-        /* --- CRT FX --- */
-        body::after {
-            content: ""; position: fixed; inset: 0;
-            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.1) 50%), linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02));
-            z-index: 9999; background-size: 100% 3px, 3px 100%; pointer-events: none;
-        }
     </style>
 </head>
 <body>
 
-<canvas id="render-canvas"></canvas>
+<canvas id="starfield"></canvas>
 
-<div id="auth-overlay">
-    <div class="auth-card">
-        <h1 style="font-family: var(--font-ui); margin-bottom: 10px;">OMNI_LINK v8.7</h1>
-        <p style="font-size: 10px; opacity: 0.5; margin-bottom: 30px;">ESTABLISHING SECURE PROTOCOL...</p>
-        <input type="email" id="field-email" placeholder="PILOT_IDENTIFIER" style="width: 100%; margin-bottom: 10px;">
-        <input type="password" id="field-pass" placeholder="SECURITY_KEY" style="width: 100%; margin-bottom: 25px;">
-        <button onclick="Omni.Auth.action('in')" style="width: 100%;">CONNECT</button>
-        <button onclick="Omni.Auth.action('up')" style="border: none; margin-top: 15px; font-size: 9px; color: var(--plasma);">REQUEST_ID</button>
+<div id="auth-screen">
+    <div style="width: 350px; text-align: center; border: 1px solid var(--n); padding: 40px; background: rgba(0,242,255,0.02);">
+        <h2 style="font-family:'Orbitron'; margin-bottom:20px;">SYSTEM_LOGIN</h2>
+        <input type="email" id="email" placeholder="PILOT_ID" style="width:100%; margin-bottom:10px;">
+        <input type="password" id="pass" placeholder="PASS_KEY" style="width:100%; margin-bottom:20px;">
+        <button onclick="App.Auth('in')" style="width:100%;">ACCESS</button>
     </div>
 </div>
 
 <div class="viewport">
-    <header class="module" style="grid-column: 1/4; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 30px;">
-        <div style="font-family: var(--font-ui); font-weight: 700; font-size: 20px; letter-spacing: 5px;">ORBITRON</div>
-        <div id="sys-clock" style="font-size: 18px;">00:00:00</div>
-        <div id="sys-status" style="font-size: 10px; color: var(--plasma);">STATUS: CONNECTED</div>
+    <header class="panel header">
+        <div style="font-family:'Orbitron'; font-weight:700;">ORBITRON_v8.8</div>
+        <div id="clock">00:00:00</div>
     </header>
 
-    <aside class="module todo-module">
-        <div class="module-header">MISSION_OBJECTIVES</div>
-        <div class="input-bar">
-            <input type="text" id="task-input" placeholder="> RECORD...">
+    <aside class="panel todo-side">
+        <div style="padding:10px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">MISSION_LOGS</div>
+        <div class="input-bar" style="padding:10px;">
+            <input type="text" id="todo-in" placeholder="+ ADD...">
         </div>
-        <div id="todo-list"></div>
+        <div id="todo-cont"></div>
     </aside>
 
-    <main class="module chat-module">
-        <div class="module-header">DEEP_SPACE_COMMS</div>
+    <main class="panel chat-main">
+        <div style="padding:10px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">COMMS_CHANNEL</div>
         <div id="chat-stream"></div>
         <div class="input-bar">
-            <input type="text" id="chat-input" placeholder="ENTER TRANSMISSION...">
-            <button onclick="Omni.Chat.send()">TRANSMIT</button>
+            <input type="text" id="chat-in" placeholder="TRANSMIT MESSAGE...">
+            <button onclick="App.Chat.send()">SEND</button>
         </div>
     </main>
 
-    <aside class="module navigation-module">
-        <div class="module-header">NAVIGATION_DATA</div>
-        <div style="padding: 20px; font-size: 11px; line-height: 2.2;">
-            SECTOR: X-91 // OMNI<br>
-            STATION: ORBITRON-7<br>
-            HULL: <span style="color: #0f0;">INTEGRITY_100%</span><br>
-            O2: 98.4%<br>
-            RAD: LOW_STABLE
-        </div>
-        <div style="flex-grow: 1; border-top: 1px solid rgba(0, 242, 255, 0.1); display: flex; align-items: center; justify-content: center;">
-            <div style="width: 100px; height: 100px; border: 1px dashed var(--neon); border-radius: 50%; animation: rotate 10s linear infinite; position: relative;">
-                <div style="position: absolute; top: 10px; left: 50%; width: 4px; height: 4px; background: var(--plasma); border-radius: 50%;"></div>
-            </div>
+    <aside class="panel">
+        <div style="padding:10px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">TELEMETRY</div>
+        <div id="tele-data" style="padding:15px; font-size:11px; line-height:2;">
+            O2: 98%<br>HULL: OK<br>TEMP: -270C
         </div>
     </aside>
 
-    <footer class="module footer-logs" id="terminal-logs">
-        <div>[SYSTEM] KERNEL_8.7_STABLE... READY.</div>
+    <footer class="panel logs-bot" id="sys-logs">
+        <div>[SYSTEM] INITIALIZING_OMNI_CORE...</div>
     </footer>
 </div>
 
 <script>
-/**
- * ============================================================================
- * OMNI ENGINE CORE v8.7
- * Промышленная архитектура для веб-приложений.
- * ============================================================================
- */
+const App = {
+    sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
+    user: null,
 
-const Omni = {
-    // Конфигурация
-    Config: {
-        URL: 'https://ebjsxlympwocluxgmwcu.supabase.co',
-        KEY: 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
-    },
-
-    // Состояние системы
-    State: {
-        user: null,
-        frame: 0,
-        logs: []
-    },
-
-    // Инициализация
-    async init() {
-        this.sb = window.supabase.createClient(this.Config.URL, this.Config.KEY);
+    init() {
         this.Canvas.init();
-        this.Events.bind();
-        this.Log.sys("SYSTEM_REBUILD_COMPLETE");
+        this.ListenAuth();
+        this.UI.todo();
+        setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
+        this.Log("CORE_LOADED");
         this.loop();
     },
 
-    // Логирование
-    Log: {
-        sys(msg) {
-            const container = document.getElementById('terminal-logs');
-            const d = document.createElement('div');
-            d.innerHTML = `<span style="color:var(--neon)">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
-            container.prepend(d);
-            if(container.children.length > 8) container.lastChild.remove();
-        }
+    Log(m) {
+        const l = document.getElementById('sys-logs');
+        const d = document.createElement('div');
+        d.innerHTML = `[SYSTEM] ${m}`;
+        l.prepend(d);
+        if(l.children.length > 5) l.lastChild.remove();
     },
 
-    // Аутентификация
-    Auth: {
-        async action(type) {
-            const email = document.getElementById('field-email').value;
-            const pass = document.getElementById('field-pass').value;
-            Omni.Log.sys(`AUTH_ATTEMPT: ${type}`);
+    Auth: async (t) => {
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = await (t === 'in' ? App.sb.auth.signInWithPassword({email:e, password:p}) : App.sb.auth.signUp({email:e, password:p}));
+        if(error) alert(error.message);
+    },
 
-            const { data, error } = type === 'in' 
-                ? await Omni.sb.auth.signInWithPassword({ email, password: pass })
-                : await Omni.sb.auth.signUp({ email, password: pass });
-
-            if(error) {
-                Omni.Log.sys(`AUTH_ERR: ${error.message}`);
-                alert(error.message);
+    ListenAuth() {
+        this.sb.auth.onAuthStateChange((_, s) => {
+            if(s) {
+                this.user = s.user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                this.Chat.load();
+                this.Log("PILOT_CONNECTED: " + this.user.email);
             }
-        }
+        });
     },
 
-    // Чат
     Chat: {
-        async send() {
-            const input = document.getElementById('chat-input');
-            if(!input.value || !Omni.State.user) return;
-
-            const val = input.value;
-            const nick = Omni.State.user.email.split('@')[0];
-            input.value = '';
-
-            // Отрисовка локально для скорости (Optimistic)
-            this.render({ nickname: nick, message: val, created_at: new Date() });
-
-            const { error } = await Omni.sb.from('comments').insert([{
-                message: val, nickname: nick
-            }]);
-            
-            if(error) Omni.Log.sys(`DB_ERR: ${error.message}`);
-        },
-
-        render(m) {
-            const stream = document.getElementById('chat-stream');
-            const node = document.createElement('div');
-            node.className = 'msg-node';
-            node.innerHTML = `
-                <div class="msg-meta">
-                    <span style="color:var(--plasma)">${m.nickname.toUpperCase()}</span>
-                    <span>${new Date(m.created_at).toLocaleTimeString()}</span>
-                </div>
-                <div class="msg-text">${m.message}</div>
-            `;
-            stream.appendChild(node);
-            stream.scrollTop = stream.scrollHeight;
-        },
-
         async load() {
-            const { data } = await Omni.sb.from('comments').select('*').order('created_at', {ascending: true});
-            if(data) {
-                document.getElementById('chat-stream').innerHTML = '';
-                data.forEach(m => this.render(m));
-            }
+            const { data } = await App.sb.from('comments').select('*').order('created_at', {ascending: true});
+            if(data) data.forEach(m => this.render(m));
+        },
+        render(m) {
+            const s = document.getElementById('chat-stream');
+            const d = document.createElement('div');
+            d.className = 'msg';
+            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`;
+            s.appendChild(d);
+            s.scrollTop = s.scrollHeight;
+        },
+        async send() {
+            const i = document.getElementById('chat-in');
+            if(!i.value || !App.user) return;
+            const n = App.user.email.split('@')[0], v = i.value; i.value = '';
+            this.render({nickname: n, message: v});
+            await App.sb.from('comments').insert([{message: v, nickname: n}]);
         }
     },
 
-    // Графический движок
+    UI: {
+        todo() {
+            const i = document.getElementById('todo-in');
+            i.onkeypress = (e) => {
+                if(e.key === 'Enter' && i.value) {
+                    const d = document.createElement('div');
+                    d.className = 't-item'; d.innerText = '> ' + i.value.toUpperCase();
+                    d.onclick = () => d.remove();
+                    document.getElementById('todo-cont').prepend(d);
+                    i.value = '';
+                }
+            };
+        }
+    },
+
     Canvas: {
         init() {
-            this.cvs = document.getElementById('render-canvas');
+            this.cvs = document.getElementById('starfield');
             this.ctx = this.cvs.getContext('2d');
-            this.resize();
-            this.stars = Array.from({length: 200}, () => ({
-                x: Math.random() * this.cvs.width,
-                y: Math.random() * this.cvs.height,
-                s: Math.random() * 2,
-                v: Math.random() * 0.5
-            }));
-            this.ufo = { x: -100, y: 400, p: [] };
+            this.res(); window.onresize = () => this.res();
+            this.stars = Array.from({length: 150}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2}));
+            this.ufo = {x: -100, y: 350, p: []};
         },
-        resize() {
-            this.cvs.width = window.innerWidth;
-            this.cvs.height = window.innerHeight;
-        },
-        render() {
-            const ctx = this.ctx;
-            ctx.fillStyle = '#01050a';
-            ctx.fillRect(0,0,this.cvs.width, this.cvs.height);
-
-            // Звезды
+        res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        draw() {
+            const ctx = this.ctx, cvs = this.cvs;
+            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width, cvs.height);
+            
+            // Stars
             ctx.fillStyle = '#fff';
             this.stars.forEach(s => {
-                s.x -= s.v;
-                if(s.x < 0) s.x = this.cvs.width;
                 ctx.globalAlpha = Math.random();
                 ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, 7); ctx.fill();
             });
             ctx.globalAlpha = 1;
 
-            // Планета (Omni-Sphere)
-            const px = this.cvs.width * 0.85, py = this.cvs.height * 0.2;
-            let g = ctx.createRadialGradient(px-30, py-30, 10, px, py, 120);
-            g.addColorStop(0, '#00f2ff'); g.addColorStop(0.3, '#004466'); g.addColorStop(1, '#01050a');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 120, 0, 7); ctx.fill();
-            // Атмосфера
-            ctx.strokeStyle = 'rgba(0, 242, 255, 0.1)';
-            ctx.beginPath(); ctx.arc(px, py, 130, 0, 7); ctx.stroke();
+            // Planet
+            const px = cvs.width * 0.8, py = cvs.height * 0.25;
+            let g = ctx.createRadialGradient(px-20, py-20, 5, px, py, 100);
+            g.addColorStop(0, '#00f2ff'); g.addColorStop(1, '#000810');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 100, 0, 7); ctx.fill();
 
-            // Астронавт
-            this.drawAstronaut(200 + Math.sin(Date.now()/1500)*50, 300);
-
-            // НЛО
-            this.drawUFO();
-        },
-        drawAstronaut(x, y) {
-            const ctx = this.ctx;
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(Math.sin(Date.now()/2000)*0.15);
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(0, -20, 12, 0, 7); ctx.fill(); // Голова
-            ctx.beginPath(); ctx.roundRect(-10, -10, 20, 30, 5); ctx.fill(); // Тело
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-25, 20); ctx.stroke(); // Руки
-            ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(25, 20); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(-5, 20); ctx.lineTo(-15, 45); ctx.stroke(); // Ноги
-            ctx.beginPath(); ctx.moveTo(5, 20); ctx.lineTo(15, 45); ctx.stroke();
-            ctx.fillStyle = '#05101a'; ctx.fillRect(-8, -24, 16, 9); // Визор
-            ctx.restore();
-        },
-        drawUFO() {
-            const ctx = this.ctx;
+            // UFO (Fixed Logic)
             let u = this.ufo;
-            u.x += 1.5; if(u.x > this.cvs.width + 100) u.x = -100;
-            let uy = u.y + Math.sin(Date.now()/600)*40;
+            u.x += 1.5; if(u.x > cvs.width + 100) u.x = -100;
+            let uy = u.y + Math.sin(Date.now()/500)*30;
 
-            // Частицы хвоста
-            if(Omni.State.frame % 3 === 0) u.p.push({x: u.x - 50, y: uy, a: 1});
-            u.p.forEach((p, i) => {
+            // Trail
+            if(Date.now() % 4 === 0) u.p.push({x: u.x - 40, y: uy, a: 1});
+            u.p.forEach((p, idx) => {
                 p.x -= 1; p.a -= 0.01;
                 ctx.fillStyle = `rgba(0, 242, 255, ${p.a})`;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, 7); ctx.fill();
-                if(p.a <= 0) u.p.splice(i, 1);
+                if(p.a <= 0) u.p.splice(idx, 1);
             });
 
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 60, 15, 0, 0, 7); ctx.fill();
-            ctx.strokeStyle = var_n = '#0ff'; ctx.lineWidth = 2; ctx.stroke();
-            for(let i=0; i<6; i++) {
-                ctx.globalAlpha = (Math.floor(Date.now()/100)%6 === i) ? 1 : 0.1;
-                ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(u.x - 40 + i*16, uy+5, 3, 0, 7); ctx.fill();
-            }
-            ctx.globalAlpha = 1;
-        }
-    },
-
-    // События
-    Events: {
-        bind() {
-            window.addEventListener('resize', () => Omni.Canvas.resize());
+            // Hull
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 50, 15, 0, 0, 7); ctx.fill();
+            ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 2; ctx.stroke();
             
-            // To-Do Logic
-            document.getElementById('task-input').addEventListener('keypress', (e) => {
-                if(e.key === 'Enter' && e.target.value) {
-                    const list = document.getElementById('todo-list');
-                    const item = document.createElement('div');
-                    item.className = 'task-item';
-                    item.innerHTML = `<span style="color:var(--neon)">[ ]</span> ${e.target.value.toUpperCase()}`;
-                    item.onclick = () => item.remove();
-                    list.prepend(item);
-                    e.target.value = '';
-                }
-            });
-
-            // Supabase Listener
-            Omni.sb.auth.onAuthStateChange((event, session) => {
-                if(session) {
-                    Omni.State.user = session.user;
-                    document.getElementById('auth-overlay').classList.add('hidden');
-                    Omni.Log.sys(`AUTHORIZED_AS: ${Omni.State.user.email}`);
-                    Omni.Chat.load();
-                }
-            });
+            // Lights
+            for(let i=0; i<5; i++) {
+                ctx.fillStyle = (Math.floor(Date.now()/150)%5 === i) ? '#0ff' : '#003344';
+                ctx.beginPath(); ctx.arc(u.x - 30 + i*15, uy+3, 3, 0, 7); ctx.fill();
+            }
         }
     },
 
     loop() {
-        Omni.State.frame++;
-        Omni.Canvas.render();
-        document.getElementById('sys-clock').innerText = new Date().toLocaleTimeString();
-        requestAnimationFrame(() => Omni.loop());
+        App.Canvas.draw();
+        requestAnimationFrame(() => App.loop());
     }
 };
 
-// Запуск системы
-window.onload = () => Omni.init();
-
-// Polyfill для roundRect в старых браузерах
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-        if (w < 2 * r) r = w / 2;
-        if (h < 2 * r) r = h / 2;
-        this.beginPath();
-        this.moveTo(x + r, y);
-        this.arcTo(x + w, y, x + w, y + h, r);
-        this.arcTo(x + w, y + h, x, y + h, r);
-        this.arcTo(x, y + h, x, y, r);
-        this.arcTo(x, y, x + w, y, r);
-        this.closePath();
-        return this;
-    };
-}
+window.onload = () => App.init();
 </script>
-
-<style>
-/* Rotation Animation for Nav Module */
-@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-</style>
-
 </body>
 </html>
