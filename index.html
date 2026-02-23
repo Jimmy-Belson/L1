@@ -2,564 +2,306 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON OS v8.5 - ULTIMATE</title>
+    <title>ORBITRON v8.6 - VOID</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --neon: #00f2ff;
-            --plasma: #ff00ff;
-            --void: #01050a;
-            --panel-bg: rgba(5, 15, 25, 0.92);
-            --border-glow: 0 0 15px rgba(0, 242, 255, 0.3);
-            --font-main: 'Share Tech Mono', monospace;
-            --font-ui: 'Orbitron', sans-serif;
+            --n: #00f2ff;
+            --p: #ff00ff;
+            --bg: #01050a;
+            --glass: rgba(0, 242, 255, 0.03);
+            --border: rgba(0, 242, 255, 0.2);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            background: var(--void); color: var(--neon); 
-            font-family: var(--font-main); height: 100vh; overflow: hidden; 
-        }
-
-        /* --- POST-PROCESSING EFFECTS --- */
-        .scanlines {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-            z-index: 9999; background-size: 100% 4px, 4px 100%; pointer-events: none; opacity: 0.3;
-        }
-        .bloom {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6) 100%);
-            z-index: 9998; pointer-events: none;
+            background: var(--bg); color: var(--n); 
+            font-family: 'Share Tech Mono', monospace; 
+            height: 100vh; overflow: hidden; 
         }
 
         #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* --- SYSTEM LAYOUT --- */
-        .os-container {
-            position: relative; z-index: 100;
+        /* Эффект старого монитора (минимум помех для чистоты) */
+        .crt::after {
+            content: " "; display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            z-index: 1000; background-size: 100% 4px; pointer-events: none; opacity: 0.2;
+        }
+
+        /* ОСНОВНАЯ СЕТКА - СДЕЛАЛИ ЕЕ МАКСИМАЛЬНО ОТКРЫТОЙ */
+        .os-wrapper {
+            position: relative; z-index: 10;
             display: grid;
-            grid-template-columns: 380px 1fr 320px;
-            grid-template-rows: 60px 1fr 200px;
-            height: 100vh; gap: 12px; padding: 15px;
-            pointer-events: none;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 60px 1fr;
+            height: 100vh; padding: 20px; gap: 20px;
         }
 
-        /* --- UI COMPONENTS --- */
-        .glass-panel {
-            background: var(--panel-bg);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            box-shadow: var(--border-glow);
-            backdrop-filter: blur(12px);
-            pointer-events: auto;
+        /* HEADER */
+        header {
+            grid-column: 1 / 3;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        /* TODO СЛЕВА - ТЕПЕРЬ ПРОЗРАЧНЫЙ */
+        .todo-panel {
+            background: var(--glass);
+            border-right: 1px solid var(--border);
             display: flex; flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-        .glass-panel::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon), transparent);
+            padding: 10px;
+            backdrop-filter: blur(2px);
         }
 
-        .header-bar {
-            grid-column: 1 / 4;
-            display: flex; align-items: center; justify-content: space-between; padding: 0 25px;
-        }
-        .nav-brand { font-family: var(--font-ui); font-weight: 700; letter-spacing: 5px; font-size: 20px; }
-
-        /* --- TERMINAL WINDOW --- */
-        .main-display {
-            grid-column: 2; grid-row: 2;
+        /* ЧАТ В ЦЕНТРЕ - ИСПРАВЛЕННЫЙ */
+        .chat-container {
             display: flex; flex-direction: column;
-        }
-        .display-content { flex-grow: 1; position: relative; display: flex; flex-direction: column; }
-        
-        #auth-module {
-            position: absolute; inset: 0; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 50px; z-index: 10;
+            height: 100%; position: relative;
         }
 
-        /* --- CHAT ENGINE UI --- */
-        #chat-engine { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        #message-stream { 
-            flex-grow: 1; overflow-y: scroll; padding: 25px; 
-            display: flex; flex-direction: column; gap: 15px;
-            scrollbar-width: thin; scrollbar-color: var(--neon) transparent;
-        }
-        .msg-frame { border-left: 3px solid var(--neon); padding: 10px 15px; background: rgba(0, 242, 255, 0.03); animation: slideIn 0.4s cubic-bezier(0,1,0.5,1); }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } }
-        .msg-sender { font-family: var(--font-ui); font-size: 10px; color: var(--plasma); margin-bottom: 5px; text-transform: uppercase; }
-
-        /* --- SIDEBARS --- */
-        .sidebar-left { grid-row: 2 / 3; }
-        .sidebar-right { grid-row: 2 / 3; }
-
-        .module-title {
-            background: rgba(0, 242, 255, 0.1); padding: 10px;
-            font-family: var(--font-ui); font-size: 11px; letter-spacing: 2px;
-            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+        #message-stream {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex; flex-direction: column;
+            gap: 15px;
+            scrollbar-width: none;
         }
 
-        /* --- INPUTS --- */
-        .input-wrapper { padding: 20px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(0,242,255,0.1); display: flex; gap: 12px; }
+        .message {
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
+
+        .msg-nick { font-family: 'Orbitron'; font-size: 10px; color: var(--p); margin-bottom: 4px; }
+        .msg-body { 
+            background: rgba(0, 242, 255, 0.07); 
+            padding: 10px 15px; 
+            border: 1px solid var(--border);
+            color: #fff;
+            border-radius: 0 10px 10px 10px;
+        }
+
+        /* ИНПУТЫ */
+        .input-area {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid var(--border);
+            display: flex; gap: 10px;
+        }
+
         input {
-            background: rgba(0, 10, 20, 0.8); border: 1px solid rgba(0, 242, 255, 0.3);
-            color: #fff; padding: 14px; font-family: var(--font-main); outline: none; flex-grow: 1;
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+            color: #fff; padding: 12px; font-family: inherit; outline: none; flex-grow: 1;
         }
-        input:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
+        input:focus { border-color: var(--n); }
+
         button {
-            background: transparent; border: 1px solid var(--neon); color: var(--neon);
-            padding: 10px 25px; font-family: var(--font-ui); cursor: pointer;
-            transition: 0.3s; text-transform: uppercase; font-size: 12px;
+            background: transparent; border: 1px solid var(--n); color: var(--n);
+            padding: 10px 20px; font-family: 'Orbitron'; cursor: pointer;
         }
-        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
-
-        /* --- TASK SYSTEM --- */
-        .task-list { padding: 15px; overflow-y: auto; flex-grow: 1; }
-        .task-card { 
-            background: rgba(255,255,255,0.02); border: 1px solid rgba(0,242,255,0.05);
-            padding: 12px; margin-bottom: 8px; cursor: pointer; transition: 0.2s;
-        }
-        .task-card:hover { background: rgba(0,242,255,0.05); border-color: var(--neon); }
-
-        /* --- DATA FOOTER --- */
-        .os-footer { grid-column: 1 / 4; display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; }
-        #live-logs { font-size: 10px; color: #555; padding: 15px; overflow-y: hidden; display: flex; flex-direction: column-reverse; }
+        button:hover { background: var(--n); color: #000; }
 
         .hidden { display: none !important; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--neon); }
+        
+        /* To-Do Item Style */
+        .todo-item {
+            font-size: 11px; padding: 8px; border-bottom: 1px solid rgba(0,242,255,0.1);
+            cursor: pointer; transition: 0.2s;
+        }
+        .todo-item:hover { color: var(--p); padding-left: 15px; }
 
     </style>
 </head>
-<body>
+<body class="crt">
 
-<div class="scanlines"></div>
-<div class="bloom"></div>
 <canvas id="starfield"></canvas>
 
-<div class="os-container">
-    <header class="glass-panel header-bar">
-        <div class="nav-brand">ORBITRON_OS // V8.5</div>
-        <div id="system-clock" style="font-size: 18px; letter-spacing: 2px;">00:00:00</div>
-        <div style="font-size: 10px; opacity: 0.6;">COORDINATES: <span id="nav-coords">X:0 Y:0 Z:0</span></div>
+<div class="os-wrapper">
+    <header>
+        <div style="font-family:'Orbitron'; font-weight:700; letter-spacing:3px;">ORBITRON_VOID_v8.6</div>
+        <div id="clock">00:00:00</div>
     </header>
 
-    <aside class="glass-panel sidebar-left">
-        <div class="module-title">MISSION_LOGS</div>
-        <div class="input-wrapper" style="padding: 10px;">
-            <input type="text" id="todo-entry" placeholder="> NEW LOG...">
-        </div>
-        <div id="mission-tasks" class="task-list"></div>
-        <div style="padding: 15px; border-top: 1px solid rgba(0,242,255,0.1);">
-            <div style="font-size: 10px; margin-bottom: 5px;">HULL_INTEGRITY</div>
-            <div style="height: 4px; background: #111; width: 100%;"><div style="width: 88%; background: var(--neon); height: 100%;"></div></div>
-        </div>
+    <aside class="todo-panel">
+        <div style="font-size:10px; letter-spacing:2px; margin-bottom:15px; color:var(--p)">[ MISSION_LOG ]</div>
+        <input type="text" id="todo-in" placeholder="> ADD TASK..." style="margin-bottom:15px; font-size:12px;">
+        <div id="todo-list" style="overflow-y:auto; flex-grow:1;"></div>
     </aside>
 
-    <main class="glass-panel main-display">
-        <div class="display-content">
-            <section id="auth-module">
-                <h1 style="font-family: var(--font-ui); font-size: 32px; margin-bottom: 10px; color: var(--neon);">LOGIN</h1>
-                <p style="margin-bottom: 40px; opacity: 0.5; font-size: 12px;">ENCRYPTED CHANNEL ESTABLISHMENT</p>
-                <input type="email" id="auth-email" placeholder="PILOT_ID" style="width: 350px; margin-bottom: 15px;">
-                <input type="password" id="auth-pass" placeholder="SECRET_KEY" style="width: 350px; margin-bottom: 30px;">
-                <button onclick="Core.Auth.init('in')" style="width: 350px;">INITIALIZE_LINK</button>
-                <button onclick="Core.Auth.init('up')" style="margin-top: 15px; border: none; font-size: 10px; color: var(--plasma);">REQUEST_IDENTITY</button>
-            </section>
+    <main class="chat-container">
+        <div id="auth-gate" style="position:absolute; inset:0; z-index:20; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <h2 style="font-family:'Orbitron'; margin-bottom:30px;">SECURE_ACCESS</h2>
+            <input type="email" id="email" placeholder="PILOT_ID" style="max-width:300px; margin-bottom:10px;">
+            <input type="password" id="pass" placeholder="PASSWORD" style="max-width:300px; margin-bottom:20px;">
+            <button onclick="Core.Auth('in')" style="width:300px;">CONNECT</button>
+            <button onclick="Core.Auth('up')" style="border:none; font-size:10px; margin-top:10px; color:var(--p)">REGISTER_NEW_ID</button>
+        </div>
 
-            <section id="chat-engine" class="hidden">
-                <div id="message-stream"></div>
-                <div class="input-wrapper">
-                    <input type="text" id="chat-input" placeholder="READY FOR TRANSMISSION...">
-                    <button onclick="Core.Chat.send()">SEND</button>
-                </div>
-            </section>
+        <div id="message-stream"></div>
+        
+        <div class="input-area">
+            <input type="text" id="msg-in" placeholder="TYPE TELEMETRY DATA...">
+            <button onclick="Core.SendMessage()">SEND</button>
         </div>
     </main>
-
-    <aside class="glass-panel sidebar-right">
-        <div class="module-title">SCANNER_OUTPUT</div>
-        <div id="telemetry-box" style="padding: 20px; font-size: 11px; line-height: 2;">
-            <div style="color: var(--plasma);">[OBJECTS_DETECTED]</div>
-            - UNKNOWN_CRAFT: 1<br>
-            - ASTEROIDS: 14<br>
-            - NEBULA_CLOUD: ALPHA-9<br><br>
-            <div style="color: var(--neon);">[ENVIRONMENT]</div>
-            RADIATION: 0.04 mSv<br>
-            TEMP: -270.4 °C<br>
-            SIGNAL: STRONG
-        </div>
-        <div id="radar-screen" style="flex-grow: 1; border-top: 1px solid rgba(0,242,255,0.1); background: rgba(0,0,0,0.5);">
-            </div>
-    </aside>
-
-    <footer class="os-footer">
-        <div class="glass-panel" id="live-logs"></div>
-        <div class="glass-panel" style="display: flex; align-items: center; justify-content: space-around; font-family: var(--font-ui); font-size: 10px;">
-            <div class="status-bit">MEM: 14.2GB</div>
-            <div class="status-bit">CPU: 22%</div>
-            <div class="status-bit">SUPABASE: ONLINE</div>
-            <div class="status-bit">LATENCY: 48MS</div>
-        </div>
-        <div class="glass-panel" style="padding: 10px; font-size: 10px; overflow: hidden;">
-            <div id="typing-effect">SYSTEM_IDLE...</div>
-        </div>
-    </footer>
 </div>
 
 <script>
 /**
- * ============================================================================
- * ORBITRON CORE ENGINE V8.5
- * Author: Gemini AI
- * Lines: ~800+ of logic and rendering
- * ============================================================================
+ * ORBITRON CORE v8.6 - "VOID" ENGINE
  */
-
 const Core = {
-    Config: {
-        SB_URL: 'https://ebjsxlympwocluxgmwcu.supabase.co',
-        SB_KEY: 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
-    },
-    State: {
-        user: null,
-        mouse: { x: 0, y: 0, tx: 0, ty: 0 },
-        isGlitching: false,
-        frame: 0
-    },
+    sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
+    user: null,
 
     init() {
-        this.sb = window.supabase.createClient(this.Config.SB_URL, this.Config.SB_KEY);
-        this.Canvas.setup();
-        this.Events.bind();
-        this.Sys.log("KERNEL_INITIALIZED: BUILD 8.5_TITAN");
-        this.loop();
+        this.Canvas.start();
+        this.ListenAuth();
+        this.UI.initTodo();
+        
+        // Clock
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
     },
 
-    Sys: {
-        log(msg) {
-            const container = document.getElementById('live-logs');
-            const entry = document.createElement('div');
-            entry.innerHTML = `<span style="color:var(--neon)">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
-            container.prepend(entry);
-            if(container.children.length > 10) container.lastChild.remove();
-        },
-        updateClock() {
-            document.getElementById('system-clock').innerText = new Date().toLocaleTimeString();
+    Auth: async (type) => {
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = type === 'in' ? await Core.sb.auth.signInWithPassword({email:e, password:p}) : await Core.sb.auth.signUp({email:e, password:p});
+        if(error) alert(error.message);
+    },
+
+    ListenAuth() {
+        this.sb.auth.onAuthStateChange((_, session) => {
+            if(session) {
+                this.user = session.user;
+                document.getElementById('auth-gate').classList.add('hidden');
+                this.LoadMessages();
+            }
+        });
+    },
+
+    async LoadMessages() {
+        const { data } = await this.sb.from('comments').select('*').order('created_at', {ascending: true});
+        if(data) {
+            data.forEach(m => this.RenderMsg(m));
         }
     },
 
-    Auth: {
-        async init(type) {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-pass').value;
-            Core.Sys.log(`AUTH_ATTEMPT: ${type.toUpperCase()}`);
-
-            const { data, error } = type === 'in' 
-                ? await Core.sb.auth.signInWithPassword({ email, password: pass })
-                : await Core.sb.auth.signUp({ email, password: pass });
-
-            if(error) {
-                Core.Sys.log(`ERROR: ${error.message}`);
-                alert(error.message);
-            }
-        }
+    RenderMsg(m) {
+        const stream = document.getElementById('message-stream');
+        const div = document.createElement('div');
+        div.className = 'message';
+        div.innerHTML = `
+            <div class="msg-nick">${(m.nickname || 'PILOT').toUpperCase()}</div>
+            <div class="msg-body">${m.message}</div>
+        `;
+        stream.appendChild(div);
+        stream.scrollTop = stream.scrollHeight;
     },
 
-    Chat: {
-        async send() {
-            const input = document.getElementById('chat-input');
-            if(!input.value || !Core.State.user) return;
+    SendMessage: async () => {
+        const i = document.getElementById('msg-in');
+        if(!i.value || !Core.user) return;
+        const val = i.value, nick = Core.user.email.split('@')[0];
+        i.value = '';
+        Core.RenderMsg({ nickname: nick, message: val });
+        await Core.sb.from('comments').insert([{ message: val, nickname: nick }]);
+    },
 
-            const nick = Core.State.user.email.split('@')[0];
-            const msg = input.value;
-            input.value = '';
-
-            // Optimistic Update
-            this.render({ nickname: nick, message: msg, created_at: new Date() });
-
-            const { error } = await Core.sb.from('comments').insert([{ 
-                message: msg, 
-                nickname: nick 
-            }]);
-            
-            if(error) Core.Sys.log(`DB_ERROR: ${error.message}`);
-        },
-
-        render(m) {
-            const stream = document.getElementById('message-stream');
-            const frame = document.createElement('div');
-            frame.className = 'msg-frame';
-            frame.innerHTML = `
-                <div class="msg-sender">${m.nickname.toUpperCase()} // ${new Date(m.created_at).toLocaleTimeString()}</div>
-                <div class="msg-text">${m.message}</div>
-            `;
-            stream.appendChild(frame);
-            stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
-        },
-
-        async load() {
-            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: true});
-            if(data) {
-                document.getElementById('message-stream').innerHTML = '';
-                data.forEach(m => this.render(m));
-            }
+    UI: {
+        initTodo() {
+            const input = document.getElementById('todo-in');
+            input.onkeypress = (e) => {
+                if(e.key === 'Enter' && input.value) {
+                    const item = document.createElement('div');
+                    item.className = 'todo-item';
+                    item.innerText = '> ' + input.value.toUpperCase();
+                    item.onclick = () => item.remove();
+                    document.getElementById('todo-list').prepend(item);
+                    input.value = '';
+                }
+            };
         }
     },
 
     Canvas: {
-        setup() {
-            this.cvs = document.getElementById('starfield');
-            this.ctx = this.cvs.getContext('2d');
-            this.resize();
-            this.createUniverse();
-        },
-        resize() {
-            this.cvs.width = window.innerWidth;
-            this.cvs.height = window.innerHeight;
-        },
-        createUniverse() {
-            this.stars = Array.from({length: 250}, () => ({
-                x: Math.random() * this.cvs.width,
-                y: Math.random() * this.cvs.height,
-                z: Math.random() * this.cvs.width,
-                s: Math.random() * 2
-            }));
-            this.ufo = { x: -100, y: 300, vx: 1.5, particles: [] };
-            this.astronauts = Array.from({length: 2}, () => new Astronaut(this.ctx));
-            this.rocks = Array.from({length: 8}, () => new Asteroid(this.ctx));
-        },
-        draw() {
-            const ctx = this.ctx;
-            ctx.fillStyle = "#01050a";
-            ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
+        start() {
+            const cvs = document.getElementById('starfield');
+            const ctx = cvs.getContext('2d');
+            let stars = [], astronauts = [], ufo = { x: -100, y: 300, p: [] };
 
-            const mx = Core.State.mouse.x * 0.02;
-            const my = Core.State.mouse.y * 0.02;
+            const resize = () => { cvs.width = window.innerWidth; cvs.height = window.innerHeight; };
+            window.onresize = resize; resize();
 
-            // Stars with Depth
-            this.stars.forEach(s => {
-                s.x -= 0.5;
-                if(s.x < 0) s.x = this.cvs.width;
-                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.8})`;
-                ctx.beginPath();
-                ctx.arc(s.x + mx * (s.s), s.y + my * (s.s), s.s/2, 0, Math.PI*2);
-                ctx.fill();
-            });
+            // Init Stars
+            for(let i=0; i<200; i++) stars.push({ x: Math.random()*cvs.width, y: Math.random()*cvs.height, s: Math.random()*2 });
 
-            // Planet (Procedural Gradient)
-            const px = this.cvs.width * 0.85 + mx * 5;
-            const py = this.cvs.height * 0.2 + my * 5;
-            this.drawPlanet(px, py);
+            const draw = () => {
+                ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width, cvs.height);
 
-            // Asteroids
-            this.rocks.forEach(r => r.update(mx, my));
+                // Stars
+                ctx.fillStyle = '#fff';
+                stars.forEach(s => {
+                    ctx.globalAlpha = Math.random();
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, 7); ctx.fill();
+                });
+                ctx.globalAlpha = 1;
 
-            // UFO with Particle Trail
-            this.updateUFO(ctx);
+                // Planet
+                const px = cvs.width * 0.8, py = cvs.height * 0.3;
+                let g = ctx.createRadialGradient(px-20, py-20, 5, px, py, 80);
+                g.addColorStop(0, '#00f2ff'); g.addColorStop(1, '#000810');
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 80, 0, 7); ctx.fill();
 
-            // Astronauts
-            this.astronauts.forEach(a => a.update());
-        },
+                // Astronaut
+                const ax = 150 + Math.sin(Date.now()/1000)*30, ay = 250;
+                ctx.save(); ctx.translate(ax, ay); ctx.rotate(Math.sin(Date.now()/2000)*0.2);
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(0, -15, 10, 0, 7); ctx.fill(); // Head
+                ctx.fillRect(-10, -10, 20, 25); // Body
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-20, 15); ctx.stroke(); // Arms
+                ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(20, 15); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-5, 15); ctx.lineTo(-12, 35); ctx.stroke(); // Legs
+                ctx.beginPath(); ctx.moveTo(5, 15); ctx.lineTo(12, 35); ctx.stroke();
+                ctx.fillStyle = '#05101a'; ctx.fillRect(-6, -18, 12, 7); // Visor
+                ctx.restore();
 
-        drawPlanet(x, y) {
-            const ctx = this.ctx;
-            const g = ctx.createRadialGradient(x-30, y-30, 5, x, y, 100);
-            g.addColorStop(0, '#00f2ff');
-            g.addColorStop(0.2, '#005577');
-            g.addColorStop(1, '#01050a');
-            
-            ctx.shadowBlur = 40; ctx.shadowColor = 'rgba(0, 242, 255, 0.2)';
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 100, 0, 7); ctx.fill();
-            ctx.shadowBlur = 0;
+                // UFO
+                ufo.x += 1.2; if(ufo.x > cvs.width + 100) ufo.x = -100;
+                let uy = ufo.y + Math.sin(Date.now()/500)*30;
+                
+                // Trail
+                if(Date.now() % 5 === 0) ufo.p.push({x: ufo.x - 40, y: uy, a: 1});
+                ufo.p.forEach((p, idx) => {
+                    p.x -= 1; p.a -= 0.01;
+                    ctx.fillStyle = `rgba(0, 242, 255, ${p.a})`;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, 7); ctx.fill();
+                    if(p.a <= 0) ufo.p.splice(idx, 1);
+                });
 
-            // Rings
-            ctx.strokeStyle = 'rgba(0, 242, 255, 0.1)';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.ellipse(x, y, 220, 50, 0.4, 0, 7); ctx.stroke();
-        },
-
-        updateUFO(ctx) {
-            let u = this.ufo;
-            u.x += u.vx;
-            if(u.x > this.cvs.width + 200) u.x = -200;
-            const uy = u.y + Math.sin(Date.now()/400) * 30;
-
-            // Particle engine
-            if(Core.State.frame % 2 === 0) {
-                u.particles.push({x: u.x - 40, y: uy, l: 1, s: Math.random() * 3});
-            }
-
-            u.particles.forEach((p, i) => {
-                p.x -= 2; p.l -= 0.01;
-                ctx.fillStyle = `rgba(0, 242, 255, ${p.l})`;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
-                if(p.l <= 0) u.particles.splice(i, 1);
-            });
-
-            // UFO Sprite (Manual Path)
-            ctx.fillStyle = "#1a1a1a";
-            ctx.beginPath(); ctx.ellipse(u.x, uy, 50, 15, 0, 0, 7); ctx.fill();
-            ctx.strokeStyle = "#00f2ff"; ctx.stroke();
-            
-            // Cockpit
-            ctx.fillStyle = "rgba(0, 242, 255, 0.3)";
-            ctx.beginPath(); ctx.arc(u.x, uy-5, 20, 3.14, 0); ctx.fill();
-
-            // Lights
-            for(let i=0; i<5; i++) {
-                ctx.fillStyle = (Math.floor(Date.now()/150) % 5 === i) ? "#00f2ff" : "#003344";
-                ctx.beginPath(); ctx.arc(u.x - 30 + i*15, uy+5, 3, 0, 7); ctx.fill();
-            }
-        }
-    },
-
-    Events: {
-        bind() {
-            window.addEventListener('mousemove', (e) => {
-                Core.State.mouse.tx = e.clientX - window.innerWidth/2;
-                Core.State.mouse.ty = e.clientY - window.innerHeight/2;
-            });
-            window.addEventListener('resize', () => Core.Canvas.resize());
-
-            // To-Do Link
-            document.getElementById('todo-entry').addEventListener('keypress', (e) => {
-                if(e.key === 'Enter' && e.target.value) {
-                    Core.Mission.add(e.target.value);
-                    e.target.value = '';
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(ufo.x, uy, 45, 12, 0, 0, 7); ctx.fill();
+                ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 1; ctx.stroke();
+                ctx.fillStyle = '#00f2ff'; 
+                for(let i=0; i<5; i++) {
+                    ctx.globalAlpha = (Math.floor(Date.now()/150)%5 === i) ? 1 : 0.2;
+                    ctx.beginPath(); ctx.arc(ufo.x - 30 + i*15, uy + 3, 3, 0, 7); ctx.fill();
                 }
-            });
+                ctx.globalAlpha = 1;
 
-            // Supabase State
-            Core.sb.auth.onAuthStateChange((event, session) => {
-                if(session) {
-                    Core.State.user = session.user;
-                    document.getElementById('auth-module').classList.add('hidden');
-                    document.getElementById('chat-engine').classList.remove('hidden');
-                    Core.Sys.log(`PILOT_AUTHORIZED: ${Core.State.user.email}`);
-                    Core.Chat.load();
-                }
-            });
+                requestAnimationFrame(draw);
+            }
+            draw();
         }
-    },
-
-    Mission: {
-        add(text) {
-            const container = document.getElementById('mission-tasks');
-            const card = document.createElement('div');
-            card.className = 'task-card';
-            card.innerHTML = `<span style="color:var(--neon)">></span> ${text.toUpperCase()}`;
-            card.onclick = () => {
-                card.style.opacity = '0.3';
-                card.style.textDecoration = 'line-through';
-                setTimeout(() => card.remove(), 1000);
-            };
-            container.prepend(card);
-            Core.Sys.log(`LOG_ENTRY_CREATED: ${text.substring(0, 10)}...`);
-        }
-    },
-
-    loop() {
-        Core.State.frame++;
-        Core.State.mouse.x += (Core.State.mouse.tx - Core.State.mouse.x) * 0.05;
-        Core.State.mouse.y += (Core.State.mouse.ty - Core.State.mouse.y) * 0.05;
-
-        Core.Sys.updateClock();
-        Core.Canvas.draw();
-
-        document.getElementById('nav-coords').innerText = 
-            `X:${Math.floor(Core.State.mouse.x)} Y:${Math.floor(Core.State.mouse.y)} Z:${(Core.State.frame % 1000)}`;
-
-        requestAnimationFrame(() => Core.loop());
     }
 };
 
-/**
- * CLASSES FOR HIGH-DENSITY GRAPHICS
- */
-class Astronaut {
-    constructor(ctx) {
-        this.ctx = ctx;
-        this.reset();
-    }
-    reset() {
-        this.x = Math.random() * window.innerWidth;
-        this.y = Math.random() * window.innerHeight;
-        this.rot = Math.random() * Math.PI * 2;
-        this.v = 0.2 + Math.random() * 0.3;
-    }
-    update() {
-        this.x += this.v;
-        this.rot += 0.005;
-        if(this.x > window.innerWidth + 50) this.reset();
-        this.draw();
-    }
-    draw() {
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rot);
-        
-        // Suit
-        ctx.fillStyle = "#fff";
-        ctx.beginPath(); ctx.roundRect(-8, -10, 16, 22, 4); ctx.fill(); // Torso
-        ctx.beginPath(); ctx.arc(0, -12, 8, 0, 7); ctx.fill(); // Helmet
-        
-        // Visor
-        ctx.fillStyle = "#05101a";
-        ctx.beginPath(); ctx.roundRect(-5, -16, 10, 6, 2); ctx.fill();
-        
-        // Detailed Limbs
-        ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.lineCap = "round";
-        ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(-15, 8); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(8, -2); ctx.lineTo(15, 8); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-4, 12); ctx.lineTo(-10, 25); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(4, 12); ctx.lineTo(10, 25); ctx.stroke();
-        
-        // Oxygen Tank
-        ctx.fillStyle = "#ccc"; ctx.fillRect(-11, -5, 3, 12);
-        
-        ctx.restore();
-    }
-}
-
-class Asteroid {
-    constructor(ctx) {
-        this.ctx = ctx;
-        this.x = Math.random() * window.innerWidth;
-        this.y = Math.random() * window.innerHeight;
-        this.size = 10 + Math.random() * 20;
-        this.points = [];
-        for(let i=0; i<8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const r = this.size + (Math.random() * 10 - 5);
-            this.points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
-        }
-    }
-    update(mx, my) {
-        this.draw(mx, my);
-    }
-    draw(mx, my) {
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.translate(this.x + mx * 0.5, this.y + my * 0.5);
-        ctx.strokeStyle = "rgba(0, 242, 255, 0.4)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(this.points[0].x, this.points[0].y);
-        this.points.forEach(p => ctx.lineTo(p.x, p.y));
-        ctx.closePath(); ctx.stroke();
-        
-        // Cracks
-        ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, 2); ctx.stroke();
-        ctx.restore();
-    }
-}
-
-// START SYSTEM
 window.onload = () => Core.init();
 </script>
 </body>
