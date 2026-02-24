@@ -2,22 +2,18 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON v9.4 - SATURNIAN DUST</title>
+    <title>ORBITRON v9.6 - STABLE VOID</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --n: #00f2ff; --p: #ff00ff; --bg: #01050a;
-            --glass: rgba(0, 242, 255, 0.05);
-            --border: rgba(0, 242, 255, 0.2);
-        }
+        :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --glass: rgba(0, 242, 255, 0.05); --border: rgba(0, 242, 255, 0.2); }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .os-container { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 20px; font-family: 'Orbitron'; background: rgba(1, 5, 10, 0.5); }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 20px; font-family: 'Orbitron'; background: rgba(1,5,10,0.5); }
         .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
-        .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+        .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; }
         .todo-panel { width: 300px; flex-shrink: 0; }
         #todo-list { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: none; }
         .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.1); cursor: pointer; transition: 0.2s; font-size: 13px; animation: slideIn 0.3s ease-out; }
@@ -25,8 +21,7 @@
         .chat-wrapper { flex: 1; display: flex; justify-content: center; }
         .chat-panel { width: 100%; max-width: 550px; height: 100%; }
         #chat-stream { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; }
-        .msg-container { animation: msgAppear 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; opacity: 0; transform: translateY(20px); }
-        @keyframes msgAppear { to { opacity: 1; transform: translateY(0); } }
+        .msg-container { animation: msgAppear 0.4s cubic-bezier(0.18,0.89,0.32,1.28) forwards; opacity: 0; transform: translateY(20px); }
         .msg-nick { font-size: 10px; color: var(--p); margin-bottom: 4px; font-family: 'Orbitron'; }
         .msg-text { background: rgba(0,242,255,0.08); padding: 12px 16px; border-radius: 2px 12px 12px 12px; border: 1px solid rgba(0,242,255,0.1); color: #fff; }
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
@@ -35,6 +30,7 @@
         #auth-gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; }
         .auth-form { width: 380px; padding: 50px; border: 1px solid var(--n); text-align: center; backdrop-filter: blur(10px); }
         .hidden { display: none !important; }
+        @keyframes msgAppear { to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
@@ -42,71 +38,130 @@
 <canvas id="starfield"></canvas>
 <div id="auth-gate"><div class="auth-form"><h1 style="font-family:'Orbitron'; margin-bottom:30px;">TERMINAL_ACCESS</h1><input type="email" id="email" placeholder="PILOT_EMAIL" style="width:100%; margin-bottom:12px;"><input type="password" id="pass" placeholder="SECURITY_KEY" style="width:100%; margin-bottom:20px;"><button onclick="Core.Auth('in')" style="width:100%; margin-bottom:15px;">LOGIN</button><button onclick="Core.Auth('up')" style="border:none; color:var(--p); font-size:9px; background:none; cursor:pointer;">> REGISTRATION</button></div></div>
 <div class="os-container">
-    <header><div>ORBITRON_OS // v9.4 <span style="color:var(--p); font-size:10px;">[DEEP_SPACE]</span></div><div id="clock">00:00:00</div></header>
+    <header><div>ORBITRON_OS // v9.6 <span style="color:var(--p); font-size:10px;">[STABLE_VOID]</span></div><div id="clock">00:00:00</div></header>
     <div class="main-area">
-        <aside class="panel todo-panel"><div style="padding:15px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">MISSION_OBJECTIVES</div><div class="input-box"><input type="text" id="todo-in" placeholder="ADD TASK..."></div><div id="todo-list"></div></aside>
-        <div class="chat-wrapper"><main class="panel chat-panel"><div style="padding:15px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">COMMS_CHANNEL</div><div id="chat-stream"></div><div class="input-box"><input type="text" id="chat-in" placeholder="TRANSMIT..."><button onclick="Core.Chat.send()">SEND</button></div></main></div>
+        <aside class="panel todo-panel"><div style="padding:15px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">MISSION_LOGS</div><div class="input-box"><input type="text" id="todo-in" placeholder="NEW TASK..."></div><div id="todo-list"></div></aside>
+        <div class="chat-wrapper"><main class="panel chat-panel"><div style="padding:15px; font-size:10px; color:var(--p); border-bottom:1px solid var(--border)">SECURE_COMMS</div><div id="chat-stream"></div><div class="input-box"><input type="text" id="chat-in" placeholder="TYPE MESSAGE..."><button onclick="Core.Chat.send()">SEND</button></div></main></div>
     </div>
 </div>
-
 <script>
 const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
-    init() { this.Canvas.init(); this.AuthListener(); this.UI(); setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000); this.loop(); },
+    init() { 
+        this.Canvas.init(); 
+        this.AuthListener(); 
+        this.UI(); 
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000); 
+        this.loop(); 
+    },
     Auth: async (t) => {
-        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value; 
+        if(!e || !p) return;
         const { error } = await (t === 'in' ? Core.sb.auth.signInWithPassword({email:e, password:p}) : Core.sb.auth.signUp({email:e, password:p}));
         if(error) alert(error.message);
     },
-    AuthListener() { this.sb.auth.onAuthStateChange((_, s) => { if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); } }); },
+    AuthListener() { 
+        this.sb.auth.onAuthStateChange((_, s) => { 
+            if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); }
+        }); 
+    },
     Chat: {
-        async load() { const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: true}); if(data) { document.getElementById('chat-stream').innerHTML = ''; data.forEach(m => this.render(m)); } },
-        render(m) { const s = document.getElementById('chat-stream'); const d = document.createElement('div'); d.className = 'msg-container'; d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`; s.appendChild(d); s.scrollTop = s.scrollHeight; },
-        async send() { const i = document.getElementById('chat-in'); if(!i.value || !Core.user) return; const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; this.render({nickname: n, message: v}); await Core.sb.from('comments').insert([{message: v, nickname: n}]); }
+        async load() { 
+            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
+            if(data) { document.getElementById('chat-stream').innerHTML = ''; data.forEach(m => this.render(m)); } 
+        },
+        render(m) { 
+            const s = document.getElementById('chat-stream'), d = document.createElement('div'); 
+            d.className = 'msg-container'; 
+            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`; 
+            s.appendChild(d); s.scrollTop = s.scrollHeight; 
+        },
+        async send() { 
+            const i = document.getElementById('chat-in'); 
+            if(!i.value || !Core.user) return; 
+            const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
+            this.render({nickname: n, message: v}); 
+            await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
+        }
     },
     UI() {
-        document.getElementById('todo-in').onkeypress = (e) => { if(e.key === 'Enter' && e.target.value) { const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); d.onclick = () => d.remove(); document.getElementById('todo-list').prepend(d); e.target.value = ''; } };
+        document.getElementById('todo-in').onkeypress = (e) => { 
+            if(e.key === 'Enter' && e.target.value) { 
+                const d = document.createElement('div'); 
+                d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); 
+                d.onclick = () => d.remove(); 
+                document.getElementById('todo-list').prepend(d); 
+                e.target.value = ''; 
+            } 
+        };
         document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') Core.Chat.send(); };
     },
     Canvas: {
         init() {
-            this.cvs = document.getElementById('starfield'); this.ctx = this.cvs.getContext('2d'); this.res(); window.onresize = () => this.res();
-            this.stars = Array.from({length: 200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.3, b:Math.random()}));
-            this.rocks = Array.from({length: 12}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:5+Math.random()*15, r:Math.random()*6, vs:Math.random()*0.01}));
-            this.crew = Array.from({length: 3}, () => ({x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, rot: Math.random()*6, vr: 0.005, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3}));
-            this.ufo = {x: -100, y: 350, p: []}; // p - particles
-            this.debris = Array.from({length: 20}, () => ({x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, s: 2+Math.random()*4, vx: -Math.random()*0.5, r: Math.random()*6}));
+            this.cvs = document.getElementById('starfield'); this.ctx = this.cvs.getContext('2d'); this.res(); 
+            window.addEventListener('resize', () => this.res());
+            this.stars = Array.from({length:200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.3, b:Math.random()}));
+            this.debris = Array.from({length:25}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*3+1, vx:-Math.random()*0.5}));
+            this.crew = Array.from({length:3}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, rot:Math.random()*6, vr:0.005, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3}));
+            this.ufo = {x:-100, y:350, p:[]}; this.comet = {x:-200, y:0, active:false};
         },
         res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        drawAstro(a) {
+            const ctx = this.ctx; ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+            ctx.fillStyle = '#fff'; ctx.beginPath(); 
+            if(ctx.roundRect) ctx.roundRect(-8, -12, 16, 24, 5); else ctx.rect(-8, -12, 16, 24);
+            ctx.fill(); 
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, -7, 6, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#0ff'; ctx.stroke();
+            ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.ellipse(-2, -8, 3, 2, 1, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-11, -8, 3, 15); ctx.restore();
+        },
+        drawUFO(u) {
+            const ctx = this.ctx; u.x += 1.1; if(u.x > this.cvs.width + 150) u.x = -150; 
+            let uy = u.y + Math.sin(Date.now()/800) * 50;
+            if(Date.now() % 3 === 0) u.p.push({x: u.x - 40, y: uy + (Math.random()*10 - 5), s: Math.random()*3+1, a: 1, vx: -Math.random()*2});
+            
+            for(let i = u.p.length - 1; i >= 0; i--) {
+                let p = u.p[i]; p.x += p.vx; p.a -= 0.02; 
+                ctx.fillStyle = `rgba(0,242,255,${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill(); 
+                if(p.a <= 0) u.p.splice(i, 1);
+            }
+            
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 16, 0, 0, Math.PI*2); ctx.fill(); 
+            ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2; ctx.stroke();
+            let d = ctx.createLinearGradient(u.x, uy-35, u.x, uy-10); 
+            d.addColorStop(0, 'rgba(0,242,255,0.7)'); d.addColorStop(1, 'transparent');
+            ctx.fillStyle = d; ctx.beginPath(); ctx.ellipse(u.x, uy-11, 28, 20, 0, Math.PI, 0); ctx.fill(); ctx.stroke();
+            for(let i=0; i<5; i++) { ctx.fillStyle = (Math.floor(Date.now()/150)%5 === i) ? '#f0f' : '#044'; ctx.beginPath(); ctx.arc(u.x-32+i*16, uy+3, 2, 0, Math.PI*2); ctx.fill(); }
+        },
         draw() {
-            const ctx = this.ctx, cvs = this.cvs; ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width, cvs.height);
-            // Stars
-            this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = `rgba(255,255,255,${0.3+Math.abs(Math.sin(Date.now()*0.001+s.b*10))*0.7})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, 7); ctx.fill(); });
-            // Debris (Мусор)
-            ctx.fillStyle = 'rgba(0, 242, 255, 0.2)';
-            this.debris.forEach(d => { d.x += d.vx; if(d.x < -10) d.x = cvs.width+10; ctx.fillRect(d.x, d.y, d.s, d.s); });
-            // Astronauts
-            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.rot += a.vr; if(a.x < -50) a.x = cvs.width+50; if(a.x > cvs.width+50) a.x = -50; ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot); ctx.fillStyle='#fff'; ctx.fillRect(-8,-12,16,24); ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(0,-8,6,0,7); ctx.fill(); ctx.restore(); });
-            // Planet Saturn-Style
-            const px = cvs.width*0.85, py = cvs.height*0.3;
-            // Atmosphere
-            let ag = ctx.createRadialGradient(px, py, 110, px, py, 140); ag.addColorStop(0, 'rgba(0,242,255,0.15)'); ag.addColorStop(1, 'transparent');
-            ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(px, py, 140, 0, 7); ctx.fill();
-            // Rings
-            ctx.strokeStyle = 'rgba(0,242,255,0.15)'; ctx.lineWidth = 15; ctx.beginPath(); ctx.ellipse(px, py, 210, 45, 0.4, 0, 7); ctx.stroke();
-            ctx.strokeStyle = 'rgba(255,0,255,0.05)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(px, py, 180, 35, 0.4, 0, 7); ctx.stroke();
-            // Planet Body
-            let pg = ctx.createRadialGradient(px-30, py-30, 10, px, py, 110); pg.addColorStop(0, '#00f2ff'); pg.addColorStop(0.6, '#004466'); pg.addColorStop(1, '#01050a');
-            ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, 110, 0, 7); ctx.fill();
-            // UFO + Particles
-            let u = this.ufo; u.x += 1.2; if(u.x > cvs.width+150) u.x = -150; let uy = u.y + Math.sin(Date.now()/800)*50;
-            if(Date.now() % 3 === 0) u.p.push({x: u.x-40, y: uy+Math.random()*10-5, s: 2+Math.random()*3, a: 1, vx: -Math.random()*2, vy: (Math.random()-0.5)*1});
-            u.p.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.a -= 0.02; ctx.fillStyle=`rgba(0,242,255,${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); if(p.a<=0) u.p.splice(i,1); });
-            // UFO Body
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 15, 0, 0, 7); ctx.fill(); ctx.strokeStyle='#0ff'; ctx.lineWidth=2; ctx.stroke();
-            ctx.fillStyle = 'rgba(0,242,255,0.6)'; ctx.beginPath(); ctx.ellipse(u.x, uy-10, 25, 18, 0, Math.PI, 0); ctx.fill();
-            for(let i=0; i<5; i++) { ctx.fillStyle = (Math.floor(Date.now()/150)%5 === i) ? '#f0f' : '#044'; ctx.beginPath(); ctx.arc(u.x-32+i*16, uy+2, 2, 0, 7); ctx.fill(); }
+            const ctx = this.ctx, cvs = this.cvs; ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.abs(Math.sin(Date.now()*0.001 + s.b*10))*0.7})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); });
+            this.debris.forEach(d => { d.x += d.vx; if(d.x < -10) d.x = cvs.width + 10; ctx.fillStyle = 'rgba(0,242,255,0.1)'; ctx.fillRect(d.x, d.y, d.s, d.s); });
+            
+            if(!this.comet.active && Math.random() < 0.004) { this.comet.active = true; this.comet.x = -200; this.comet.y = Math.random() * cvs.height; }
+            if(this.comet.active) { 
+                this.comet.x += 12; this.comet.y += 1.5; 
+                let g = ctx.createLinearGradient(this.comet.x, this.comet.y, this.comet.x-80, this.comet.y-5); 
+                g.addColorStop(0, '#fff'); g.addColorStop(1, 'transparent'); ctx.strokeStyle = g; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x-80, this.comet.y-5); ctx.stroke(); 
+                if(this.comet.x > cvs.width + 200) this.comet.active = false; 
+            }
+            
+            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.rot += a.vr; if(a.x < -50) a.x = cvs.width+50; if(a.y < -50) a.y = cvs.height+50; this.drawAstro(a); });
+            
+            const px = cvs.width * 0.85, py = cvs.height * 0.3;
+            ctx.strokeStyle = 'rgba(0,242,255,0.1)'; ctx.lineWidth = 12; ctx.beginPath(); ctx.ellipse(px, py, 200, 45, 0.4, 0, Math.PI*2); ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,0,255,0.05)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(px, py, 170, 35, 0.4, 0, Math.PI*2); ctx.stroke();
+            
+            let pg = ctx.createRadialGradient(px-30, py-30, 10, px, py, 110); 
+            pg.addColorStop(0, '#00f2ff'); pg.addColorStop(0.7, '#003344'); pg.addColorStop(1, '#01050a');
+            ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, 110, 0, Math.PI*2); ctx.fill();
+            
+            let ag = ctx.createRadialGradient(px, py, 110, px, py, 135); 
+            ag.addColorStop(0, 'rgba(0,242,255,0.1)'); ag.addColorStop(1, 'transparent');
+            ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(px, py, 135, 0, Math.PI*2); ctx.fill();
+            
+            this.drawUFO(this.ufo);
         }
     },
     loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
