@@ -10,30 +10,32 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .os-container { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; padding: 20px; }
+        .os-container { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; padding: 20px; pointer-events: none; }
+        header, .panel { pointer-events: all; } /* Чтобы клики проходили сквозь контейнер, но работали в панелях */
         header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 20px; font-family: 'Orbitron'; background: rgba(1,5,10,0.5); }
         .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
-        .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; }
+        .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; position: relative; z-index: 20; }
         .todo-panel { width: 300px; flex-shrink: 0; }
         #todo-list { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: none; }
         .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.1); cursor: pointer; transition: 0.2s; font-size: 13px; }
         .task:hover { color: var(--p); background: rgba(255,0,255,0.1); text-decoration: line-through; }
-        .chat-wrapper { flex: 1; display: flex; justify-content: center; }
-        .chat-panel { width: 100%; max-width: 550px; height: 100%; }
+        .chat-wrapper { flex: 1; display: flex; justify-content: center; pointer-events: none; }
+        .chat-panel { width: 100%; max-width: 550px; height: 100%; pointer-events: all; }
         #chat-stream { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; }
         .msg-container { animation: msgAppear 0.4s cubic-bezier(0.18,0.89,0.32,1.28) forwards; opacity: 0; transform: translateY(20px); }
         .msg-nick { font-size: 10px; color: var(--p); margin-bottom: 4px; font-family: 'Orbitron'; }
         .msg-text { background: rgba(0,242,255,0.08); padding: 12px 16px; border-radius: 2px 12px 12px 12px; border: 1px solid rgba(0,242,255,0.1); color: #fff; }
-        .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
+        .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); position: relative; z-index: 30; }
         input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; }
-        button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 11px; }
+        button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 11px; transition: 0.3s; z-index: 40; position: relative; }
+        button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
         #auth-gate { position: fixed; inset: 0; z-index: 500; background: radial-gradient(circle at center, #0a121a 0%, #01050a 100%); display: flex; align-items: center; justify-content: center; }
-        .auth-form { width: 380px; padding: 40px; background: rgba(1, 5, 10, 0.8); border: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,1), inset 0 0 15px rgba(0, 242, 255, 0.1); backdrop-filter: blur(20px); position: relative; text-align: center; }
+        .auth-form { width: 380px; padding: 40px; background: rgba(1, 5, 10, 0.8); border: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,1); text-align: center; }
         .auth-input-group { margin-bottom: 25px; text-align: left; }
-        .auth-input-group label { font-size: 10px; color: var(--p); display: block; margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron'; }
-        .auth-form input { width: 100%; background: rgba(0, 242, 255, 0.05); border: 1px solid var(--border); padding: 12px; color: #fff; font-family: 'Share Tech Mono'; outline: none; transition: 0.3s; }
-        .login-btn { width: 100%; padding: 16px; background: transparent; border: 1px solid var(--n); color: var(--n); font-family: 'Orbitron'; font-size: 12px; cursor: pointer; transition: 0.3s; }
-        .login-btn:hover { background: var(--n); color: #000; box-shadow: 0 0 30px var(--n); }
+        .auth-input-group label { font-size: 10px; color: var(--p); display: block; margin-bottom: 8px; font-family: 'Orbitron'; }
+        .auth-form input { width: 100%; background: rgba(0, 242, 255, 0.05); border: 1px solid var(--border); padding: 12px; color: #fff; outline: none; }
+        .login-btn { width: 100%; padding: 16px; background: transparent; border: 1px solid var(--n); color: var(--n); font-family: 'Orbitron'; cursor: pointer; transition: 0.3s; margin-bottom: 10px; }
+        .login-btn:hover { background: var(--n); color: #000; box-shadow: 0 0 20px var(--n); }
         .hidden { display: none !important; }
         .audio-link { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--border); font-size: 10px; }
         .bars { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
@@ -57,7 +59,7 @@
             <input type="password" id="pass" placeholder="---">
         </div>
         <button class="login-btn" onclick="Core.Auth()">INITIATE_SESSION</button>
-        <button class="login-btn" onclick="Core.Register()" style="margin-top: 10px; border-color: var(--p); color: var(--p);">CREATE_NEW_PILOT</button>
+        <button class="login-btn" onclick="Core.Register()" style="border-color: var(--p); color: var(--p);">CREATE_NEW_PILOT</button>
     </div>
 </div>
 
@@ -80,8 +82,8 @@
             <main class="panel chat-panel">
                 <div id="chat-stream"></div>
                 <div class="input-box">
-                    <input type="text" id="chat-in">
-                    <button onclick="Core.Chat.send()">SEND</button>
+                    <input type="text" id="chat-in" placeholder="TYPE_MESSAGE...">
+                    <button id="send-btn" onclick="Core.Chat.send()">SEND</button>
                 </div>
             </main>
         </div>
@@ -151,10 +153,13 @@ const Core = {
         },
         async send() { 
             const i = document.getElementById('chat-in'); 
-            if(!i.value || !Core.user) return; 
+            if(!i.value || !Core.user) {
+                console.log("Cannot send: empty input or no user");
+                return;
+            }
             const n = Core.user.email.split('@')[0], v = i.value; 
             i.value = ''; 
-            this.render({nickname: n, message: v, created_at: new Date()}); 
+            Core.Chat.render({nickname: n, message: v, created_at: new Date()}); 
             await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
         }
     },
