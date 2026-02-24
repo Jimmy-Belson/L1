@@ -92,25 +92,37 @@
 const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
+    
     init() {
-        this.Canvas.init(); this.Audio.setup(); this.UI();
+        this.Canvas.init(); 
+        this.Audio.setup(); 
+        this.UI();
         setInterval(() => {
             const el = document.getElementById('clock');
             if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
         }, 1000);
-        this.sb.auth.onAuthStateChange((_, s) => { if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); }});
+        this.sb.auth.onAuthStateChange((_, s) => { 
+            if(s) { 
+                this.user = s.user; 
+                document.getElementById('auth-gate').classList.add('hidden'); 
+                this.Chat.load(); 
+            }
+        });
         this.loop();
     },
+
     Auth: async () => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
         if(error) alert(error.message);
     },
+
     Register: async () => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await Core.sb.auth.signUp({email:e, password:p});
         if(error) alert(error.message); else alert("PILOT_CREATED");
     },
+
     Audio: {
         playing: false,
         setup() { 
@@ -124,6 +136,7 @@ const Core = {
             else { this.el.pause(); b.classList.remove('playing'); this.playing = false; }
         }
     },
+
     Chat: {
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
@@ -137,16 +150,31 @@ const Core = {
             s.appendChild(d); s.scrollTop = s.scrollHeight; 
         },
         async send() { 
-            const i = document.getElementById('chat-in'); if(!i.value || !this.user) return; 
-            const n = this.user.email.split('@')[0], v = i.value; i.value = ''; 
+            const i = document.getElementById('chat-in'); 
+            if(!i.value || !Core.user) return; 
+            const n = Core.user.email.split('@')[0], v = i.value; 
+            i.value = ''; 
             this.render({nickname: n, message: v, created_at: new Date()}); 
             await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
         }
     },
+
     UI() {
-        document.getElementById('todo-in').onkeypress = (e) => { if(e.key === 'Enter' && e.target.value) { const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); d.onclick = () => d.remove(); document.getElementById('todo-list').prepend(d); e.target.value = ''; } };
-        document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
+        document.getElementById('todo-in').onkeypress = (e) => { 
+            if(e.key === 'Enter' && e.target.value) { 
+                const d = document.createElement('div'); 
+                d.className = 'task'; 
+                d.innerText = '> ' + e.target.value.toUpperCase(); 
+                d.onclick = () => d.remove(); 
+                document.getElementById('todo-list').prepend(d); 
+                e.target.value = ''; 
+            } 
+        };
+        document.getElementById('chat-in').onkeypress = (e) => { 
+            if(e.key === 'Enter') Core.Chat.send(); 
+        };
     },
+
     Canvas: {
         init() {
             this.cvs = document.getElementById('starfield'); this.ctx = this.cvs.getContext('2d'); this.res();
@@ -190,8 +218,13 @@ const Core = {
             this.drawUFO(this.ufo);
         }
     },
-    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+
+    loop() { 
+        Core.Canvas.draw(); 
+        requestAnimationFrame(() => Core.loop()); 
+    }
 };
+
 window.onload = () => Core.init();
 </script>
 </body>
