@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>ORBITRON v10.1</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --glass: rgba(0, 242, 255, 0.05); --border: rgba(0, 242, 255, 0.2); }
@@ -11,24 +11,33 @@
         body { background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
         #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .os-container { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; padding: 20px; pointer-events: none; }
-        header, .panel { pointer-events: all; } /* Чтобы клики проходили сквозь контейнер, но работали в панелях */
+        header, .panel { pointer-events: all; }
         header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 20px; font-family: 'Orbitron'; background: rgba(1,5,10,0.5); }
         .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
         .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; position: relative; z-index: 20; }
-        .todo-panel { width: 300px; flex-shrink: 0; }
+        
+        .todo-panel { width: 300px; flex-shrink: 0; height: fit-content; max-height: 80%; }
         #todo-list { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: none; }
         .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.1); cursor: pointer; transition: 0.2s; font-size: 13px; }
         .task:hover { color: var(--p); background: rgba(255,0,255,0.1); text-decoration: line-through; }
-        .chat-wrapper { flex: 1; display: flex; justify-content: center; pointer-events: none; }
-        .chat-panel { width: 100%; max-width: 550px; height: 100%; pointer-events: all; }
+        
+        /* ЧАТ: УКОРОТИЛ В ДЛИНУ */
+        .chat-wrapper { flex: 1; display: flex; justify-content: center; align-items: flex-end; pointer-events: none; padding-bottom: 20px; }
+        .chat-panel { width: 100%; max-width: 550px; height: 450px; pointer-events: all; }
         #chat-stream { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; }
+        
         .msg-container { animation: msgAppear 0.4s cubic-bezier(0.18,0.89,0.32,1.28) forwards; opacity: 0; transform: translateY(20px); }
-        .msg-nick { font-size: 10px; color: var(--p); margin-bottom: 4px; font-family: 'Orbitron'; }
+        
+        /* НИКИ: СДЕЛАЛ ЖИРНЕЕ */
+        .msg-nick { font-size: 11px; color: var(--n); margin-bottom: 4px; font-family: 'Orbitron'; font-weight: 900; text-shadow: 0 0 8px var(--n); text-transform: uppercase; }
+        .msg-time { opacity: 0.4; font-size: 9px; margin-left: 10px; font-weight: 400; text-shadow: none; color: #fff; }
+        
         .msg-text { background: rgba(0,242,255,0.08); padding: 12px 16px; border-radius: 2px 12px 12px 12px; border: 1px solid rgba(0,242,255,0.1); color: #fff; }
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); position: relative; z-index: 30; }
         input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; }
         button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 11px; transition: 0.3s; z-index: 40; position: relative; }
         button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
+        
         #auth-gate { position: fixed; inset: 0; z-index: 500; background: radial-gradient(circle at center, #0a121a 0%, #01050a 100%); display: flex; align-items: center; justify-content: center; }
         .auth-form { width: 380px; padding: 40px; background: rgba(1, 5, 10, 0.8); border: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,1); text-align: center; }
         .auth-input-group { margin-bottom: 25px; text-align: left; }
@@ -49,7 +58,7 @@
 <canvas id="starfield"></canvas>
 <div id="auth-gate">
     <div class="auth-form">
-        <h1>STATION_LOGIN</h1>
+        <h1 style="font-family:'Orbitron'; color:var(--n); margin-bottom:20px; font-size:20px">STATION_LOGIN</h1>
         <div class="auth-input-group">
             <label>YOUR_MAIL</label>
             <input type="email" id="email" placeholder="---" autocomplete="off">
@@ -74,7 +83,7 @@
     </header>
     <div class="main-area">
         <aside class="panel todo-panel">
-            <div style="padding:15px; font-size:10px; border-bottom:1px solid var(--border)">MISSION_LOGS</div>
+            <div style="padding:15px; font-size:10px; border-bottom:1px solid var(--border); font-family:'Orbitron'">MISSION_LOGS</div>
             <div class="input-box"><input type="text" id="todo-in" placeholder="..."></div>
             <div id="todo-list"></div>
         </aside>
@@ -148,15 +157,12 @@ const Core = {
             const s = document.getElementById('chat-stream'), d = document.createElement('div'); 
             d.className = 'msg-container';
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit', hour12:false});
-            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
+            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span class="msg-time">${time}</span></div><div class="msg-text">${m.message}</div>`; 
             s.appendChild(d); s.scrollTop = s.scrollHeight; 
         },
         async send() { 
             const i = document.getElementById('chat-in'); 
-            if(!i.value || !Core.user) {
-                console.log("Cannot send: empty input or no user");
-                return;
-            }
+            if(!i.value || !Core.user) return;
             const n = Core.user.email.split('@')[0], v = i.value; 
             i.value = ''; 
             Core.Chat.render({nickname: n, message: v, created_at: new Date()}); 
@@ -175,9 +181,7 @@ const Core = {
                 e.target.value = ''; 
             } 
         };
-        document.getElementById('chat-in').onkeypress = (e) => { 
-            if(e.key === 'Enter') Core.Chat.send(); 
-        };
+        document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') Core.Chat.send(); };
     },
 
     Canvas: {
@@ -223,13 +227,8 @@ const Core = {
             this.drawUFO(this.ufo);
         }
     },
-
-    loop() { 
-        Core.Canvas.draw(); 
-        requestAnimationFrame(() => Core.loop()); 
-    }
+    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
 };
-
 window.onload = () => Core.init();
 </script>
 </body>
