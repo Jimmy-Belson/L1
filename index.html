@@ -108,73 +108,73 @@ const Core = {
         this.Canvas.init(); 
         this.Audio.setup(); 
         this.UI();
+        
+        // Часы
         setInterval(() => {
             const el = document.getElementById('clock');
             if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
         }, 1000);
 
-        this.sb.auth.onAuthStateChange((_, s) => { 
-            if(s) { 
-                this.user = s.user; 
+        // Слушаем авторизацию
+        this.sb.auth.onAuthStateChange((event, session) => { 
+            if (session) { 
+                this.user = session.user; 
                 document.getElementById('auth-gate').classList.add('hidden'); 
-                this.Chat.load(); 
-                this.Chat.subscribe(); // ВКЛЮЧАЕМ ЖИВОЕ ОБНОВЛЕНИЕ
+                
+                // Сначала загружаем историю, потом включаем живой эфир
+                this.Chat.load().then(() => {
+                    this.Chat.subscribe(); 
+                });
             }
         });
         this.loop();
     },
 
-    // ... (Auth и Register остаются прежними)
-    Auth: async () => {
-        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
-        if(error) alert(error.message);
-    },
-    Register: async () => {
-        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signUp({email:e, password:p});
-        if(error) alert(error.message); else alert("PILOT_CREATED");
-    },
-
-    Audio: {
-        playing: false,
-        setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop = true; this.el.volume = 0.2; },
-        toggle() {
-            const b = document.getElementById('audio-btn');
-            if(this.el.paused) { this.el.play(); b.classList.add('playing'); this.playing = true; }
-            else { this.el.pause(); b.classList.remove('playing'); this.playing = false; }
-        }
-    },
-
     Chat: {
         async load() { 
-            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
+            const { data, error } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
             if(data) { 
                 document.getElementById('chat-stream').innerHTML = ''; 
                 data.forEach(m => this.render(m)); 
             } 
         },
         
-        // ПОДПИСКА НА НОВЫЕ СООБЩЕНИЯ
         subscribe() {
-            this.sb.channel('realtime_chat')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
-                    // Если это сообщение не от нас (наше мы отрисовали мгновенно), рисуем его
-                    const isMyMessage = Core.user && payload.new.nickname === Core.user.email.split('@')[0];
-                    if (!isMyMessage) {
-                        this.render(payload.new);
-                    }
+            // Создаем канал и слушаем ВСЕ изменения в таблице comments
+            const channel = Core.sb.channel('realtime_chat')
+                .on('postgres_changes', { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'comments' 
+                }, (payload) => {
+                    console.log("Пришло новое сообщение:", payload.new);
+                    this.render(payload.new);
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    console.log("Статус подключения к эфиру:", status);
+                });
         },
 
         render(m) { 
-            const s = document.getElementById('chat-stream'), d = document.createElement('div'); 
+            const s = document.getElementById('chat-stream');
+            
+            // Если сообщение с таким ID уже есть на экране, не дублируем его
+            if (m.id && document.getElementById(`msg-${m.id}`)) return;
+
+            const d = document.createElement('div'); 
             d.className = 'msg-container';
+            if (m.id) d.id = `msg-${m.id}`;
+            
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit', hour12:false});
-            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px; color:#fff; font-weight:400;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
+            d.innerHTML = `
+                <div class="msg-nick" style="font-weight:900; text-shadow: 0 0 10px var(--n);">
+                    ${(m.nickname||'PILOT').toUpperCase()} 
+                    <span style="opacity:0.4; font-size:9px; margin-left:10px; color:#fff; font-weight:400;">${time}</span>
+                </div>
+                <div class="msg-text">${m.message}</div>
+            `; 
             s.appendChild(d); 
-            s.scrollTop = s.scrollHeight; // Скроллим вниз
+            s.scrollTop = s.scrollHeight;
         },
 
         async send() { 
@@ -183,14 +183,11 @@ const Core = {
             const n = Core.user.email.split('@')[0], v = i.value; 
             i.value = ''; 
             
-            // Оптимистичный рендер (сразу показываем себе)
-            Core.Chat.render({nickname: n, message: v, created_at: new Date()}); 
-            
-            const { error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
-            if(error) console.error("Send error:", error);
+            // Просто отправляем в базу. Рендер произойдет через subscribe автоматически!
+            await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
         }
     },
-
+    // ... остальной код (UI, Canvas, loop) без изменений
     UI() {
         document.getElementById('todo-in').onkeypress = (e) => { 
             if(e.key === 'Enter' && e.target.value) { 
