@@ -34,6 +34,7 @@
 }
 
 .auth-form { 
+    
     width: 380px; padding: 40px; 
     background: rgba(1, 5, 10, 0.8);
     border: 1px solid var(--border);
@@ -41,6 +42,7 @@
     backdrop-filter: blur(20px);
     position: relative;
     text-align: center;
+    
 }
 
 /* Угловые декоративные элементы */
@@ -98,15 +100,10 @@
 <div id="auth-gate">
     <div class="auth-form">
         <h1>TERMINAL_ACCESS</h1>
-        <div class="auth-input-group">
-            <label>PILOT_ID (EMAIL)</label>
-            <input type="email" id="email" placeholder="_">
-        </div>
-        <div class="auth-input-group">
-            <label>ACCESS_CODE (PASS)</label>
-            <input type="password" id="pass" placeholder="_">
-        </div>
-        <button class="login-btn" onclick="Core.Auth()">INITIATE_LOGIN</button>
+        <button class="login-btn" onclick="Core.Auth()">INITIATE_SESSION</button>
+        <button class="login-btn" onclick="Core.Register()" style="margin-top: 10px; border-color: var(--p); color: var(--p);">
+    CREATE_NEW_PILOT
+</button>
     </div>
 </div>
 <div class="os-container">
