@@ -2,342 +2,277 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>ORBITRON v9.0 - VOID FOCUS</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Chat</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-:root{
---n:#00f2ff;
---p:#ff00ff;
---bg:#01050a;
---glass:rgba(0,242,255,0.05);
---border:rgba(0,242,255,0.2);
+body {
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:black;
+    overflow:hidden;
+    color:white;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;}
-
-body{
-background:var(--bg);
-color:var(--n);
-font-family:'Share Tech Mono', monospace;
-height:100vh;
-overflow:hidden;
+/* CANVAS */
+canvas{
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:-1;
 }
 
-#starfield{
-position:fixed;
-inset:0;
-z-index:1;
+/* CHAT */
+#chat-box{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:420px;
+    height:600px;
+    background:rgba(0,0,0,0.7);
+    backdrop-filter:blur(12px);
+    border-radius:20px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 0 40px rgba(0,255,255,0.4);
+    animation:float 6s ease-in-out infinite;
 }
 
-.viewport{
-position:relative;
-z-index:10;
-display:flex;
-flex-direction:column;
-align-items:center;
-height:100vh;
-padding:20px;
+@keyframes float{
+    0%,100%{transform:translate(-50%,-50%) translateY(0px);}
+    50%{transform:translate(-50%,-50%) translateY(-10px);}
 }
 
-.header{
-width:100%;
-max-width:700px;
-display:flex;
-justify-content:space-between;
-padding:15px;
-border-bottom:1px solid var(--border);
-font-family:'Orbitron';
+#messages{
+    flex:1;
+    overflow-y:auto;
+    padding:15px;
 }
 
-.chat-panel{
-width:100%;
-max-width:650px;
-height:75vh;
-background:var(--glass);
-backdrop-filter:blur(12px);
-border:1px solid var(--border);
-display:flex;
-flex-direction:column;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
+.message{
+    margin-bottom:12px;
+    animation:fade 0.4s ease;
 }
 
-#chat-stream{
-flex:1;
-overflow-y:auto;
-padding:20px;
-display:flex;
-flex-direction:column;
-gap:12px;
+@keyframes fade{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
 }
 
-.msg-nick{
-font-size:10px;
-color:var(--p);
-font-family:'Orbitron';
+.time{
+    font-size:11px;
+    opacity:0.6;
 }
 
-.msg-text{
-background:rgba(0,242,255,0.07);
-padding:10px 15px;
-border-radius:0 10px 10px 10px;
-border:1px solid rgba(0,242,255,0.15);
-color:#e0faff;
+#input-area{
+    display:flex;
+    padding:10px;
 }
 
-.input-bar{
-display:flex;
-gap:10px;
-padding:15px;
-border-top:1px solid var(--border);
-}
-
-input{
-flex:1;
-background:rgba(0,0,0,0.6);
-border:1px solid var(--border);
-color:#fff;
-padding:12px;
-outline:none;
+#chat-input{
+    flex:1;
+    border:none;
+    border-radius:10px;
+    padding:8px;
 }
 
 button{
-background:transparent;
-border:1px solid var(--n);
-color:var(--n);
-padding:10px 20px;
-font-family:'Orbitron';
-cursor:pointer;
+    margin-left:6px;
+    border:none;
+    border-radius:10px;
+    padding:8px 12px;
+    background:cyan;
+    cursor:pointer;
 }
 
-button:hover{
-background:var(--n);
-color:#000;
+/* TODO */
+#todo{
+    position:absolute;
+    right:20px;
+    top:20px;
+    width:220px;
+    background:rgba(0,0,0,0.6);
+    padding:15px;
+    border-radius:15px;
 }
 
-#auth-gate{
-position:fixed;
-inset:0;
-z-index:100;
-background:var(--bg);
-display:flex;
-align-items:center;
-justify-content:center;
+#auth{
+    position:absolute;
+    top:20px;
+    left:20px;
 }
-
-.hidden{display:none!important;}
 </style>
 </head>
 
 <body>
 
-<canvas id="starfield"></canvas>
+<canvas id="space"></canvas>
 
-<div id="auth-gate">
-<div style="width:350px;text-align:center;border:1px solid var(--n);padding:50px;backdrop-filter:blur(10px);">
-<h1 style="font-family:'Orbitron';margin-bottom:30px;">OMNI_v9.0</h1>
-<input type="email" id="email" placeholder="EMAIL" style="width:100%;margin-bottom:10px;">
-<input type="password" id="pass" placeholder="PASSWORD" style="width:100%;margin-bottom:20px;">
-<button onclick="Core.Auth('in')" style="width:100%;margin-bottom:10px;">LOGIN</button>
-<button onclick="Core.Auth('up')" style="width:100%;">REGISTER</button>
-</div>
+<div id="auth">
+    <input id="email" placeholder="email">
+    <input id="password" type="password" placeholder="password">
+    <button onclick="register()">Регистрация</button>
+    <button onclick="login()">Вход</button>
 </div>
 
-<div class="viewport">
-<header class="header">
-<div>ORBITRON_SYSTEM // FOCUS</div>
-<div id="clock">00:00:00</div>
-</header>
-
-<main class="chat-panel">
-<div id="chat-stream"></div>
-<div class="input-bar">
-<input type="text" id="chat-in" placeholder="ENTER TELEMETRY DATA...">
-<button onclick="Core.Chat.send()">SEND</button>
+<div id="chat-box">
+    <div id="messages"></div>
+    <div id="input-area">
+        <input id="chat-input" placeholder="Сообщение...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
 </div>
-</main>
+
+<div id="todo">
+    <h3>🚀 ToDo</h3>
+    <input id="todo-input" placeholder="Новая задача">
+    <button onclick="addTodo()">+</button>
+    <ul id="todo-list"></ul>
 </div>
 
 <script>
-const Core={
-sb:window.supabase.createClient(
-'https://ebjsxlympwocluxgmwcu.supabase.co',
-'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
-),
-user:null,
+const SUPABASE_URL="YOUR_URL";
+const SUPABASE_ANON_KEY="YOUR_KEY";
+const sb = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-init(){
-this.Canvas.init();
-this.AuthListener();
-this.UI();
-setInterval(()=>document.getElementById('clock').innerText=new Date().toLocaleTimeString(),1000);
-this.loop();
-},
+let user=null;
 
-Auth:async(type)=>{
-const email=document.getElementById('email').value;
-const pass=document.getElementById('pass').value;
-
-let result;
-
-if(type==='in'){
-result=await this.sb.auth.signInWithPassword({email,password:pass});
-}else{
-result=await this.sb.auth.signUp({email,password:pass});
+/* AUTH */
+async function register(){
+    await sb.auth.signUp({
+        email:email.value,
+        password:password.value
+    });
+    alert("Проверь почту");
 }
 
-if(result.error) alert(result.error.message);
-},
-
-AuthListener(){
-this.sb.auth.onAuthStateChange((_,session)=>{
-if(session){
-this.user=session.user;
-document.getElementById('auth-gate').classList.add('hidden');
-this.Chat.load();
-this.Chat.subscribe();
+async function login(){
+    const {data}=await sb.auth.signInWithPassword({
+        email:email.value,
+        password:password.value
+    });
+    user=data.user;
 }
-});
-},
 
-Chat:{
-async load(){
-const {data}=await Core.sb.from('comments').select('*').order('created_at',{ascending:true});
-if(data)data.forEach(m=>this.render(m));
-},
+/* CHAT */
+async function sendMessage() {
 
-subscribe(){
-Core.sb.channel('comments')
-.on('postgres_changes',{event:'INSERT',schema:'public',table:'comments'},
+    const input = document.getElementById("chat-input");
+    const value = input.value.trim();
+
+    if (!value || !user) return;
+
+    const time = new Date().toLocaleTimeString();
+
+    await sb.from("messages").insert({
+        text: value,
+        user: user.email,
+        time: time
+    });
+
+    input.value = "";
+}
+
+sb.channel("chat")
+.on("postgres_changes",
+{event:"INSERT",schema:"public",table:"messages"},
 payload=>{
-if(Core.user && payload.new.nickname!==Core.user.email.split('@')[0]){
-this.notify(payload.new);
-}
-this.render(payload.new);
+    const msg=document.createElement("div");
+    msg.className="message";
+    msg.innerHTML=`<b>${payload.new.user}</b>: ${payload.new.text}
+    <div class="time">${payload.new.time}</div>`;
+    messages.appendChild(msg);
+    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
 })
 .subscribe();
-},
 
-notify(m){
-const n=document.createElement('div');
-n.style.position='fixed';
-n.style.bottom='20px';
-n.style.right='20px';
-n.style.padding='15px 20px';
-n.style.background='rgba(0,0,0,0.9)';
-n.style.border='1px solid #00f2ff';
-n.style.color='#00f2ff';
-n.style.fontFamily='Orbitron';
-n.textContent='NEW MESSAGE FROM '+m.nickname.toUpperCase();
-document.body.appendChild(n);
-setTimeout(()=>n.remove(),3000);
-},
-
-render(m){
-const s=document.getElementById('chat-stream');
-const d=document.createElement('div');
-
-const nick=document.createElement('div');
-nick.className='msg-nick';
-nick.textContent=(m.nickname||'PILOT').toUpperCase();
-
-const text=document.createElement('div');
-text.className='msg-text';
-text.textContent=m.message;
-
-d.appendChild(nick);
-d.appendChild(text);
-s.appendChild(d);
-s.scrollTop=s.scrollHeight;
-},
-
-async send(){
-const input=document.getElementById('chat-in');
-if(!input.value||!Core.user)return;
-if(input.value.length>300)return;
-
-const nickname=Core.user.email.split('@')[0];
-const message=input.value;
-input.value='';
-
-await Core.sb.from('comments').insert([{message,nickname}]);
+/* TODO */
+function addTodo(){
+    const li=document.createElement("li");
+    li.textContent=todo-input.value;
+    todo-list.appendChild(li);
+    todo-input.value;"";
 }
-},
 
-UI(){
-const chatInput=document.getElementById('chat-in');
-chatInput.addEventListener('keypress',e=>{
-if(e.key==='Enter') Core.Chat.send();
-});
-},
+/* SPACE ANIMATION */
+const canvas=document.getElementById("space");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
 
-Canvas:{
-init(){
-this.cvs=document.getElementById('starfield');
-this.ctx=this.cvs.getContext('2d');
-this.resize();
-window.addEventListener('resize',()=>this.resize());
-
-this.stars=Array.from({length:200},()=>({
-x:Math.random()*this.cvs.width,
-y:Math.random()*this.cvs.height,
-v:Math.random()*0.5
-}));
-
-this.astronauts=Array.from({length:4},()=>({
-x:Math.random()*this.cvs.width,
-y:Math.random()*this.cvs.height,
-speed:0.3+Math.random()*0.5,
-size:20+Math.random()*20
-}));
-},
-
-resize(){
-this.cvs.width=window.innerWidth;
-this.cvs.height=window.innerHeight;
-},
-
-draw(){
-const ctx=this.ctx;
-const cvs=this.cvs;
-
-ctx.fillStyle='#01050a';
-ctx.fillRect(0,0,cvs.width,cvs.height);
-
-ctx.fillStyle='#fff';
-this.stars.forEach(s=>{
-s.x-=s.v;
-if(s.x<0)s.x=cvs.width;
-ctx.beginPath();
-ctx.arc(s.x,s.y,1,0,7);
-ctx.fill();
-});
-
-this.astronauts.forEach(a=>{
-a.x-=a.speed;
-if(a.x<-50)a.x=cvs.width+50;
-ctx.save();
-ctx.translate(a.x,a.y);
-ctx.strokeStyle='#00f2ff';
-ctx.beginPath();
-ctx.arc(0,0,a.size/4,0,Math.PI*2);
-ctx.stroke();
-ctx.beginPath();
-ctx.arc(0,-a.size/3,a.size/5,0,Math.PI*2);
-ctx.stroke();
-ctx.restore();
-});
+let stars=[];
+for(let i=0;i<200;i++){
+    stars.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height,
+        size:Math.random()*2
+    });
 }
-},
 
-loop(){
-Core.Canvas.draw();
-requestAnimationFrame(()=>Core.loop());
+let astronauts=[
+    {x:100,y:200,speed:0.5},
+    {x:500,y:400,speed:0.3}
+];
+
+let ufo={x:0,y:100,speed:1};
+
+let asteroids=[];
+for(let i=0;i<5;i++){
+    asteroids.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height,
+        speed:2+Math.random()*2
+    });
 }
-};
 
-window.onload=()=>Core.init();
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    /* stars */
+    ctx.fillStyle="white";
+    stars.forEach(s=>{
+        ctx.fillRect(s.x,s.y,s.size,s.size);
+    });
+
+    /* planets */
+    ctx.fillStyle="purple";
+    ctx.beginPath();
+    ctx.arc(200,150,60,0,Math.PI*2);
+    ctx.fill();
+
+    /* astronauts */
+    ctx.fillStyle="white";
+    astronauts.forEach(a=>{
+        ctx.beginPath();
+        ctx.arc(a.x,a.y,10,0,Math.PI*2);
+        ctx.fill();
+        a.y+=a.speed;
+        if(a.y>canvas.height)a.y=0;
+    });
+
+    /* ufo */
+    ctx.fillStyle="lime";
+    ctx.fillRect(ufo.x,ufo.y,40,15);
+    ufo.x+=ufo.speed;
+    if(ufo.x>canvas.width)ufo.x=-50;
+
+    /* asteroids */
+    ctx.fillStyle="gray";
+    asteroids.forEach(a=>{
+        ctx.beginPath();
+        ctx.arc(a.x,a.y,8,0,Math.PI*2);
+        ctx.fill();
+        a.y+=a.speed;
+        if(a.y>canvas.height)a.y=0;
+    });
+
+    requestAnimationFrame(draw);
+}
+
+draw();
 </script>
 
 </body>
