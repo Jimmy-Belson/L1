@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON v10.2_FULL_RESTORE</title>
+    <title>ORBITRON v10.3_RESTORED</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -21,23 +21,28 @@
         
         .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; }
         
+        /* TO-DO ПАНЕЛЬ: ИНПУТ СВЕРХУ */
         .todo-panel { width: 300px; flex-shrink: 0; height: 100%; }
-        
-        /* ЧАТ ПО ЦЕНТРУ С ДВОЙНОЙ РАМКОЙ */
+        .todo-header { padding:15px; font-size:10px; border-bottom:1px solid var(--border); font-family:'Orbitron'; letter-spacing: 1px; }
+        #todo-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+        .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05); cursor: pointer; transition: 0.2s; font-size: 13px; }
+        .task:hover { color: var(--p); background: rgba(255,0,255,0.05); }
+
+        /* ЧАТ: ДВОЙНАЯ РАМКА И ЦЕНТРОВКА */
         .chat-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
         .chat-panel { 
             width: 100%; 
             max-width: 550px; 
-            height: 580px; 
+            height: 480px; 
             pointer-events: all; 
-            padding: 8px; /* Внешний отступ для эффекта двойной рамки */
+            padding: 8px; 
         }
         
         .chat-inner {
             flex: 1;
             display: flex;
             flex-direction: column;
-            border: 1px solid rgba(0, 242, 255, 0.15); /* Вторая внутренняя рамка */
+            border: 1px solid rgba(0, 242, 255, 0.15);
             background: rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
@@ -52,22 +57,20 @@
             scrollbar-width: none; 
         }
 
-        .msg-container { width: 100%; }
-        .msg-nick { font-size: 11px; color: var(--n); margin-bottom: 4px; font-family: 'Orbitron'; font-weight: 900; text-shadow: 0 0 8px var(--n); }
-        
         .msg-text { 
             background: rgba(0,242,255,0.08); 
             padding: 12px 16px; 
             border-radius: 2px 12px 12px 12px; 
             border: 1px solid rgba(0,242,255,0.1); 
             color: #fff;
-            /* ФИКС: Текст не выходит за рамки */
             word-wrap: break-word;
             overflow-wrap: break-word;
             max-width: 100%;
         }
         
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
+        .todo-input-box { border-bottom: 1px solid var(--border); border-top: none; }
+        
         input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; font-family: 'Share Tech Mono'; }
         button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; transition: 0.3s; }
         button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
@@ -93,16 +96,16 @@
 
 <div class="os-container">
     <header>
-        <div>ORBITRON_SYSTEM v10.2</div>
+        <div>ORBITRON_SYSTEM v10.3</div>
         <div id="clock">00:00:00</div>
         <div onclick="Core.Audio.toggle()" style="cursor:pointer">[ LINK_AUDIO ]</div>
     </header>
 
     <div class="main-area">
         <aside class="panel todo-panel">
-            <div style="padding:15px; font-size:10px; border-bottom:1px solid var(--border); font-family:'Orbitron'">MISSION_LOGS</div>
-            <div id="todo-list" style="flex:1; overflow-y:auto;"></div>
-            <div class="input-box"><input type="text" id="todo-in" placeholder="+ TASK"></div>
+            <div class="todo-header">MISSION_LOGS</div>
+            <div class="input-box todo-input-box"><input type="text" id="todo-in" placeholder="+ TASK"></div>
+            <div id="todo-list"></div>
         </aside>
 
         <div class="chat-wrapper">
@@ -174,7 +177,7 @@ const Core = {
             if (m.id && document.getElementById(`msg-${m.id}`)) return;
             const d = document.createElement('div'); d.className = 'msg-container'; if(m.id) d.id = `msg-${m.id}`;
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
+            d.innerHTML = `<div class="msg-nick" style="font-size:11px; font-family:'Orbitron'; font-weight:900; text-shadow: 0 0 8px var(--n);">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
             s.appendChild(d); s.scrollTop = s.scrollHeight; 
         },
         async send() { 
@@ -187,8 +190,7 @@ const Core = {
     UI() {
         document.getElementById('todo-in').onkeypress = (e) => { 
             if(e.key === 'Enter' && e.target.value) { 
-                const d = document.createElement('div'); d.style.padding = '10px'; d.style.borderBottom = '1px solid var(--border)';
-                d.style.fontSize = '12px'; d.innerText = '> ' + e.target.value.toUpperCase(); 
+                const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); 
                 d.onclick = () => d.remove(); document.getElementById('todo-list').prepend(d); e.target.value = ''; 
             } 
         };
