@@ -2,27 +2,48 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON v10.5_LIVE_FX</title>
+    <title>ORBITRON v10.6_ULTRA_FX</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --glass: rgba(0, 242, 255, 0.05); --border: rgba(0, 242, 255, 0.2); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--n); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; }
+        
+        /* ФИКС СКРОЛЛА: страница не двигается */
+        html, body { 
+            background: var(--bg); 
+            color: var(--n); 
+            font-family: 'Share Tech Mono', monospace; 
+            height: 100%; 
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Запрет скролла всей страницы */
+        }
         
         #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .os-container { position: relative; z-index: 10; display: flex; flex-direction: column; height: 100vh; padding: 20px; pointer-events: none; }
+        
+        .os-container { 
+            position: absolute; 
+            inset: 0; 
+            z-index: 10; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+            pointer-events: none; 
+            box-sizing: border-box;
+        }
+        
         header, .panel { pointer-events: all; }
         header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border); margin-bottom: 20px; font-family: 'Orbitron'; background: rgba(1,5,10,0.5); }
         
-        .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
+        .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; height: calc(100vh - 100px); }
         .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; }
         
-        /* TO-DO ПАНЕЛЬ */
+        /* TO-DO */
         .todo-panel { width: 300px; flex-shrink: 0; height: 100%; }
         .todo-header { padding:15px; font-size:10px; border-bottom:1px solid var(--border); font-family:'Orbitron'; letter-spacing: 1px; }
         #todo-list { flex: 1; overflow-y: auto; scrollbar-width: none; overflow-x: hidden; }
-        .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05); cursor: pointer; transition: all 0.3s ease; font-size: 13px; position: relative; }
+        .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05); cursor: pointer; transition: all 0.3s ease; font-size: 13px; }
         .task:hover { color: var(--p); background: rgba(255,0,255,0.05); padding-left: 20px; box-shadow: inset 5px 0 0 var(--p); }
         .task-destruct { animation: taskOut 0.4s forwards; pointer-events: none; }
 
@@ -31,7 +52,7 @@
             100% { transform: translateX(100%); opacity: 0; filter: blur(10px); }
         }
 
-        /* ЧАТ С АНИМАЦИЕЙ СООБЩЕНИЙ */
+        /* ЧАТ */
         .chat-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
         .chat-panel { width: 100%; max-width: 550px; height: 480px; pointer-events: all; padding: 8px; }
         .chat-inner { flex: 1; display: flex; flex-direction: column; border: 1px solid rgba(0, 242, 255, 0.15); background: rgba(0, 0, 0, 0.3); overflow: hidden; }
@@ -44,20 +65,33 @@
             flex-direction: column; 
             gap: 15px; 
             scrollbar-width: none; 
-            scroll-behavior: smooth; /* Плавный скролл */
+            scroll-behavior: smooth;
         }
 
-        /* Анимация появления сообщения */
+        /* УСИЛЕННАЯ АНИМАЦИЯ ПОЯВЛЕНИЯ */
         .msg-container { 
             width: 100%; 
-            animation: msgArrival 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+            animation: msgArrival 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(40px) scale(0.8);
+            filter: blur(10px) brightness(3);
         }
 
         @keyframes msgArrival {
-            0% { opacity: 0; transform: translateY(20px) scale(0.95); filter: brightness(2); }
-            100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+            0% { 
+                opacity: 0; 
+                transform: translateY(40px) scale(0.8); 
+                filter: blur(10px) brightness(3);
+            }
+            50% {
+                opacity: 0.5;
+                filter: blur(5px) brightness(1.5);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+                filter: blur(0) brightness(1);
+            }
         }
 
         .msg-nick { font-size: 11px; color: var(--n); margin-bottom: 4px; font-family: 'Orbitron'; font-weight: 900; text-shadow: 0 0 8px var(--n); }
@@ -70,9 +104,7 @@
             word-wrap: break-word; 
             overflow-wrap: break-word; 
             max-width: 100%;
-            transition: 0.3s;
         }
-        .msg-container:hover .msg-text { background: rgba(0,242,255,0.15); border-color: var(--n); }
 
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
         .todo-input-box { border-bottom: 1px solid var(--border); border-top: none; }
@@ -94,7 +126,7 @@
     <div class="auth-form">
         <h1 style="font-family:'Orbitron'; color:var(--n); margin-bottom:20px;">STATION_LOGIN</h1>
         <input type="email" id="email" placeholder="PILOT_EMAIL">
-        <input type="password" id="pass" placeholder="ACCESS_CODE" style="width:100%; padding:12px; margin-bottom:20px; background:#000; border:1px solid var(--border); color:#fff;">
+        <input type="password" id="pass" placeholder="ACCESS_CODE">
         <button onclick="Core.Auth()" style="width:100%; margin-bottom:10px;">ENTER_ORBIT</button>
         <button onclick="Core.Register()" style="width:100%; border-color:var(--p); color:var(--p);">NEW_PROFILE</button>
     </div>
@@ -102,7 +134,7 @@
 
 <div class="os-container">
     <header>
-        <div>ORBITRON_SYSTEM v10.5</div>
+        <div>ORBITRON_SYSTEM v10.6</div>
         <div id="clock">00:00:00</div>
         <div onclick="Core.Audio.toggle()" style="cursor:pointer">[ LINK_AUDIO ]</div>
     </header>
@@ -165,7 +197,7 @@ const Core = {
     },
 
     Audio: {
-        setup() { this.el = new Audio('track.mp3'); this.el.loop = true; this.el.volume = 0.2; },
+        setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop = true; this.el.volume = 0.2; },
         toggle() { this.el.paused ? this.el.play() : this.el.pause(); }
     },
 
@@ -185,8 +217,7 @@ const Core = {
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
             d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
             s.appendChild(d); 
-            // Плавная прокрутка после добавления
-            setTimeout(() => { s.scrollTop = s.scrollHeight; }, 50);
+            setTimeout(() => { s.scrollTop = s.scrollHeight; }, 100);
         },
         async send() { 
             const i = document.getElementById('chat-in'); if(!i.value || !Core.user) return;
