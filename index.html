@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <div>ORBITRON_OS v10.1</div>
+    <div id="clock" style="font-size: 14px; color: var(--n); letter-spacing: 2px;">00:00:00</div>
+    <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
+        <div class="bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+        <span>LINK_AUDIO</span>
+    </div>
     <meta charset="UTF-8">
     <title>ORBITRON v10.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -43,7 +49,6 @@
     text-align: center;
 }
 
-/* Угловые декоративные элементы */
 .auth-form::before {
     content: ""; position: absolute; top: -1px; left: -1px; width: 30px; height: 30px;
     border-top: 2px solid var(--n); border-left: 2px solid var(--n);
@@ -138,8 +143,18 @@ const Core = {
     user: null,
     init() {
         this.Canvas.init(); this.Audio.setup(); this.UI();
-        setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
-        this.sb.auth.onAuthStateChange((_, s) => { if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); }});
+        // Исправлено: 24-часовой формат и проверка на наличие элемента
+        setInterval(() => {
+            const el = document.getElementById('clock');
+            if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        }, 1000);
+        this.sb.auth.onAuthStateChange((_, s) => { 
+            if(s) { 
+                this.user = s.user; 
+                document.getElementById('auth-gate').classList.add('hidden'); 
+                this.Chat.load(); 
+            }
+        });
         this.loop();
     },
     Auth: async () => {
@@ -147,27 +162,12 @@ const Core = {
         const { error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
         if(error) alert(error.message);
     },
-    Audio: {
-        playing: false,
-        setup() { 
-            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
-            this.el.loop = true; 
-            this.el.volume = 0.2;
-        },
-        toggle() {
-            const b = document.getElementById('audio-btn');
-            if(this.el.paused) { this.el.play(); b.classList.add('playing'); this.playing = true; }
-            else { this.el.pause(); b.classList.remove('playing'); this.playing = false; }
-        }
-    },
-    Chat: {
-        async load() { const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); if(data) { document.getElementById('chat-stream').innerHTML = ''; data.forEach(m => this.render(m)); } },
-        render(m) { const s = document.getElementById('chat-stream'), d = document.createElement('div'); d.className = 'msg-container'; d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`; s.appendChild(d); s.scrollTop = s.scrollHeight; },
-        async send() { const i = document.getElementById('chat-in'); if(!i.value || !this.user) return; const n = this.user.email.split('@')[0], v = i.value; i.value = ''; this.render({nickname: n, message: v}); await Core.sb.from('comments').insert([{message: v, nickname: n}]); }
-    },
-    UI() {
-        document.getElementById('todo-in').onkeypress = (e) => { if(e.key === 'Enter' && e.target.value) { const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); d.onclick = () => d.remove(); document.getElementById('todo-list').prepend(d); e.target.value = ''; } };
-        document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
+    // Добавлена недостающая функция регистрации
+    Register: async () => {
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = await Core.sb.auth.signUp({email:e, password:p});
+        if(error) alert(error.message);
+        else alert("PILOT_CREATED: Check email or try login.");
     },
     Canvas: {
         init() {
