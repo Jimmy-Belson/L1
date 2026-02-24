@@ -239,12 +239,13 @@ const Core = {
             this.drawUFO(this.ufo);
         }
     },
-  loop() { 
-        Core.Canvas.draw(); 
-        requestAnimationFrame(() => Core.loop()); 
+ loop() {
+        Core.Canvas.draw();
+        requestAnimationFrame(() => Core.loop());
+ 
     }
 }
-};
+}
 
 window.onload = () => Core.init();
 </script>
