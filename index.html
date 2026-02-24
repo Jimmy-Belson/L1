@@ -7,126 +7,125 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-:root {
-    --n:#00f2ff;
-    --p:#ff00ff;
-    --bg:#01050a;
-    --glass:rgba(0,242,255,0.05);
-    --border:rgba(0,242,255,0.2);
+:root{
+--n:#00f2ff;
+--p:#ff00ff;
+--bg:#01050a;
+--glass:rgba(0,242,255,0.05);
+--border:rgba(0,242,255,0.2);
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
 
 body{
-    background:var(--bg);
-    color:var(--n);
-    font-family:'Share Tech Mono', monospace;
-    height:100vh;
-    overflow:hidden;
+background:var(--bg);
+color:var(--n);
+font-family:'Share Tech Mono', monospace;
+height:100vh;
+overflow:hidden;
 }
 
 #starfield{
-    position:fixed;
-    inset:0;
-    z-index:1;
+position:fixed;
+inset:0;
+z-index:1;
 }
 
-/* Центрируем всё */
 .viewport{
-    position:relative;
-    z-index:10;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    height:100vh;
-    padding:20px;
+position:relative;
+z-index:10;
+display:flex;
+flex-direction:column;
+align-items:center;
+height:100vh;
+padding:20px;
 }
 
 .header{
-    width:100%;
-    max-width:700px;
-    display:flex;
-    justify-content:space-between;
-    padding:15px;
-    border-bottom:1px solid var(--border);
-    font-family:'Orbitron';
+width:100%;
+max-width:700px;
+display:flex;
+justify-content:space-between;
+padding:15px;
+border-bottom:1px solid var(--border);
+font-family:'Orbitron';
 }
 
-/* ЧАТ */
 .chat-panel{
-    width:100%;
-    max-width:650px;
-    height:75vh;
-    background:var(--glass);
-    backdrop-filter:blur(12px);
-    border:1px solid var(--border);
-    display:flex;
-    flex-direction:column;
-    box-shadow:0 0 40px rgba(0,0,0,0.6);
+width:100%;
+max-width:650px;
+height:75vh;
+background:var(--glass);
+backdrop-filter:blur(12px);
+border:1px solid var(--border);
+display:flex;
+flex-direction:column;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
 }
 
 #chat-stream{
-    flex:1;
-    overflow-y:auto;
-    padding:20px;
-    display:flex;
-    flex-direction:column;
-    gap:12px;
+flex:1;
+overflow-y:auto;
+padding:20px;
+display:flex;
+flex-direction:column;
+gap:12px;
 }
 
 .msg-nick{
-    font-size:10px;
-    color:var(--p);
-    font-family:'Orbitron';
+font-size:10px;
+color:var(--p);
+font-family:'Orbitron';
 }
 
 .msg-text{
-    background:rgba(0,242,255,0.07);
-    padding:10px 15px;
-    border-radius:0 10px 10px 10px;
-    border:1px solid rgba(0,242,255,0.15);
-    color:#e0faff;
+background:rgba(0,242,255,0.07);
+padding:10px 15px;
+border-radius:0 10px 10px 10px;
+border:1px solid rgba(0,242,255,0.15);
+color:#e0faff;
 }
 
 .input-bar{
-    display:flex;
-    gap:10px;
-    padding:15px;
-    border-top:1px solid var(--border);
+display:flex;
+gap:10px;
+padding:15px;
+border-top:1px solid var(--border);
 }
 
 input{
-    flex:1;
-    background:rgba(0,0,0,0.6);
-    border:1px solid var(--border);
-    color:#fff;
-    padding:12px;
-    outline:none;
+flex:1;
+background:rgba(0,0,0,0.6);
+border:1px solid var(--border);
+color:#fff;
+padding:12px;
+outline:none;
 }
 
 button{
-    background:transparent;
-    border:1px solid var(--n);
-    color:var(--n);
-    padding:10px 20px;
-    font-family:'Orbitron';
-    cursor:pointer;
+background:transparent;
+border:1px solid var(--n);
+color:var(--n);
+padding:10px 20px;
+font-family:'Orbitron';
+cursor:pointer;
 }
 
 button:hover{
-    background:var(--n);
-    color:#000;
+background:var(--n);
+color:#000;
 }
 
 #auth-gate{
-    position:fixed;
-    inset:0;
-    z-index:100;
-    background:var(--bg);
-    display:flex;
-    align-items:center;
-    justify-content:center;
+position:fixed;
+inset:0;
+z-index:100;
+background:var(--bg);
+display:flex;
+align-items:center;
+justify-content:center;
 }
+
 .hidden{display:none!important;}
 </style>
 </head>
@@ -138,9 +137,10 @@ button:hover{
 <div id="auth-gate">
 <div style="width:350px;text-align:center;border:1px solid var(--n);padding:50px;backdrop-filter:blur(10px);">
 <h1 style="font-family:'Orbitron';margin-bottom:30px;">OMNI_v9.0</h1>
-<input type="email" id="email" placeholder="PILOT_ID" style="width:100%;margin-bottom:10px;">
-<input type="password" id="pass" placeholder="PASSWORD" style="width:100%;margin-bottom:25px;">
-<button onclick="Core.Auth('in')" style="width:100%;">INITIALIZE</button>
+<input type="email" id="email" placeholder="EMAIL" style="width:100%;margin-bottom:10px;">
+<input type="password" id="pass" placeholder="PASSWORD" style="width:100%;margin-bottom:20px;">
+<button onclick="Core.Auth('in')" style="width:100%;margin-bottom:10px;">LOGIN</button>
+<button onclick="Core.Auth('up')" style="width:100%;">REGISTER</button>
 </div>
 </div>
 
@@ -160,8 +160,8 @@ button:hover{
 </div>
 
 <script>
-const Core = {
-sb: window.supabase.createClient(
+const Core={
+sb:window.supabase.createClient(
 'https://ebjsxlympwocluxgmwcu.supabase.co',
 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
 ),
@@ -175,17 +175,26 @@ setInterval(()=>document.getElementById('clock').innerText=new Date().toLocaleTi
 this.loop();
 },
 
-Auth:async(t)=>{
-const e=email.value,p=pass.value;
-const {error}=await Core.sb.auth.signInWithPassword({email:e,password:p});
-if(error)alert(error.message);
+Auth:async(type)=>{
+const email=document.getElementById('email').value;
+const pass=document.getElementById('pass').value;
+
+let result;
+
+if(type==='in'){
+result=await this.sb.auth.signInWithPassword({email,password:pass});
+}else{
+result=await this.sb.auth.signUp({email,password:pass});
+}
+
+if(result.error) alert(result.error.message);
 },
 
 AuthListener(){
-this.sb.auth.onAuthStateChange((_,s)=>{
-if(s){
-this.user=s.user;
-auth-gate.classList.add('hidden');
+this.sb.auth.onAuthStateChange((_,session)=>{
+if(session){
+this.user=session.user;
+document.getElementById('auth-gate').classList.add('hidden');
 this.Chat.load();
 this.Chat.subscribe();
 }
@@ -202,7 +211,7 @@ subscribe(){
 Core.sb.channel('comments')
 .on('postgres_changes',{event:'INSERT',schema:'public',table:'comments'},
 payload=>{
-if(payload.new.nickname!==Core.user.email.split('@')[0]){
+if(Core.user && payload.new.nickname!==Core.user.email.split('@')[0]){
 this.notify(payload.new);
 }
 this.render(payload.new);
@@ -228,12 +237,15 @@ setTimeout(()=>n.remove(),3000);
 render(m){
 const s=document.getElementById('chat-stream');
 const d=document.createElement('div');
+
 const nick=document.createElement('div');
 nick.className='msg-nick';
 nick.textContent=(m.nickname||'PILOT').toUpperCase();
+
 const text=document.createElement('div');
 text.className='msg-text';
 text.textContent=m.message;
+
 d.appendChild(nick);
 d.appendChild(text);
 s.appendChild(d);
@@ -241,33 +253,38 @@ s.scrollTop=s.scrollHeight;
 },
 
 async send(){
-const i=document.getElementById('chat-in');
-if(!i.value||!Core.user)return;
-if(i.value.length>300)return;
-const n=Core.user.email.split('@')[0];
-const v=i.value;
-i.value='';
-await Core.sb.from('comments').insert([{message:v,nickname:n}]);
+const input=document.getElementById('chat-in');
+if(!input.value||!Core.user)return;
+if(input.value.length>300)return;
+
+const nickname=Core.user.email.split('@')[0];
+const message=input.value;
+input.value='';
+
+await Core.sb.from('comments').insert([{message,nickname}]);
 }
 },
 
-UI() {
-    const chatInput = document.getElementById('chat-in');
+UI(){
+const chatInput=document.getElementById('chat-in');
+chatInput.addEventListener('keypress',e=>{
+if(e.key==='Enter') Core.Chat.send();
+});
+},
 
-    chatInput.onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            Core.Chat.send();
-        }
-    };
-}
-
-,Canvas:{
+Canvas:{
 init(){
-this.cvs=starfield;
+this.cvs=document.getElementById('starfield');
 this.ctx=this.cvs.getContext('2d');
 this.resize();
-window.onresize=()=>this.resize();
-this.stars=Array.from({length:200},()=>({x:Math.random()*this.cvs.width,y:Math.random()*this.cvs.height,v:Math.random()*0.5}));
+window.addEventListener('resize',()=>this.resize());
+
+this.stars=Array.from({length:200},()=>({
+x:Math.random()*this.cvs.width,
+y:Math.random()*this.cvs.height,
+v:Math.random()*0.5
+}));
+
 this.astronauts=Array.from({length:4},()=>({
 x:Math.random()*this.cvs.width,
 y:Math.random()*this.cvs.height,
@@ -277,12 +294,14 @@ size:20+Math.random()*20
 },
 
 resize(){
-this.cvs.width=innerWidth;
-this.cvs.height=innerHeight;
+this.cvs.width=window.innerWidth;
+this.cvs.height=window.innerHeight;
 },
 
 draw(){
-const ctx=this.ctx,cvs=this.cvs;
+const ctx=this.ctx;
+const cvs=this.cvs;
+
 ctx.fillStyle='#01050a';
 ctx.fillRect(0,0,cvs.width,cvs.height);
 
@@ -312,7 +331,10 @@ ctx.restore();
 }
 },
 
-loop(){Core.Canvas.draw();requestAnimationFrame(()=>Core.loop());}
+loop(){
+Core.Canvas.draw();
+requestAnimationFrame(()=>Core.loop());
+}
 };
 
 window.onload=()=>Core.init();
