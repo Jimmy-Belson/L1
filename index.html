@@ -147,7 +147,6 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
     init() {
-        this.Canvas.init(); this.Audio.setup(); this.UI();
         setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
         this.sb.auth.onAuthStateChange((_, s) => { if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); }});
         this.loop();
@@ -240,10 +239,9 @@ const Core = {
         }
     },
  loop() {
-        Core.Canvas.draw();
-        requestAnimationFrame(() => Core.loop());
- 
-    }
+    Core.Canvas.draw();
+    requestAnimationFrame(() => Core.loop());
+ }
 }
 }
 
