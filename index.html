@@ -27,62 +27,8 @@
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
         input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; }
         button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 11px; }
-        #auth-gate { 
-    position: fixed; inset: 0; z-index: 500; 
-    background: radial-gradient(circle at center, #0a121a 0%, #01050a 100%); 
-    display: flex; align-items: center; justify-content: center; 
-}
-
-.auth-form { 
-    
-    width: 380px; padding: 40px; 
-    background: rgba(1, 5, 10, 0.8);
-    border: 1px solid var(--border);
-    box-shadow: 0 0 60px rgba(0,0,0,1), inset 0 0 15px rgba(0, 242, 255, 0.1);
-    backdrop-filter: blur(20px);
-    position: relative;
-    text-align: center;
-    
-}
-
-/* Угловые декоративные элементы */
-.auth-form::before {
-    content: ""; position: absolute; top: -1px; left: -1px; width: 30px; height: 30px;
-    border-top: 2px solid var(--n); border-left: 2px solid var(--n);
-}
-
-.auth-input-group { margin-bottom: 25px; text-align: left; }
-
-.auth-input-group label { 
-    font-size: 10px; color: var(--p); display: block; 
-    margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron';
-}
-
-.auth-form input { 
-    width: 100%; background: rgba(0, 242, 255, 0.05); 
-    border: 1px solid var(--border); padding: 12px; 
-    color: #fff; font-family: 'Share Tech Mono'; outline: none;
-    transition: 0.3s;
-}
-
-.auth-form input:focus { border-color: var(--n); background: rgba(0, 242, 255, 0.1); }
-
-.login-btn { 
-    width: 100%; padding: 16px; background: transparent; 
-    border: 1px solid var(--n); color: var(--n); 
-    font-family: 'Orbitron'; font-size: 12px; cursor: pointer; 
-    transition: 0.3s; position: relative; overflow: hidden;
-}
-
-.login-btn:hover { 
-    background: var(--n); color: #000; 
-    box-shadow: 0 0 30px var(--n); 
-}
-
-.auth-footer { 
-    margin-top: 25px; font-size: 8px; color: rgba(0, 242, 255, 0.3); 
-    letter-spacing: 3px; border-top: 1px solid rgba(0, 242, 255, 0.1); padding-top: 15px; 
-}
+        #auth-gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+        .auth-form { width: 380px; padding: 50px; border: 1px solid var(--n); text-align: center; }
         .hidden { display: none !important; }
         .audio-link { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--border); font-size: 10px; transition: 0.3s; }
         .audio-link:hover { border-color: var(--p); box-shadow: 0 0 10px var(--p); }
@@ -97,27 +43,7 @@
 </head>
 <body>
 <canvas id="starfield"></canvas>
-<div id="auth-gate">
-    <div class="auth-form">
-    <h1>STATION_LOGIN</h1>
-    
-    <div class="auth-input-group">
-        <label>YOUR_MAIL</label>
-        <input type="email" id="email" placeholder="---">
-    </div>
-
-    <div class="auth-input-group">
-        <label>YOUR_PASSWORD</label>
-        <input type="password" id="pass" placeholder="---">
-    </div>
-
-    <button class="login-btn" onclick="Core.Auth()">INITIATE_SESSION</button>
-    
-    <button class="login-btn" onclick="Core.Register()" style="margin-top: 10px; border-color: var(--p); color: var(--p);">
-        CREATE_NEW_PILOT
-    </button>
-</div>
-</div>
+<div id="auth-gate"><div class="auth-form"><h1 style="font-family:'Orbitron'; margin-bottom:30px;">ACCESS</h1><input type="email" id="email" placeholder="EMAIL"><input type="password" id="pass" placeholder="KEY" style="margin: 15px 0;"><button onclick="Core.Auth()" style="width:100%">LOGIN</button></div></div>
 <div class="os-container">
     <header>
         <div>ORBITRON_OS // v10.1</div>
