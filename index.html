@@ -2,35 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON v10.6_ULTRA_FX</title>
+    <title>ORBITRON v10.7_AUTOSCROLL</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --n: #00f2ff; --p: #ff00ff; --bg: #01050a; --glass: rgba(0, 242, 255, 0.05); --border: rgba(0, 242, 255, 0.2); }
         
-        /* ФИКС СКРОЛЛА: страница не двигается */
         html, body { 
-            background: var(--bg); 
-            color: var(--n); 
+            background: var(--bg); color: var(--n); 
             font-family: 'Share Tech Mono', monospace; 
-            height: 100%; 
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Запрет скролла всей страницы */
+            height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; 
         }
         
         #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
         .os-container { 
-            position: absolute; 
-            inset: 0; 
-            z-index: 10; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px; 
-            pointer-events: none; 
-            box-sizing: border-box;
+            position: absolute; inset: 0; z-index: 10; 
+            display: flex; flex-direction: column; padding: 20px; 
+            pointer-events: none; box-sizing: border-box;
         }
         
         header, .panel { pointer-events: all; }
@@ -39,76 +28,42 @@
         .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; height: calc(100vh - 100px); }
         .panel { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 0 0 40px #000; }
         
-        /* TO-DO */
         .todo-panel { width: 300px; flex-shrink: 0; height: 100%; }
         .todo-header { padding:15px; font-size:10px; border-bottom:1px solid var(--border); font-family:'Orbitron'; letter-spacing: 1px; }
-        #todo-list { flex: 1; overflow-y: auto; scrollbar-width: none; overflow-x: hidden; }
-        .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05); cursor: pointer; transition: all 0.3s ease; font-size: 13px; }
+        #todo-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
+        .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05); cursor: pointer; transition: 0.3s; font-size: 13px; }
         .task:hover { color: var(--p); background: rgba(255,0,255,0.05); padding-left: 20px; box-shadow: inset 5px 0 0 var(--p); }
         .task-destruct { animation: taskOut 0.4s forwards; pointer-events: none; }
+        @keyframes taskOut { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(100%); opacity: 0; } }
 
-        @keyframes taskOut {
-            0% { transform: translateX(0); opacity: 1; color: var(--p); }
-            100% { transform: translateX(100%); opacity: 0; filter: blur(10px); }
-        }
-
-        /* ЧАТ */
         .chat-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
         .chat-panel { width: 100%; max-width: 550px; height: 480px; pointer-events: all; padding: 8px; }
         .chat-inner { flex: 1; display: flex; flex-direction: column; border: 1px solid rgba(0, 242, 255, 0.15); background: rgba(0, 0, 0, 0.3); overflow: hidden; }
         
         #chat-stream { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            scrollbar-width: none; 
-            scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; padding: 20px; 
+            display: flex; flex-direction: column; gap: 15px; 
+            scrollbar-width: none; scroll-behavior: auto; /* Для мгновенного прыжка в начало */
         }
 
-        /* УСИЛЕННАЯ АНИМАЦИЯ ПОЯВЛЕНИЯ */
         .msg-container { 
-            width: 100%; 
-            animation: msgArrival 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-            opacity: 0;
-            transform: translateY(40px) scale(0.8);
-            filter: blur(10px) brightness(3);
+            width: 100%; animation: msgArrival 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            opacity: 0; transform: translateY(40px) scale(0.8); filter: blur(10px) brightness(3);
         }
 
         @keyframes msgArrival {
-            0% { 
-                opacity: 0; 
-                transform: translateY(40px) scale(0.8); 
-                filter: blur(10px) brightness(3);
-            }
-            50% {
-                opacity: 0.5;
-                filter: blur(5px) brightness(1.5);
-            }
-            100% { 
-                opacity: 1; 
-                transform: translateY(0) scale(1); 
-                filter: blur(0) brightness(1);
-            }
+            0% { opacity: 0; transform: translateY(40px) scale(0.8); filter: blur(10px) brightness(3); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0) brightness(1); }
         }
 
         .msg-nick { font-size: 11px; color: var(--n); margin-bottom: 4px; font-family: 'Orbitron'; font-weight: 900; text-shadow: 0 0 8px var(--n); }
         .msg-text { 
-            background: rgba(0,242,255,0.08); 
-            padding: 12px 16px; 
-            border-radius: 2px 12px 12px 12px; 
-            border: 1px solid rgba(0,242,255,0.1); 
-            color: #fff; 
-            word-wrap: break-word; 
-            overflow-wrap: break-word; 
-            max-width: 100%;
+            background: rgba(0,242,255,0.08); padding: 12px 16px; border-radius: 2px 12px 12px 12px; 
+            border: 1px solid rgba(0,242,255,0.1); color: #fff; word-wrap: break-word; max-width: 100%;
         }
 
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
         .todo-input-box { border-bottom: 1px solid var(--border); border-top: none; }
-        
         input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; font-family: 'Share Tech Mono'; }
         button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; transition: 0.3s; }
         button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
@@ -134,7 +89,7 @@
 
 <div class="os-container">
     <header>
-        <div>ORBITRON_SYSTEM v10.6</div>
+        <div>ORBITRON_SYSTEM v10.7</div>
         <div id="clock">00:00:00</div>
         <div onclick="Core.Audio.toggle()" style="cursor:pointer">[ LINK_AUDIO ]</div>
     </header>
@@ -178,7 +133,15 @@ const Core = {
             if(s) { 
                 this.user = s.user; 
                 document.getElementById('auth-gate').classList.add('hidden'); 
-                this.Chat.load().then(() => this.Chat.subscribe());
+                this.Chat.load().then(() => {
+                    this.Chat.subscribe();
+                    // Фикс: принудительный скролл вниз после загрузки всех сообщений
+                    setTimeout(() => {
+                        const s = document.getElementById('chat-stream');
+                        s.scrollTop = s.scrollHeight;
+                        s.style.scrollBehavior = 'smooth'; // Включаем плавность только ПОСЛЕ первого прыжка
+                    }, 300);
+                });
             }
         });
         this.loop();
@@ -204,7 +167,11 @@ const Core = {
     Chat: {
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
-            if(data) { document.getElementById('chat-stream').innerHTML = ''; data.forEach(m => this.render(m)); } 
+            if(data) { 
+                const s = document.getElementById('chat-stream');
+                s.innerHTML = ''; 
+                data.forEach(m => this.render(m)); 
+            } 
         },
         subscribe() {
             Core.sb.channel('global').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, 
@@ -217,7 +184,7 @@ const Core = {
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
             d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
             s.appendChild(d); 
-            setTimeout(() => { s.scrollTop = s.scrollHeight; }, 100);
+            s.scrollTop = s.scrollHeight;
         },
         async send() { 
             const i = document.getElementById('chat-in'); if(!i.value || !Core.user) return;
