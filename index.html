@@ -43,7 +43,7 @@
         #chat-stream { 
             flex: 1; overflow-y: auto; padding: 20px; 
             display: flex; flex-direction: column; gap: 15px; 
-            scrollbar-width: none; scroll-behavior: auto; /* Для мгновенного прыжка в начало */
+            scrollbar-width: none; scroll-behavior: auto; 
         }
 
         .msg-container { 
@@ -135,11 +135,11 @@ const Core = {
                 document.getElementById('auth-gate').classList.add('hidden'); 
                 this.Chat.load().then(() => {
                     this.Chat.subscribe();
-                    // Фикс: принудительный скролл вниз после загрузки всех сообщений
+                    
                     setTimeout(() => {
                         const s = document.getElementById('chat-stream');
                         s.scrollTop = s.scrollHeight;
-                        s.style.scrollBehavior = 'smooth'; // Включаем плавность только ПОСЛЕ первого прыжка
+                        s.style.scrollBehavior = 'smooth'; 
                     }, 300);
                 });
             }
