@@ -13,7 +13,6 @@
         
         #starfield { position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none; }
 
-        /* UI LAYERS */
         .hud-layer { position: relative; z-index: 10; display: grid; grid-template-columns: 320px 1fr 320px; height: 100vh; padding: 20px; gap: 20px; pointer-events: none; }
         .hud-layer > * { pointer-events: auto; }
 
@@ -23,42 +22,40 @@
         .panel { background: rgba(0,20,40,0.6); border: 1px solid rgba(0,242,255,0.2); backdrop-filter: blur(10px); padding: 20px; position: relative; }
         .panel::before { content: ''; position: absolute; top: -1px; left: -1px; width: 15px; height: 15px; border-top: 2px solid var(--neon); border-left: 2px solid var(--neon); }
 
-        /* CHAT SYSTEM */
+        /* CHAT AREA */
         #chat-panel { display: flex; flex-direction: column; height: 500px; }
-        #chat-stream { flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 10px; scroll-behavior: smooth; }
+        #chat-stream { flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 10px; }
         #chat-stream::-webkit-scrollbar { width: 4px; }
         #chat-stream::-webkit-scrollbar-thumb { background: var(--neon); }
 
         .msg-container { margin-bottom: 15px; padding: 10px; border-left: 2px solid var(--pink); background: rgba(255,0,255,0.05); }
+        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         
-        /* СТИЛИ НИКОВ И ВРЕМЕНИ */
-        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        /* ЖИРНЫЕ НИКИ И ВРЕМЯ */
         .msg-nick { color: var(--neon); font-weight: 900; font-size: 14px; text-shadow: 0 0 8px var(--neon); text-transform: uppercase; }
-        .msg-time { color: var(--pink); font-weight: 700; font-size: 11px; opacity: 0.9; }
-        .msg-text { font-size: 13px; line-height: 1.4; color: #e0e0e0; }
+        .msg-time { color: var(--pink); font-weight: 700; font-size: 11px; opacity: 1; }
+        .msg-text { font-size: 13px; color: #fff; }
 
-        input { background: rgba(0,0,0,0.5); border: 1px solid var(--neon); color: var(--neon); padding: 10px; outline: none; width: 100%; transition: 0.3s; }
-        input:focus { box-shadow: 0 0 15px rgba(0,242,255,0.4); }
+        input { background: rgba(0,0,0,0.5); border: 1px solid var(--neon); color: var(--neon); padding: 10px; outline: none; width: 100%; margin-top: 5px; }
 
-        /* AUDIO VISUALIZER */
-        #audio-btn { width: 50px; height: 50px; border: 1px solid var(--neon); display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-        #audio-btn.playing { border-color: var(--pink); box-shadow: 0 0 20px var(--pink); }
-        .bar { width: 3px; background: var(--neon); margin: 0 2px; transition: 0.3s; }
+        /* КНОПКА МУЗЫКИ */
+        #audio-btn { width: 50px; height: 50px; border: 1px solid var(--neon); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .bar { width: 3px; background: var(--neon); margin: 0 2px; height: 10px; }
         .playing .bar { animation: pulse 0.5s infinite alternate; background: var(--pink); }
         @keyframes pulse { from { height: 5px; } to { height: 20px; } }
 
-        /* AUTH GATE */
+        /* ТВОЙ ОРИГИНАЛЬНЫЙ ДИЗАЙН ВХОДА */
         #auth-gate { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; align-items: center; justify-content: center; }
         .auth-box { width: 350px; text-align: center; }
-        .btn { border: 1px solid var(--neon); color: var(--neon); padding: 10px 20px; margin-top: 10px; cursor: pointer; transition: 0.3s; display: inline-block; width: 100%; }
+        .btn { border: 1px solid var(--neon); color: var(--neon); padding: 10px 20px; margin-top: 10px; cursor: pointer; transition: 0.3s; width: 100%; text-align: center; }
         .btn:hover { background: var(--neon); color: #000; }
+        .hidden { display: none !important; }
 
         /* АДАПТИВНОСТЬ ДЛЯ МОБИЛОК */
         @media (max-width: 768px) {
-            .hud-layer { grid-template-columns: 1fr; overflow-y: auto; padding: 10px; gap: 10px; }
-            header { grid-column: 1; }
+            .hud-layer { grid-template-columns: 1fr; overflow-y: auto; padding: 10px; }
             #chat-panel { height: 35vh; order: 3; }
-            #todo-panel { order: 2; }
+            header { grid-column: 1; }
             .panel { padding: 15px; }
         }
     </style>
@@ -68,10 +65,10 @@
 <div id="auth-gate">
     <div class="panel auth-box">
         <h2 class="logo" style="margin-bottom:20px">LOGIN</h2>
-        <input type="email" id="email" placeholder="PILOT_EMAIL" style="margin-bottom:10px">
+        <input type="email" id="email" placeholder="PILOT_EMAIL">
         <input type="password" id="pass" placeholder="ACCESS_CODE">
         <div class="btn" onclick="Core.Auth()">INITIATE_SESSION</div>
-        <div class="btn" onclick="Core.Register()" style="border-color:var(--pink); color:var(--pink); margin-top:5px">CREATE_NEW_PILOT</div>
+        <div class="btn" onclick="Core.Register()" style="border-color:var(--pink); color:var(--pink)">CREATE_NEW_PILOT</div>
     </div>
 </div>
 
@@ -82,9 +79,7 @@
         <div class="logo">ORBITRON</div>
         <div id="clock" style="font-size: 20px; color: var(--pink)">00:00:00</div>
         <div id="audio-btn" onclick="Core.Audio.toggle()">
-            <div class="bar" style="height:10px"></div>
-            <div class="bar" style="height:15px"></div>
-            <div class="bar" style="height:10px"></div>
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
         </div>
     </header>
 
@@ -139,7 +134,6 @@ const Core = {
     },
 
     Audio: {
-        playing: false,
         setup() { 
             this.el = new Audio('track.mp3'); 
             this.el.loop = true; 
@@ -147,9 +141,8 @@ const Core = {
         },
         toggle() {
             const b = document.getElementById('audio-btn');
-            if(!this.el) return;
             if(this.el.paused) { 
-                this.el.play().catch(e => console.log("Кликни по экрану")); 
+                this.el.play().catch(e => console.log("User must interact first")); 
                 b.classList.add('playing'); 
             } else { 
                 this.el.pause(); 
@@ -167,14 +160,7 @@ const Core = {
             const s = document.getElementById('chat-stream'), d = document.createElement('div'); 
             d.className = 'msg-container';
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit', hour12:false});
-            
-            d.innerHTML = `
-                <div class="msg-header">
-                    <span class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</span>
-                    <span class="msg-time">${time}</span>
-                </div>
-                <div class="msg-text">${m.message}</div>
-            `; 
+            d.innerHTML = `<div class="msg-header"><span class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</span><span class="msg-time">${time}</span></div><div class="msg-text">${m.message}</div>`; 
             s.appendChild(d); s.scrollTop = s.scrollHeight; 
         },
         async send() { 
