@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON v10.4_FX</title>
+    <title>ORBITRON v10.5_LIVE_FX</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -22,42 +22,58 @@
         .todo-panel { width: 300px; flex-shrink: 0; height: 100%; }
         .todo-header { padding:15px; font-size:10px; border-bottom:1px solid var(--border); font-family:'Orbitron'; letter-spacing: 1px; }
         #todo-list { flex: 1; overflow-y: auto; scrollbar-width: none; overflow-x: hidden; }
-        
-        .task { 
-            padding: 12px; 
-            border-bottom: 1px solid rgba(0,242,255,0.05); 
-            cursor: pointer; 
-            transition: all 0.3s ease; 
-            font-size: 13px; 
-            position: relative;
-            background: transparent;
-        }
-        .task:hover { 
-            color: var(--p); 
-            background: rgba(255,0,255,0.05); 
-            padding-left: 20px;
-            box-shadow: inset 5px 0 0 var(--p);
-        }
-
-        /* АНИМАЦИЯ УДАЛЕНИЯ (ВЫЛЕТ В КОСМОС) */
-        .task-destruct {
-            animation: taskOut 0.4s forwards cubic-bezier(0.4, 0, 1, 1);
-            pointer-events: none;
-        }
+        .task { padding: 12px; border-bottom: 1px solid rgba(0,242,255,0.05); cursor: pointer; transition: all 0.3s ease; font-size: 13px; position: relative; }
+        .task:hover { color: var(--p); background: rgba(255,0,255,0.05); padding-left: 20px; box-shadow: inset 5px 0 0 var(--p); }
+        .task-destruct { animation: taskOut 0.4s forwards; pointer-events: none; }
 
         @keyframes taskOut {
             0% { transform: translateX(0); opacity: 1; color: var(--p); }
-            30% { transform: translateX(-10px); opacity: 1; background: rgba(255,0,0,0.2); }
             100% { transform: translateX(100%); opacity: 0; filter: blur(10px); }
         }
 
-        /* ЧАТ */
+        /* ЧАТ С АНИМАЦИЕЙ СООБЩЕНИЙ */
         .chat-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; pointer-events: none; }
         .chat-panel { width: 100%; max-width: 550px; height: 480px; pointer-events: all; padding: 8px; }
         .chat-inner { flex: 1; display: flex; flex-direction: column; border: 1px solid rgba(0, 242, 255, 0.15); background: rgba(0, 0, 0, 0.3); overflow: hidden; }
-        #chat-stream { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scrollbar-width: none; }
-        .msg-text { background: rgba(0,242,255,0.08); padding: 12px 16px; border-radius: 2px 12px 12px 12px; border: 1px solid rgba(0,242,255,0.1); color: #fff; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; }
         
+        #chat-stream { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            scrollbar-width: none; 
+            scroll-behavior: smooth; /* Плавный скролл */
+        }
+
+        /* Анимация появления сообщения */
+        .msg-container { 
+            width: 100%; 
+            animation: msgArrival 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes msgArrival {
+            0% { opacity: 0; transform: translateY(20px) scale(0.95); filter: brightness(2); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+        }
+
+        .msg-nick { font-size: 11px; color: var(--n); margin-bottom: 4px; font-family: 'Orbitron'; font-weight: 900; text-shadow: 0 0 8px var(--n); }
+        .msg-text { 
+            background: rgba(0,242,255,0.08); 
+            padding: 12px 16px; 
+            border-radius: 2px 12px 12px 12px; 
+            border: 1px solid rgba(0,242,255,0.1); 
+            color: #fff; 
+            word-wrap: break-word; 
+            overflow-wrap: break-word; 
+            max-width: 100%;
+            transition: 0.3s;
+        }
+        .msg-container:hover .msg-text { background: rgba(0,242,255,0.15); border-color: var(--n); }
+
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
         .todo-input-box { border-bottom: 1px solid var(--border); border-top: none; }
         
@@ -86,7 +102,7 @@
 
 <div class="os-container">
     <header>
-        <div>ORBITRON_SYSTEM v10.4</div>
+        <div>ORBITRON_SYSTEM v10.5</div>
         <div id="clock">00:00:00</div>
         <div onclick="Core.Audio.toggle()" style="cursor:pointer">[ LINK_AUDIO ]</div>
     </header>
@@ -167,8 +183,10 @@ const Core = {
             if (m.id && document.getElementById(`msg-${m.id}`)) return;
             const d = document.createElement('div'); d.className = 'msg-container'; if(m.id) d.id = `msg-${m.id}`;
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-            d.innerHTML = `<div class="msg-nick" style="font-size:11px; font-family:'Orbitron'; font-weight:900; text-shadow: 0 0 8px var(--n);">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
-            s.appendChild(d); s.scrollTop = s.scrollHeight; 
+            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
+            s.appendChild(d); 
+            // Плавная прокрутка после добавления
+            setTimeout(() => { s.scrollTop = s.scrollHeight; }, 50);
         },
         async send() { 
             const i = document.getElementById('chat-in'); if(!i.value || !Core.user) return;
@@ -180,18 +198,9 @@ const Core = {
     UI() {
         document.getElementById('todo-in').onkeypress = (e) => { 
             if(e.key === 'Enter' && e.target.value) { 
-                const d = document.createElement('div'); 
-                d.className = 'task'; 
-                d.innerText = '> ' + e.target.value.toUpperCase(); 
-                
-                // ЭФФЕКТНАЯ АНИМАЦИЯ УДАЛЕНИЯ
-                d.onclick = () => {
-                    d.classList.add('task-destruct');
-                    setTimeout(() => d.remove(), 400); // Удаляем после анимации
-                };
-                
-                document.getElementById('todo-list').prepend(d); 
-                e.target.value = ''; 
+                const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); 
+                d.onclick = () => { d.classList.add('task-destruct'); setTimeout(() => d.remove(), 400); };
+                document.getElementById('todo-list').prepend(d); e.target.value = ''; 
             } 
         };
         document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') Core.Chat.send(); };
