@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <div>ORBITRON_OS v10.1</div>
-    <div id="clock" style="font-size: 14px; color: var(--n); letter-spacing: 2px;">00:00:00</div>
-    <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
-        <div class="bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
-        <span>LINK_AUDIO</span>
-    </div>
     <meta charset="UTF-8">
     <title>ORBITRON v10.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -33,68 +27,18 @@
         .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
         input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; }
         button { background: transparent; border: 1px solid var(--n); color: var(--n); padding: 10px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 11px; }
-       #auth-gate { 
-    position: fixed; inset: 0; z-index: 500; 
-    background: radial-gradient(circle at center, #0a121a 0%, #01050a 100%); 
-    display: flex; align-items: center; justify-content: center; 
-}
-
-.auth-form { 
-    width: 380px; padding: 40px; 
-    background: rgba(1, 5, 10, 0.8);
-    border: 1px solid var(--border);
-    box-shadow: 0 0 60px rgba(0,0,0,1), inset 0 0 15px rgba(0, 242, 255, 0.1);
-    backdrop-filter: blur(20px);
-    position: relative;
-    text-align: center;
-}
-
-.auth-form::before {
-    content: ""; position: absolute; top: -1px; left: -1px; width: 30px; height: 30px;
-    border-top: 2px solid var(--n); border-left: 2px solid var(--n);
-}
-
-.auth-input-group { margin-bottom: 25px; text-align: left; }
-
-.auth-input-group label { 
-    font-size: 10px; color: var(--p); display: block; 
-    margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron';
-}
-
-.auth-form input { 
-    width: 100%; background: rgba(0, 242, 255, 0.05); 
-    border: 1px solid var(--border); padding: 12px; 
-    color: #fff; font-family: 'Share Tech Mono'; outline: none;
-    transition: 0.3s;
-}
-
-.auth-form input:focus { border-color: var(--n); background: rgba(0, 242, 255, 0.1); }
-
-.login-btn { 
-    width: 100%; padding: 16px; background: transparent; 
-    border: 1px solid var(--n); color: var(--n); 
-    font-family: 'Orbitron'; font-size: 12px; cursor: pointer; 
-    transition: 0.3s; position: relative; overflow: hidden;
-}
-
-.login-btn:hover { 
-    background: var(--n); color: #000; 
-    box-shadow: 0 0 30px var(--n); 
-}
-
-.auth-footer { 
-    margin-top: 25px; font-size: 8px; color: rgba(0, 242, 255, 0.3); 
-    letter-spacing: 3px; border-top: 1px solid rgba(0, 242, 255, 0.1); padding-top: 15px; 
-}
-        .auth-form { width: 380px; padding: 50px; border: 1px solid var(--n); text-align: center; }
+        #auth-gate { position: fixed; inset: 0; z-index: 500; background: radial-gradient(circle at center, #0a121a 0%, #01050a 100%); display: flex; align-items: center; justify-content: center; }
+        .auth-form { width: 380px; padding: 40px; background: rgba(1, 5, 10, 0.8); border: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,1), inset 0 0 15px rgba(0, 242, 255, 0.1); backdrop-filter: blur(20px); position: relative; text-align: center; }
+        .auth-input-group { margin-bottom: 25px; text-align: left; }
+        .auth-input-group label { font-size: 10px; color: var(--p); display: block; margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron'; }
+        .auth-form input { width: 100%; background: rgba(0, 242, 255, 0.05); border: 1px solid var(--border); padding: 12px; color: #fff; font-family: 'Share Tech Mono'; outline: none; transition: 0.3s; }
+        .login-btn { width: 100%; padding: 16px; background: transparent; border: 1px solid var(--n); color: var(--n); font-family: 'Orbitron'; font-size: 12px; cursor: pointer; transition: 0.3s; }
+        .login-btn:hover { background: var(--n); color: #000; box-shadow: 0 0 30px var(--n); }
         .hidden { display: none !important; }
-        .audio-link { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--border); font-size: 10px; transition: 0.3s; }
-        .audio-link:hover { border-color: var(--p); box-shadow: 0 0 10px var(--p); }
+        .audio-link { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--border); font-size: 10px; }
         .bars { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
         .bar { width: 2px; height: 4px; background: var(--n); }
         .playing .bar { animation: wave 0.5s infinite alternate; }
-        .playing .bar:nth-child(2) { animation-delay: 0.1s; }
-        .playing .bar:nth-child(3) { animation-delay: 0.2s; }
         @keyframes wave { from { height: 4px; } to { height: 15px; background: var(--p); } }
         @keyframes msgAppear { to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -112,16 +56,19 @@
             <label>YOUR_PASSWORD</label>
             <input type="password" id="pass" placeholder="---">
         </div>
-        
         <button class="login-btn" onclick="Core.Auth()">INITIATE_SESSION</button>
-        
-        <button class="login-btn" onclick="Core.Register()" style="margin-top: 10px; border-color: var(--p); color: var(--p);">
-            CREATE_NEW_PILOT
-        </button>
-
-        <div style="margin-top: 20px; font-size: 8px; color: var(--border); letter-spacing: 2px;">SECURE_CONNECTION_STABLE</div>
+        <button class="login-btn" onclick="Core.Register()" style="margin-top: 10px; border-color: var(--p); color: var(--p);">CREATE_NEW_PILOT</button>
     </div>
 </div>
+
+<div class="os-container">
+    <header>
+        <div>ORBITRON_OS v10.1</div>
+        <div id="clock">00:00:00</div>
+        <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
+            <div class="bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+            <span>LINK_AUDIO</span>
+        </div>
     </header>
     <div class="main-area">
         <aside class="panel todo-panel">
@@ -132,29 +79,26 @@
         <div class="chat-wrapper">
             <main class="panel chat-panel">
                 <div id="chat-stream"></div>
-                <div class="input-box"><input type="text" id="chat-in"><button onclick="Core.Chat.send()">SEND</button></div>
+                <div class="input-box">
+                    <input type="text" id="chat-in">
+                    <button onclick="Core.Chat.send()">SEND</button>
+                </div>
             </main>
         </div>
     </div>
 </div>
+
 <script>
 const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
     init() {
         this.Canvas.init(); this.Audio.setup(); this.UI();
-        // Исправлено: 24-часовой формат и проверка на наличие элемента
         setInterval(() => {
             const el = document.getElementById('clock');
             if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
         }, 1000);
-        this.sb.auth.onAuthStateChange((_, s) => { 
-            if(s) { 
-                this.user = s.user; 
-                document.getElementById('auth-gate').classList.add('hidden'); 
-                this.Chat.load(); 
-            }
-        });
+        this.sb.auth.onAuthStateChange((_, s) => { if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); }});
         this.loop();
     },
     Auth: async () => {
@@ -162,12 +106,46 @@ const Core = {
         const { error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
         if(error) alert(error.message);
     },
-    // Добавлена недостающая функция регистрации
     Register: async () => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await Core.sb.auth.signUp({email:e, password:p});
-        if(error) alert(error.message);
-        else alert("PILOT_CREATED: Check email or try login.");
+        if(error) alert(error.message); else alert("PILOT_CREATED");
+    },
+    Audio: {
+        playing: false,
+        setup() { 
+            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
+            this.el.loop = true; 
+            this.el.volume = 0.2;
+        },
+        toggle() {
+            const b = document.getElementById('audio-btn');
+            if(this.el.paused) { this.el.play(); b.classList.add('playing'); this.playing = true; }
+            else { this.el.pause(); b.classList.remove('playing'); this.playing = false; }
+        }
+    },
+    Chat: {
+        async load() { 
+            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
+            if(data) { document.getElementById('chat-stream').innerHTML = ''; data.forEach(m => this.render(m)); } 
+        },
+        render(m) { 
+            const s = document.getElementById('chat-stream'), d = document.createElement('div'); 
+            d.className = 'msg-container';
+            const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit', hour12:false});
+            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px; margin-left:10px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
+            s.appendChild(d); s.scrollTop = s.scrollHeight; 
+        },
+        async send() { 
+            const i = document.getElementById('chat-in'); if(!i.value || !this.user) return; 
+            const n = this.user.email.split('@')[0], v = i.value; i.value = ''; 
+            this.render({nickname: n, message: v, created_at: new Date()}); 
+            await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
+        }
+    },
+    UI() {
+        document.getElementById('todo-in').onkeypress = (e) => { if(e.key === 'Enter' && e.target.value) { const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); d.onclick = () => d.remove(); document.getElementById('todo-list').prepend(d); e.target.value = ''; } };
+        document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
     },
     Canvas: {
         init() {
