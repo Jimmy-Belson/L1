@@ -5,18 +5,36 @@ const Core = {
     init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
-        this.UI();
-        setInterval(() => {
-            const el = document.getElementById('clock');
-            if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-        }, 1000);
-        this.sb.auth.onAuthStateChange((_, s) => { 
-            if(s) { 
-                this.user = s.user; 
-                document.getElementById('auth-gate').classList.add('hidden'); 
-                this.Chat.load(); 
+        
+        // Магия перенаправления и проверки сессии
+        this.sb.auth.onAuthStateChange((event, session) => {
+            const isLoginPage = window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/');
+            const isStationPage = window.location.pathname.includes('station.html');
+
+            if (session) {
+                this.user = session.user;
+                if (isLoginPage) {
+                    window.location.href = 'station.html';
+                }
+                if (document.getElementById('chat-stream')) {
+                    this.Chat.load();
+                }
+            } else {
+                if (isStationPage) {
+                    window.location.href = 'index.html';
+                }
             }
         });
+
+        // Инициализация UI и часов, если элементы есть на странице
+        if (document.getElementById('clock')) {
+            this.UI();
+            setInterval(() => {
+                const el = document.getElementById('clock');
+                if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+            }, 1000);
+        }
+
         this.loop();
     },
 
@@ -29,16 +47,18 @@ const Core = {
     Register: async () => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await Core.sb.auth.signUp({email:e, password:p});
-        if(error) alert(error.message); else alert("PILOT_CREATED. CHECK_MAIL.");
+        if(error) alert(error.message); else alert("PILOT_CREATED. CHECK_MAIL TO CONFIRM.");
     },
 
     Audio: {
         setup() { 
             this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
-            this.el.loop = true; this.el.volume = 0.2;
+            this.el.loop = true; 
+            this.el.volume = 0.2;
         },
         toggle() {
             const b = document.getElementById('audio-btn');
+            if(!b) return;
             if(this.el.paused) { this.el.play(); b.classList.add('playing'); }
             else { this.el.pause(); b.classList.remove('playing'); }
         }
@@ -47,17 +67,29 @@ const Core = {
     Chat: {
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
-            if(data) { document.getElementById('chat-stream').innerHTML = ''; data.forEach(m => this.render(m)); } 
+            if(data) { 
+                const stream = document.getElementById('chat-stream');
+                if(stream) {
+                    stream.innerHTML = ''; 
+                    data.forEach(m => this.render(m)); 
+                }
+            } 
         },
         render(m) { 
-            const s = document.getElementById('chat-stream'), d = document.createElement('div'); 
+            const s = document.getElementById('chat-stream');
+            if(!s) return;
+            const d = document.createElement('div'); 
             d.className = 'msg-container';
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-            d.innerHTML = `<div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px;">${time}</span></div><div class="msg-text">${m.message}</div>`; 
-            s.appendChild(d); s.scrollTop = s.scrollHeight; 
+            d.innerHTML = `
+                <div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px;">${time}</span></div>
+                <div class="msg-text">${m.message}</div>
+            `; 
+            s.appendChild(d); 
+            s.scrollTop = s.scrollHeight; 
         },
         async send() { 
-            const i = document.getElementById('chat-in'); if(!i.value || !Core.user) return; 
+            const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
             const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
             this.render({nickname: n, message: v, created_at: new Date()}); 
             await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
@@ -65,28 +97,38 @@ const Core = {
     },
 
     UI() {
-        document.getElementById('todo-in').onkeypress = (e) => { 
-            if(e.key === 'Enter' && e.target.value) { 
-                const d = document.createElement('div'); 
-                d.className = 'task'; 
-                d.innerText = '> ' + e.target.value.toUpperCase(); 
-                
-                
-                d.onclick = () => {
-                    d.classList.add('removing'); 
-                    setTimeout(() => d.remove(), 400); 
-                };
+        const todoIn = document.getElementById('todo-in');
+        if (todoIn) {
+            todoIn.onkeypress = (e) => { 
+                if(e.key === 'Enter' && e.target.value) { 
+                    const d = document.createElement('div'); 
+                    d.className = 'task'; 
+                    d.innerText = '> ' + e.target.value.toUpperCase(); 
+                    
+                    // ЛОГИКА УДАЛЕНИЯ С ЗАДЕРЖКОЙ ДЛЯ АНИМАЦИИ
+                    d.onclick = () => {
+                        d.classList.add('removing'); 
+                        setTimeout(() => d.remove(), 400); 
+                    };
 
-                document.getElementById('todo-list').prepend(d); 
-                e.target.value = ''; 
-            } 
-        };
-        document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
+                    document.getElementById('todo-list').prepend(d); 
+                    e.target.value = ''; 
+                } 
+            };
+        }
+        
+        const chatIn = document.getElementById('chat-in');
+        if (chatIn) {
+            chatIn.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
+        }
     },
 
     Canvas: {
         init() {
-            this.cvs = document.getElementById('starfield'); this.ctx = this.cvs.getContext('2d'); this.res();
+            this.cvs = document.getElementById('starfield'); 
+            if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d'); 
+            this.res();
             window.addEventListener('resize', () => this.res());
             this.stars = Array.from({length:200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.3, b:Math.random()}));
             this.debris = Array.from({length:25}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*3+1, vx:-Math.random()*0.5}));
@@ -94,10 +136,16 @@ const Core = {
             this.ufo = {x:-100, y:350, p:[]}; 
             this.comet = {x:-200, y:0, active:false};
         },
-        res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        res() { 
+            if(!this.cvs) return;
+            this.cvs.width = window.innerWidth; 
+            this.cvs.height = window.innerHeight; 
+        },
         drawAstro(a) {
             const ctx = this.ctx; ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.fillStyle = '#fff'; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-8,-12,16,24,5); else ctx.rect(-8,-12,16,24); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); 
+            if(ctx.roundRect) ctx.roundRect(-8,-12,16,24,5); else ctx.rect(-8,-12,16,24); 
+            ctx.fill();
             ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,-7,6,0,Math.PI*2); ctx.fill(); ctx.strokeStyle = '#0ff'; ctx.stroke();
             ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.ellipse(-2,-8,3,2,1,0,Math.PI*2); ctx.fill();
             ctx.fillStyle = '#ccc'; ctx.fillRect(-11,-8,3,15); ctx.restore();
@@ -116,6 +164,7 @@ const Core = {
             for(let i=0; i<5; i++) { ctx.fillStyle = (Math.floor(Date.now()/150)%5 === i) ? '#f0f' : '#044'; ctx.beginPath(); ctx.arc(u.x-32+i*16, uy+3, 2, 0, Math.PI*2); ctx.fill(); }
         },
         draw() {
+            if(!this.ctx) return;
             const ctx = this.ctx, cvs = this.cvs; ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
             this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.abs(Math.sin(Date.now()*0.001 + s.b*10))*0.7})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); });
             this.debris.forEach(d => { d.x += d.vx; if(d.x < -10) d.x = cvs.width + 10; ctx.fillStyle = 'rgba(0,242,255,0.1)'; ctx.fillRect(d.x, d.y, d.s, d.s); });
@@ -128,6 +177,10 @@ const Core = {
             this.drawUFO(this.ufo);
         }
     },
-    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+    loop() { 
+        Core.Canvas.draw(); 
+        requestAnimationFrame(() => Core.loop()); 
+    }
 };
+
 window.onload = () => Core.init();
