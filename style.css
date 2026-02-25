@@ -40,7 +40,6 @@ header {
 
 .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
 
-
 .panel { 
     background: var(--glass); 
     backdrop-filter: blur(15px); 
@@ -50,27 +49,26 @@ header {
     box-shadow: 0 0 40px #000, inset 0 0 15px rgba(0, 242, 255, 0.1); 
 }
 
-
 .todo-panel { width: 300px; flex-shrink: 0; }
 #todo-list { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: none; }
+
 
 .task { 
     padding: 12px; 
     border-bottom: 1px solid rgba(0,242,255,0.1); 
     cursor: pointer; 
-    transition: 0.2s; 
-    font-size: 13px; 
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    font-size: 13px;
+    animation: taskAppear 0.4s ease-out forwards; 
 }
 .task:hover { color: var(--p); background: rgba(255,0,255,0.1); text-decoration: line-through; }
 
 
 .chat-wrapper { flex: 1; display: flex; justify-content: center; }
-
 .chat-panel { 
     width: 100%; 
     max-width: 480px; 
     height: 100%; 
-    
     outline: 2px solid rgba(0, 242, 255, 0.1);
     outline-offset: 4px;
 }
@@ -86,11 +84,11 @@ header {
     scrollbar-color: var(--border) transparent;
 }
 
+
 .msg-container { 
     animation: msgAppear 0.4s cubic-bezier(0.18,0.89,0.32,1.28) forwards; 
     opacity: 0; 
     transform: translateY(20px); 
-    max-width: 100%;
 }
 
 .msg-nick { font-size: 10px; color: var(--p); margin-bottom: 4px; font-family: 'Orbitron'; }
@@ -103,13 +101,11 @@ header {
     color: #fff; 
     font-size: 14px;
     line-height: 1.4;
-    
-  
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
-    max-width: 100%;
 }
+
 
 .input-box { display: flex; gap: 10px; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--border); }
 input { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: #fff; padding: 12px; flex: 1; outline: none; font-family: 'Share Tech Mono'; }
@@ -119,6 +115,31 @@ button {
     transition: 0.3s;
 }
 button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n); }
+
+
+.audio-link { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    cursor: pointer; 
+    padding: 8px 15px; 
+    border: 1px solid var(--border); 
+    font-size: 10px; 
+    transition: 0.3s; 
+    background: rgba(0, 242, 255, 0.02);
+}
+.audio-link:hover { 
+    background: rgba(0, 242, 255, 0.1); 
+    border-color: var(--n); 
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.3), inset 0 0 10px rgba(0, 242, 255, 0.1);
+    color: #fff;
+}
+
+.bars { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
+.bar { width: 2px; height: 4px; background: var(--n); transition: 0.3s; }
+.audio-link:hover .bar { background: #fff; }
+.playing .bar { animation: wave 0.5s infinite alternate; }
+
 
 #auth-gate { 
     position: fixed; inset: 0; z-index: 500; 
@@ -135,18 +156,22 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     text-align: center;
 }
 
-.auth-input-group { margin-bottom: 25px; text-align: left; }
-.auth-input-group label { font-size: 10px; color: var(--p); display: block; margin-bottom: 8px; letter-spacing: 2px; font-family: 'Orbitron'; }
-
-.login-btn { width: 100%; padding: 16px; background: transparent; border: 1px solid var(--n); color: var(--n); font-family: 'Orbitron'; font-size: 12px; cursor: pointer; transition: 0.3s; }
-.login-btn:hover { background: var(--n); color: #000; box-shadow: 0 0 30px var(--n); }
-
-.hidden { display: none !important; }
-
-.audio-link { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 12px; border: 1px solid var(--border); font-size: 10px; }
-.bars { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
-.bar { width: 2px; height: 4px; background: var(--n); }
-.playing .bar { animation: wave 0.5s infinite alternate; }
 
 @keyframes wave { from { height: 4px; } to { height: 15px; background: var(--p); } }
 @keyframes msgAppear { to { opacity: 1; transform: translateY(0); } }
+
+
+@keyframes taskAppear {
+    from { 
+        opacity: 0; 
+        transform: translateX(-20px); 
+        background: rgba(0, 242, 255, 0.2);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+        background: transparent;
+    }
+}
+
+.hidden { display: none !important; }
