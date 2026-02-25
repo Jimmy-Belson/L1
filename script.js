@@ -2,12 +2,20 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
     init() {
-        this.Canvas.init(); this.Audio.setup(); this.UI();
+        this.Canvas.init(); 
+        this.Audio.setup(); 
+        this.UI();
         setInterval(() => {
             const el = document.getElementById('clock');
             if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
         }, 1000);
-        this.sb.auth.onAuthStateChange((_, s) => { if(s) { this.user = s.user; document.getElementById('auth-gate').classList.add('hidden'); this.Chat.load(); }});
+        this.sb.auth.onAuthStateChange((_, s) => { 
+            if(s) { 
+                this.user = s.user; 
+                document.getElementById('auth-gate').classList.add('hidden'); 
+                this.Chat.load(); 
+            }
+        });
         this.loop();
     },
     Auth: async () => {
@@ -53,7 +61,16 @@ const Core = {
         }
     },
     UI() {
-        document.getElementById('todo-in').onkeypress = (e) => { if(e.key === 'Enter' && e.target.value) { const d = document.createElement('div'); d.className = 'task'; d.innerText = '> ' + e.target.value.toUpperCase(); d.onclick = () => d.remove(); document.getElementById('todo-list').prepend(d); e.target.value = ''; } };
+        document.getElementById('todo-in').onkeypress = (e) => { 
+            if(e.key === 'Enter' && e.target.value) { 
+                const d = document.createElement('div'); 
+                d.className = 'task'; 
+                d.innerText = '> ' + e.target.value.toUpperCase(); 
+                d.onclick = () => d.remove(); 
+                document.getElementById('todo-list').prepend(d); 
+                e.target.value = ''; 
+            } 
+        };
         document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
     },
     Canvas: {
