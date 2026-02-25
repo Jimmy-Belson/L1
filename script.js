@@ -67,10 +67,18 @@ const Core = {
     UI() {
         document.getElementById('todo-in').onkeypress = (e) => { 
             if(e.key === 'Enter' && e.target.value) { 
-                const d = document.createElement('div'); d.className = 'task'; 
+                const d = document.createElement('div'); 
+                d.className = 'task'; 
                 d.innerText = '> ' + e.target.value.toUpperCase(); 
-                d.onclick = () => d.remove(); 
-                document.getElementById('todo-list').prepend(d); e.target.value = ''; 
+                
+                
+                d.onclick = () => {
+                    d.classList.add('removing'); 
+                    setTimeout(() => d.remove(), 400); 
+                };
+
+                document.getElementById('todo-list').prepend(d); 
+                e.target.value = ''; 
             } 
         };
         document.getElementById('chat-in').onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
