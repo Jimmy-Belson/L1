@@ -69,11 +69,12 @@ const Core = {
         const { error } = await Core.sb.auth.signUp({email:e, password:p});
         if(error) alert("ERROR: " + error.message); 
         else alert("PILOT_REGISTERED. NOW PRESS INITIATE_SESSION.");
-    },
+    }, // <-- ВОТ ЭТА ЗАПЯТАЯ БЫЛА ПРОПУЩЕНА!
+
     Logout: async () => {
-    await Core.sb.auth.signOut();
-    window.location.href = 'station.html';
-},
+        await Core.sb.auth.signOut();
+        window.location.href = 'station.html';
+    }, // <-- И ЗДЕСЬ ТОЖЕ НУЖНА ЗАПЯТАЯ ПЕРЕД Audio
 
     Audio: {
         setup() { 
