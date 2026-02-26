@@ -148,7 +148,6 @@ const Core = {
                     ${(m.nickname||'PILOT').toUpperCase()} ${isMyMsg ? '<span style="font-size:8px;opacity:0.5">(YOU)</span>' : ''}
                     <span style="opacity:0.4; font-size:9px;">${time}</span>
                 </div>
-
                 <div class="msg-text">${m.message}</div>
             `; 
             if (isMyMsg) {
