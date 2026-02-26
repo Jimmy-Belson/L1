@@ -2,31 +2,25 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
- init() {
+    init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
         
         this.sb.auth.onAuthStateChange((event, session) => {
-            // Очищаем путь от лишних символов, чтобы проверка была точной
             const path = window.location.pathname.toLowerCase();
-            
-            // Убедись, что файлы на GitHub называются именно так (маленькими буквами)
             const isLoginPage = path.includes('station.html');
-            // Считаем главной, если путь заканчивается на / или index.html
-            const isMainPage = path.endsWith('/') || path.includes('index.html');
+            const isMainPage = path.endsWith('/') || path.includes('index.html') || path.endsWith('/l1/');
 
             if (session) {
                 this.user = session.user;
-                // Если залогинились — уходим со страницы логина на станцию
                 if (isLoginPage) {
                     window.location.href = 'index.html'; 
-                    return; // Прерываем выполнение, чтобы не сработал код ниже
+                    return;
                 }
-                if (document.getElementById('chat-stream')) {
-                    this.Chat.load();
-                }
+                // Загрузка данных при входе
+                if (document.getElementById('chat-stream')) this.Chat.load();
+                if (document.getElementById('todo-list')) this.Todo.load();
             } else {
-                // Если сессии НЕТ и мы пытаемся открыть станцию — кидаем на логин
                 if (isMainPage) {
                     window.location.href = 'station.html';
                     return;
@@ -48,45 +42,71 @@ const Core = {
     Auth: async () => {
         const emailEl = document.getElementById('email');
         const passEl = document.getElementById('pass');
-        
-        if(!emailEl || !passEl) return console.error("Поля ввода не найдены!");
-
-        const e = emailEl.value, p = passEl.value;
-        console.log("Попытка входа для:", e);
-
-        const { data, error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
-        
-        if(error) {
-            alert("ОШИБКА ВХОДА: " + error.message);
-        } else {
-            console.log("Вход успешен!", data);
-            // Редирект произойдет автоматически через onAuthStateChange
-        }
+        if(!emailEl || !passEl) return;
+        const { error } = await Core.sb.auth.signInWithPassword({email:emailEl.value, password:passEl.value});
+        if(error) alert("ACCESS_DENIED: " + error.message);
     },
 
     Register: async () => {
-        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signUp({email:e, password:p});
-        if(error) alert("ERROR: " + error.message); 
+        const emailEl = document.getElementById('email');
+        const passEl = document.getElementById('pass');
+        if(!emailEl || !passEl) return;
+        const { error } = await Core.sb.auth.signUp({email:emailEl.value, password:passEl.value});
+        if(error) alert("REG_ERROR: " + error.message); 
         else alert("PILOT_REGISTERED. NOW PRESS INITIATE_SESSION.");
-    }, // <-- ВОТ ЭТА ЗАПЯТАЯ БЫЛА ПРОПУЩЕНА!
+    },
 
     Logout: async () => {
         await Core.sb.auth.signOut();
         window.location.href = 'station.html';
-    }, // <-- И ЗДЕСЬ ТОЖЕ НУЖНА ЗАПЯТАЯ ПЕРЕД Audio
+    },
 
-    Audio: {
-        setup() { 
-            this.el = new Audio('track.mp3'); 
-            this.el.loop = true; 
-            this.el.volume = 0.2;
+    Todo: {
+        async load() {
+            const { data, error } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
+            if (error) return console.error("Ошибка загрузки задач:", error);
+            const list = document.getElementById('todo-list');
+            if (list) {
+                list.innerHTML = '';
+                data.forEach(t => this.render(t));
+            }
         },
-        toggle() {
-            const b = document.getElementById('audio-btn');
-            if(!b) return;
-            if(this.el.paused) { this.el.play(); b.classList.add('playing'); }
-            else { this.el.pause(); b.classList.remove('playing'); }
+
+        render(t) {
+            const list = document.getElementById('todo-list');
+            if (!list) return;
+            const d = document.createElement('div');
+            d.className = `task ${t.is_completed ? 'completed' : ''}`;
+            d.dataset.id = t.id;
+            d.draggable = true;
+            d.innerText = '> ' + t.task.toUpperCase();
+
+            // Переключение статуса (ЛКМ)
+            d.onclick = async () => {
+                const newState = !d.classList.contains('completed');
+                d.classList.toggle('completed');
+                await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+            };
+
+            // Удаление (ПКМ)
+            d.oncontextmenu = async (ev) => {
+                ev.preventDefault();
+                d.classList.add('removing');
+                const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+                if(!error) setTimeout(() => d.remove(), 400);
+            };
+
+            // Drag & Drop события
+            d.addEventListener('dragstart', () => setTimeout(() => d.classList.add('dragging'), 0));
+            d.addEventListener('dragend', () => d.classList.remove('dragging'));
+
+            list.appendChild(d);
+        },
+
+        async add(val) {
+            const { data, error } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
+            if (!error && data) this.render(data[0]);
+            else if(error) console.error("Ошибка сохранения:", error);
         }
     },
 
@@ -122,34 +142,16 @@ const Core = {
         }
     },
 
-   UI() {
+    UI() {
         const todoIn = document.getElementById('todo-in');
         const todoList = document.getElementById('todo-list');
 
         if (todoIn) {
-            todoIn.onkeypress = (e) => { 
-                if(e.key === 'Enter' && e.target.value) { 
-                    const d = document.createElement('div'); 
-                    d.className = 'task'; 
-                    d.draggable = true;
-                    d.innerText = '> ' + e.target.value.toUpperCase(); 
-                    
-                    d.onclick = () => d.classList.toggle('completed');
-
-                    d.oncontextmenu = (ev) => {
-                        ev.preventDefault();
-                        d.classList.add('removing'); 
-                        setTimeout(() => d.remove(), 400); 
-                    };
-
-                    d.addEventListener('dragstart', () => {
-                        setTimeout(() => d.classList.add('dragging'), 0);
-                    });
-                    d.addEventListener('dragend', () => d.classList.remove('dragging'));
-
-                    todoList.prepend(d); 
-                    e.target.value = ''; 
-                } 
+            todoIn.onkeypress = async (e) => {
+                if (e.key === 'Enter' && e.target.value) {
+                    await this.Todo.add(e.target.value);
+                    e.target.value = '';
+                }
             };
         }
 
@@ -158,29 +160,33 @@ const Core = {
                 e.preventDefault();
                 const draggingItem = document.querySelector('.dragging');
                 if (!draggingItem) return;
-
                 const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
-
                 const nextSibling = siblings.find(sibling => {
                     const box = sibling.getBoundingClientRect();
-                    
                     return e.clientY <= box.top + box.height / 2;
                 });
-
-                if (nextSibling) {
-                    todoList.insertBefore(draggingItem, nextSibling);
-                } else {
-                    
-                    todoList.appendChild(draggingItem);
-                }
+                if (nextSibling) todoList.insertBefore(draggingItem, nextSibling);
+                else todoList.appendChild(draggingItem);
             });
-
-            todoList.addEventListener('dragenter', e => e.preventDefault());
         }
         
         const chatIn = document.getElementById('chat-in');
         if (chatIn) {
             chatIn.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
+        }
+    },
+
+    Audio: {
+        setup() { 
+            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
+            this.el.loop = true; 
+            this.el.volume = 0.2;
+        },
+        toggle() {
+            const b = document.getElementById('audio-btn');
+            if(!b) return;
+            if(this.el.paused) { this.el.play(); b.classList.add('playing'); }
+            else { this.el.pause(); b.classList.remove('playing'); }
         }
     },
 
