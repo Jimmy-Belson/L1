@@ -148,6 +148,7 @@ const Core = {
                     ${(m.nickname||'PILOT').toUpperCase()} ${isMyMsg ? '<span style="font-size:8px;opacity:0.5">(YOU)</span>' : ''}
                     <span style="opacity:0.4; font-size:9px;">${time}</span>
                 </div>
+
                 <div class="msg-text">${m.message}</div>
             `; 
             if (isMyMsg) {
@@ -157,7 +158,7 @@ const Core = {
                     menu.style.display = 'block';
                     menu.style.left = e.pageX + 'px';
                     menu.style.top = e.pageY + 'px';
-                    menu.innerHTML = <div class="menu-item">Terminate Message</div>;
+                    menu.innerHTML = '<div class="menu-item">Terminate Message</div>';
                     menu.onclick = async () => {
                         const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
                         if (!error) d.remove();
@@ -242,7 +243,7 @@ const Core = {
         draw() {
             if(!this.ctx) return;
             const ctx = this.ctx, cvs = this.cvs; ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = rgba(255,255,255,0.7); ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); });
+            this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); });
             this.drawUFO(this.ufo);
             this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.rot += a.vr; this.drawAstro(a); });
         }
