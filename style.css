@@ -341,3 +341,55 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 @keyframes toastExit {
     to { transform: translateX(110%); opacity: 0; }
 }
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#toggle-pass {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.camera-lens {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--n);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 5px var(--n);
+}
+
+.camera-lens::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--p); 
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px var(--p);
+    transition: 0.3s;
+}
+
+.viewing .camera-lens {
+    border-color: var(--p);
+    box-shadow: 0 0 10px var(--p);
+}
+
+.viewing .camera-lens::after {
+    background: var(--n);
+    box-shadow: 0 0 10px var(--n);
+    width: 6px;
+    height: 6px;
+}
