@@ -302,3 +302,42 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     background: var(--p);
     color: #000;
 }
+#notify-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background: rgba(1, 5, 10, 0.9);
+    border-left: 4px solid var(--n);
+    color: #fff;
+    padding: 15px 25px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid var(--border);
+    animation: toastSlide 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+    min-width: 250px;
+    text-transform: uppercase;
+}
+
+.toast.error { border-left-color: var(--p); color: var(--p); }
+
+@keyframes toastSlide {
+    from { transform: translateX(110%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.hide {
+    animation: toastExit 0.4s ease-in forwards;
+}
+
+@keyframes toastExit {
+    to { transform: translateX(110%); opacity: 0; }
+}
