@@ -2,6 +2,23 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
+    TogglePass() {
+        const passInput = document.getElementById('pass');
+        const toggleBtn = document.getElementById('toggle-pass');
+        
+        if (!passInput || !toggleBtn) return;
+
+        if (passInput.type === 'password') {
+            passInput.type = 'text';
+            toggleBtn.classList.add('viewing');
+            this.Msg("DECRYPTING_OVERSIGHT: VISIBLE", "info");
+        } else {
+            passInput.type = 'password';
+            toggleBtn.classList.remove('viewing');
+            this.Msg("ENCRYPTING_OVERSIGHT: HIDDEN", "info");
+        }
+    },
+
     init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
