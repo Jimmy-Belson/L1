@@ -124,23 +124,47 @@ const Core = {
 
     UI() {
         const todoIn = document.getElementById('todo-in');
+        const todoList = document.getElementById('todo-list');
+
         if (todoIn) {
             todoIn.onkeypress = (e) => { 
                 if(e.key === 'Enter' && e.target.value) { 
                     const d = document.createElement('div'); 
                     d.className = 'task'; 
+                    d.draggable = true; 
                     d.innerText = '> ' + e.target.value.toUpperCase(); 
                     
-                    // ЛОГИКА УДАЛЕНИЯ С ЗАДЕРЖКОЙ ДЛЯ АНИМАЦИИ
+                    
                     d.onclick = () => {
+                        d.classList.toggle('completed');
+                    };
+
+                    
+                    d.oncontextmenu = (ev) => {
+                        ev.preventDefault();
                         d.classList.add('removing'); 
                         setTimeout(() => d.remove(), 400); 
                     };
 
-                    document.getElementById('todo-list').prepend(d); 
+                    d.addEventListener('dragstart', () => d.classList.add('dragging'));
+                    d.addEventListener('dragend', () => d.classList.remove('dragging'));
+
+                    todoList.prepend(d); 
                     e.target.value = ''; 
                 } 
             };
+        }
+
+        if (todoList) {
+            todoList.addEventListener('dragover', e => {
+                e.preventDefault();
+                const draggingItem = document.querySelector('.dragging');
+                const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
+                const nextSibling = siblings.find(sibling => {
+                    return e.clientY <= sibling.offsetTop + sibling.offsetHeight / 2;
+                });
+                todoList.insertBefore(draggingItem, nextSibling);
+            });
         }
         
         const chatIn = document.getElementById('chat-in');
