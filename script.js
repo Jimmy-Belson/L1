@@ -81,14 +81,12 @@ const Core = {
             d.draggable = true;
             d.innerText = '> ' + t.task.toUpperCase();
 
-            // Переключение статуса (ЛКМ)
             d.onclick = async () => {
                 const newState = !d.classList.contains('completed');
                 d.classList.toggle('completed');
                 await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
             };
 
-            // Удаление (ПКМ)
             d.oncontextmenu = async (ev) => {
                 ev.preventDefault();
                 d.classList.add('removing');
@@ -96,7 +94,6 @@ const Core = {
                 if(!error) setTimeout(() => d.remove(), 400);
             };
 
-            // Drag & Drop события
             d.addEventListener('dragstart', () => setTimeout(() => d.classList.add('dragging'), 0));
             d.addEventListener('dragend', () => d.classList.remove('dragging'));
 
@@ -121,24 +118,62 @@ const Core = {
                 }
             } 
         },
+
         render(m) { 
             const s = document.getElementById('chat-stream');
             if(!s) return;
+            
             const d = document.createElement('div'); 
             d.className = 'msg-container';
+            
+            const myNick = Core.user ? Core.user.email.split('@')[0] : null;
+            const isMyMsg = m.nickname === myNick;
+
             const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+            
             d.innerHTML = `
-                <div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()} <span style="opacity:0.4; font-size:9px;">${time}</span></div>
-                <div class="msg-text">${m.message}</div>
+                <div class="msg-nick" style="${isMyMsg ? 'color: var(--n);' : ''}">
+                    ${(m.nickname||'PILOT').toUpperCase()} 
+                    ${isMyMsg ? '<span style="font-size:8px; opacity:0.5;">(YOU)</span>' : ''}
+                    <span style="opacity:0.4; font-size:9px;">${time}</span>
+                </div>
+                <div class="msg-text" style="${isMyMsg ? 'border-color: rgba(0,242,255,0.3);' : ''}">${m.message}</div>
             `; 
+
+            if (isMyMsg) {
+                d.oncontextmenu = async (ev) => {
+                    ev.preventDefault();
+                    if (confirm("DELETE_MESSAGE FROM_DATABASE?")) {
+                        d.style.opacity = '0.3';
+                        const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                        if (!error) {
+                            d.remove();
+                        } else {
+                            d.style.opacity = '1';
+                            alert("ERROR_DELETING: " + error.message);
+                        }
+                    }
+                };
+                d.title = "Right click to delete";
+            }
+
             s.appendChild(d); 
             s.scrollTop = s.scrollHeight; 
         },
+
         async send() { 
-            const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
-            const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
-            this.render({nickname: n, message: v, created_at: new Date()}); 
-            await Core.sb.from('comments').insert([{message: v, nickname: n}]); 
+            const i = document.getElementById('chat-in'); 
+            if(!i || !i.value || !Core.user) return; 
+            
+            const n = Core.user.email.split('@')[0];
+            const v = i.value; 
+            i.value = ''; 
+            
+            const { data, error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]).select();
+            
+            if (!error && data) {
+                this.render(data[0]); 
+            }
         }
     },
 
