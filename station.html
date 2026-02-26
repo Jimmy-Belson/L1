@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ORBITRON - CORE ACCESS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBITRON - AUTH_STATION</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,30 +16,29 @@
         <div class="auth-form login-frame">
             <div class="corner tl"></div><div class="corner tr"></div>
             <div class="corner bl"></div><div class="corner br"></div>
-            
             <div class="scanline"></div>
 
             <h1 class="glitch-text">SYSTEM_ACCESS</h1>
-            <p style="font-size: 9px; opacity: 0.6; margin-bottom: 30px;">ESTABLISHING SECURE CONNECTION...</p>
+            <p style="font-size: 9px; opacity: 0.5; margin-bottom: 25px; letter-spacing: 2px;">SECURE TERMINAL V.10.1</p>
             
             <div class="auth-input-group">
-                <label>PILOT_IDENTIFIER (EMAIL)</label>
-                <input type="email" id="email" placeholder="LOGIN@" autocomplete="off">
+                <label>PILOT_IDENTIFIER</label>
+                <input type="email" id="email" placeholder="EMAIL_ADDRESS" autocomplete="off">
             </div>
 
             <div class="auth-input-group" style="margin-top: 20px;">
-                <label>ENCRYPTION_KEY (PASSWORD)</label>
-                <input type="password" id="pass" placeholder="****">
+                <label>ACCESS_ENCRYPTION</label>
+                <input type="password" id="pass" placeholder="PASSWORD">
             </div>
 
             <div class="auth-actions" style="margin-top: 30px; display: flex; gap: 10px;">
-                <button class="login-btn main-btn" onclick="Core.Auth()">AUTH_LOGIN</button>
+                <button class="login-btn main-btn" onclick="Core.Auth()">INIT_LOGIN</button>
                 <button class="login-btn sub-btn" onclick="Core.Register()">NEW_ID</button>
             </div>
             
-            <div class="status-bar" style="margin-top: 20px; font-size: 8px; text-align: left; opacity: 0.4;">
-                > STATUS: WAITING_FOR_INPUT<br>
-                > ENCRYPTION: AES-256_ACTIVE
+            <div class="status-bar" style="margin-top: 20px; font-size: 8px; text-align: left; opacity: 0.4; font-family: 'Share Tech Mono';">
+                > CONNECTION: STABLE<br>
+                > ENCRYPTION: AES-256 ACTIVE
             </div>
         </div>
     </div>
