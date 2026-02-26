@@ -77,7 +77,7 @@ const Core = {
 
     Audio: {
         setup() { 
-            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
+            this.el = new Audio('track.mp3'); 
             this.el.loop = true; 
             this.el.volume = 0.2;
         },
