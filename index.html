@@ -3,56 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORBITRON v10.1</title>
+    <title>ORBITRON - MAIN_STATION</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js?v=1.1" defer></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
     <canvas id="starfield"></canvas>
 
-    <div id="auth-gate">
-        <div class="auth-form">
-            <h1>STATION_LOGIN</h1>
-            <div class="auth-input-group">
-                <label for="email">YOUR_MAIL</label>
-                <input type="email" id="email" placeholder="---" autocomplete="off">
-            </div>
-            <div class="auth-input-group">
-                <label for="pass">YOUR_PASSWORD</label>
-                <input type="password" id="pass" placeholder="---">
-            </div>
-            <button class="login-btn" onclick="Core.Auth()">INITIATE_SESSION</button>
-            <button class="login-btn" onclick="Core.Register()" style="margin-top: 10px; border-color: var(--p); color: var(--p);">CREATE_NEW_PILOT</button>
-        </div>
-    </div>
-
     <div class="os-container">
-        <header>
-            <div>ORBITRON_OS v10.1</div>
-            <div id="clock">00:00:00</div>
-            <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
-                <div class="bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
-                <span>LINK_AUDIO</span>
+        <header class="os-header">
+            <div class="system-status">
+                <span class="blink">●</span> SYSTEM_READY
+            </div>
+            <div class="header-controls">
+                <div id="clock">00:00:00</div>
+                <button class="logout-trigger" onclick="Core.Logout()">[ TERMINATE_SESSION ]</button>
             </div>
         </header>
-        <div class="main-area">
-            <aside class="panel todo-panel">
-                <div style="padding:15px; font-size:10px; border-bottom:1px solid var(--border)">MISSION_LOGS</div>
-                <div class="input-box"><input type="text" id="todo-in" placeholder="..."></div>
-                <div id="todo-list"></div>
-            </aside>
-            <div class="chat-wrapper">
-                <main class="panel chat-panel">
-                    <div id="chat-stream"></div>
-                    <div class="input-box">
-                        <input type="text" id="chat-in" placeholder="TYPE_MESSAGE...">
-                        <button onclick="Core.Chat.send()">SEND</button>
-                    </div>
-                </main>
+
+        <main class="os-content">
+            <section class="panel chat-panel">
+                <div class="panel-header">COMM_LINK</div>
+                <div id="chat-stream" class="chat-messages"></div>
+                <div class="chat-controls">
+                    <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100">
+                </div>
+            </section>
+
+            <section class="panel tasks-panel">
+                <div class="panel-header">MISSION_OBJECTIVES</div>
+                <div class="task-input-wrapper">
+                    <input type="text" id="todo-in" placeholder="ADD_OBJECTIVE...">
+                </div>
+                <div id="todo-list" class="task-list"></div>
+            </section>
+        </main>
+
+        <footer class="os-footer">
+            <div class="audio-module">
+                <button id="audio-btn" onclick="Core.Audio.toggle()">AMB_ATMOSPHERE</button>
             </div>
-        </div>
+            <div class="coordinates">LOC: ORBIT_STATION_L1</div>
+        </footer>
     </div>
 </body>
 </html>
