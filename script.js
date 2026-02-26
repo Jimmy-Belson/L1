@@ -122,7 +122,7 @@ const Core = {
         }
     },
 
-    UI() {
+   UI() {
         const todoIn = document.getElementById('todo-in');
         const todoList = document.getElementById('todo-list');
 
@@ -131,22 +131,20 @@ const Core = {
                 if(e.key === 'Enter' && e.target.value) { 
                     const d = document.createElement('div'); 
                     d.className = 'task'; 
-                    d.draggable = true; 
+                    d.draggable = true;
                     d.innerText = '> ' + e.target.value.toUpperCase(); 
                     
-                    
-                    d.onclick = () => {
-                        d.classList.toggle('completed');
-                    };
+                    d.onclick = () => d.classList.toggle('completed');
 
-                    
                     d.oncontextmenu = (ev) => {
                         ev.preventDefault();
                         d.classList.add('removing'); 
                         setTimeout(() => d.remove(), 400); 
                     };
 
-                    d.addEventListener('dragstart', () => d.classList.add('dragging'));
+                    d.addEventListener('dragstart', () => {
+                        setTimeout(() => d.classList.add('dragging'), 0);
+                    });
                     d.addEventListener('dragend', () => d.classList.remove('dragging'));
 
                     todoList.prepend(d); 
@@ -156,15 +154,28 @@ const Core = {
         }
 
         if (todoList) {
-            todoList.addEventListener('dragover', e => {
+            todoList.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 const draggingItem = document.querySelector('.dragging');
+                if (!draggingItem) return;
+
                 const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
+
                 const nextSibling = siblings.find(sibling => {
-                    return e.clientY <= sibling.offsetTop + sibling.offsetHeight / 2;
+                    const box = sibling.getBoundingClientRect();
+                    
+                    return e.clientY <= box.top + box.height / 2;
                 });
-                todoList.insertBefore(draggingItem, nextSibling);
+
+                if (nextSibling) {
+                    todoList.insertBefore(draggingItem, nextSibling);
+                } else {
+                    
+                    todoList.appendChild(draggingItem);
+                }
             });
+
+            todoList.addEventListener('dragenter', e => e.preventDefault());
         }
         
         const chatIn = document.getElementById('chat-in');
