@@ -48,13 +48,14 @@ const Core = {
     Auth: async () => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
-        if(error) alert(error.message);
+        if(error) alert("ERROR: " + error.message);
     },
 
     Register: async () => {
         const e = document.getElementById('email').value, p = document.getElementById('pass').value;
         const { error } = await Core.sb.auth.signUp({email:e, password:p});
-        if(error) alert(error.message); else alert("PILOT_CREATED. CHECK_MAIL TO CONFIRM.");
+        if(error) alert("ERROR: " + error.message); 
+        else alert("PILOT_REGISTERED. NOW PRESS INITIATE_SESSION.");
     },
 
     Audio: {
