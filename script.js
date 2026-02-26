@@ -2,35 +2,38 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-   init() {
+ init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
         
         this.sb.auth.onAuthStateChange((event, session) => {
-            const path = window.location.pathname;
+            // Очищаем путь от лишних символов, чтобы проверка была точной
+            const path = window.location.pathname.toLowerCase();
             
-            // Проверяем страницы по твоей новой логике
+            // Убедись, что файлы на GitHub называются именно так (маленькими буквами)
             const isLoginPage = path.includes('station.html');
-            const isMainPage = path.includes('index.html') || path.endsWith('/');
+            // Считаем главной, если путь заканчивается на / или index.html
+            const isMainPage = path.endsWith('/') || path.includes('index.html');
 
             if (session) {
                 this.user = session.user;
-                // Если залогинились и мы на странице входа (station) — уходим на главную (index)
+                // Если залогинились — уходим со страницы логина на станцию
                 if (isLoginPage) {
                     window.location.href = 'index.html'; 
+                    return; // Прерываем выполнение, чтобы не сработал код ниже
                 }
                 if (document.getElementById('chat-stream')) {
                     this.Chat.load();
                 }
             } else {
-                // Если НЕ залогинились и мы на главной (index) — выкидываем на логин (station)
+                // Если сессии НЕТ и мы пытаемся открыть станцию — кидаем на логин
                 if (isMainPage) {
                     window.location.href = 'station.html';
+                    return;
                 }
             }
         });
 
-        
         if (document.getElementById('clock')) {
             this.UI();
             setInterval(() => {
