@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORBITRON - MAIN_STATION</title>
+    <title>ORBITRON - STATION</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,40 +12,34 @@
 <body>
     <canvas id="starfield"></canvas>
 
-    <div class="os-container">
-        <header class="os-header">
-            <div class="system-status">
-                <span class="blink">●</span> SYSTEM_READY
-            </div>
-            <div class="header-controls">
+    <div id="ui-layer">
+        <header>
+            <div id="system-status"><span class="blink">●</span> SYSTEM_ACTIVE</div>
+            <div style="display: flex; align-items: center; gap: 20px;">
                 <div id="clock">00:00:00</div>
-                <button class="logout-trigger" onclick="Core.Logout()">[ TERMINATE_SESSION ]</button>
+                <button onclick="Core.Logout()" style="background: none; border: 1px solid #0ff; color: #0ff; font-family: 'Orbitron'; cursor: pointer; padding: 2px 10px;">[ EXIT ]</button>
             </div>
         </header>
 
-        <main class="os-content">
-            <section class="panel chat-panel">
+        <main>
+            <section class="panel" id="chat-panel">
                 <div class="panel-header">COMM_LINK</div>
-                <div id="chat-stream" class="chat-messages"></div>
-                <div class="chat-controls">
-                    <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100">
+                <div id="chat-stream"></div>
+                <div class="input-area">
+                    <input type="text" id="chat-in" placeholder="SEND_MESSAGE...">
                 </div>
             </section>
 
-            <section class="panel tasks-panel">
-                <div class="panel-header">MISSION_OBJECTIVES</div>
-                <div class="task-input-wrapper">
-                    <input type="text" id="todo-in" placeholder="ADD_OBJECTIVE...">
-                </div>
-                <div id="todo-list" class="task-list"></div>
+            <section class="panel" id="todo-panel">
+                <div class="panel-header">OBJECTIVES</div>
+                <input type="text" id="todo-in" placeholder="ADD_TASK...">
+                <div id="todo-list"></div>
             </section>
         </main>
 
-        <footer class="os-footer">
-            <div class="audio-module">
-                <button id="audio-btn" onclick="Core.Audio.toggle()">AMB_ATMOSPHERE</button>
-            </div>
-            <div class="coordinates">LOC: ORBIT_STATION_L1</div>
+        <footer>
+            <button id="audio-btn" onclick="Core.Audio.toggle()">AMB_ATMOSPHERE</button>
+            <div id="coords">LOC: L1_STATION</div>
         </footer>
     </div>
 </body>
