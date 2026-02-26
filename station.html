@@ -26,10 +26,15 @@
                 <input type="email" id="email" placeholder="EMAIL_ADDRESS" autocomplete="off">
             </div>
 
-            <div class="auth-input-group" style="margin-top: 20px;">
-                <label>ACCESS_ENCRYPTION</label>
-                <input type="password" id="pass" placeholder="PASSWORD">
-            </div>
+            <div class="auth-input-group">
+    <label>ACCESS_CODE</label>
+    <div class="password-wrapper">
+        <input type="password" id="pass" placeholder="****">
+        <div id="toggle-pass" onclick="Core.TogglePass()">
+            <div class="camera-lens"></div>
+        </div>
+    </div>
+</div>
 
             <div class="auth-actions" style="margin-top: 30px; display: flex; gap: 10px;">
                 <button class="login-btn main-btn" onclick="Core.Auth()">INIT_LOGIN</button>
