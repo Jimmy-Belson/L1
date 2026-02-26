@@ -46,9 +46,22 @@ const Core = {
     },
 
     Auth: async () => {
-        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
-        if(error) alert("ERROR: " + error.message);
+        const emailEl = document.getElementById('email');
+        const passEl = document.getElementById('pass');
+        
+        if(!emailEl || !passEl) return console.error("Поля ввода не найдены!");
+
+        const e = emailEl.value, p = passEl.value;
+        console.log("Попытка входа для:", e);
+
+        const { data, error } = await Core.sb.auth.signInWithPassword({email:e, password:p});
+        
+        if(error) {
+            alert("ОШИБКА ВХОДА: " + error.message);
+        } else {
+            console.log("Вход успешен!", data);
+            // Редирект произойдет автоматически через onAuthStateChange
+        }
     },
 
     Register: async () => {
