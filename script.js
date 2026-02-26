@@ -70,6 +70,10 @@ const Core = {
         if(error) alert("ERROR: " + error.message); 
         else alert("PILOT_REGISTERED. NOW PRESS INITIATE_SESSION.");
     },
+    Logout: async () => {
+    await Core.sb.auth.signOut();
+    window.location.href = 'station.html';
+},
 
     Audio: {
         setup() { 
