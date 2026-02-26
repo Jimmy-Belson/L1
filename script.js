@@ -17,7 +17,6 @@ const Core = {
                     window.location.href = 'index.html'; 
                     return;
                 }
-                // Загрузка данных при входе
                 if (document.getElementById('chat-stream')) this.Chat.load();
                 if (document.getElementById('todo-list')) this.Todo.load();
             } else {
@@ -109,12 +108,16 @@ const Core = {
 
     Chat: {
         async load() { 
-            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:true}); 
+            const { data } = await Core.sb.from('comments')
+                .select('*')
+                .order('created_at', {ascending: false})
+                .limit(50); 
+            
             if(data) { 
                 const stream = document.getElementById('chat-stream');
                 if(stream) {
                     stream.innerHTML = ''; 
-                    data.forEach(m => this.render(m)); 
+                    data.reverse().forEach(m => this.render(m)); 
                 }
             } 
         },
@@ -125,55 +128,37 @@ const Core = {
             
             const d = document.createElement('div'); 
             d.className = 'msg-container';
-            
             const myNick = Core.user ? Core.user.email.split('@')[0] : null;
             const isMyMsg = m.nickname === myNick;
 
-            const time = new Date(m.created_at || Date.now()).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-            
             d.innerHTML = `
                 <div class="msg-nick" style="${isMyMsg ? 'color: var(--n);' : ''}">
                     ${(m.nickname||'PILOT').toUpperCase()} 
-                    ${isMyMsg ? '<span style="font-size:8px; opacity:0.5;">(YOU)</span>' : ''}
-                    <span style="opacity:0.4; font-size:9px;">${time}</span>
+                    <span style="opacity:0.4; font-size:9px;">${new Date(m.created_at).toLocaleTimeString()}</span>
                 </div>
-                <div class="msg-text" style="${isMyMsg ? 'border-color: rgba(0,242,255,0.3);' : ''}">${m.message}</div>
+                <div class="msg-text">${m.message}</div>
             `; 
 
-            if (isMyMsg) {
-                d.oncontextmenu = async (ev) => {
-                    ev.preventDefault();
-                    if (confirm("DELETE_MESSAGE FROM_DATABASE?")) {
-                        d.style.opacity = '0.3';
-                        const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                        if (!error) {
-                            d.remove();
-                        } else {
-                            d.style.opacity = '1';
-                            alert("ERROR_DELETING: " + error.message);
-                        }
-                    }
+            d.oncontextmenu = (e) => {
+                if (!isMyMsg) return; 
+                e.preventDefault();
+                const menu = document.getElementById('custom-menu');
+                menu.style.display = 'block';
+                menu.style.left = e.pageX + 'px';
+                menu.style.top = e.pageY + 'px';
+                
+                menu.innerHTML = <div class="menu-item">Terminate Message</div>;
+                menu.onclick = async () => {
+                    d.style.filter = 'blur(5px)';
+                    const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                    if (!error) d.remove();
+                    menu.style.display = 'none';
                 };
-                d.title = "Right click to delete";
-            }
+            };
 
             s.appendChild(d); 
-            s.scrollTop = s.scrollHeight; 
-        },
+            s.scrollTop = s.scrollHeight;
 
-        async send() { 
-            const i = document.getElementById('chat-in'); 
-            if(!i || !i.value || !Core.user) return; 
-            
-            const n = Core.user.email.split('@')[0];
-            const v = i.value; 
-            i.value = ''; 
-            
-            const { data, error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]).select();
-            
-            if (!error && data) {
-                this.render(data[0]); 
-            }
         }
     },
 
