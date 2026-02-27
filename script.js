@@ -2,20 +2,20 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-    Msg: function(text, type) {
+    Msg(text, type = 'info') {
         const container = document.getElementById('notify-container');
         if (!container) return;
         const t = document.createElement('div');
-        t.className = "toast" + (type === 'error' ? ' error' : '');
-        t.innerHTML = '<span style="opacity:0.5">>></span> ' + text;
+        t.className = toast ${type === 'error' ? 'error' : ''};
+        t.innerHTML = <span style="opacity:0.5">>></span> ${text};
         container.appendChild(t);
-        setTimeout(function() {
+        setTimeout(() => {
             t.classList.add('hide');
-            setTimeout(function() { t.remove(); }, 400);
+            setTimeout(() => t.remove(), 400);
         }, 4000);
     },
 
-    TogglePass: function() {
+    TogglePass() {
         const passInput = document.getElementById('pass');
         const toggleBtn = document.getElementById('toggle-pass');
         if (!passInput || !toggleBtn) return;
@@ -30,18 +30,17 @@ const Core = {
         }
     },
 
-    init: function() {
+    init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
         
-        const self = this;
-        this.sb.auth.onAuthStateChange(function(event, session) {
+        this.sb.auth.onAuthStateChange((event, session) => {
             const path = window.location.pathname.toLowerCase();
             if (session) {
-                self.user = session.user;
+                this.user = session.user;
                 if (path.includes('station.html')) window.location.href = 'index.html';
-                if (document.getElementById('chat-stream')) self.Chat.load();
-                if (document.getElementById('todo-list')) self.Todo.load();
+                if (document.getElementById('chat-stream')) this.Chat.load();
+                if (document.getElementById('todo-list')) this.Todo.load();
             } else {
                 if (path.includes('index.html') || path.endsWith('/')) window.location.href = 'station.html';
             }
@@ -49,7 +48,7 @@ const Core = {
 
         if (document.getElementById('clock')) {
             this.UI();
-            setInterval(function() {
+            setInterval(() => {
                 const el = document.getElementById('clock');
                 if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
             }, 1000);
@@ -57,150 +56,198 @@ const Core = {
         this.loop();
     },
 
-    Auth: async function() {
+    Auth: async () => {
         const email = document.getElementById('email').value;
         const pass = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signInWithPassword({email: email, password: pass});
+        const { error } = await Core.sb.auth.signInWithPassword({email, password:pass});
         if(error) Core.Msg("ACCESS_DENIED: " + error.message, "error");
     },
 
-    Register: async function() {
+    Register: async () => {
         const email = document.getElementById('email').value;
         const pass = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signUp({email: email, password: pass});
+        const { error } = await Core.sb.auth.signUp({email, password:pass});
         if(error) Core.Msg("REG_ERROR: " + error.message, "error"); 
         else Core.Msg("PILOT_REGISTERED. INITIATE SESSION.");
     },
 
-    Logout: async function() { 
-        await Core.sb.auth.signOut(); 
-        window.location.href = 'station.html'; 
-    },
+    Logout: async () => { await Core.sb.auth.signOut(); window.location.href = 'station.html'; },
 
     Todo: {
-        load: async function() {
+        async load() {
             const { data } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
             const list = document.getElementById('todo-list');
             if (list && data) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
-        render: function(t) {
+        render(t) {
             const list = document.getElementById('todo-list');
             const d = document.createElement('div');
-            d.className = 'task' + (t.is_completed ? ' completed' : '');
+            d.className = task ${t.is_completed ? 'completed' : ''};
             d.innerText = '> ' + t.task.toUpperCase();
-            d.onclick = async function() {
+            d.onclick = async () => {
                 const newState = !d.classList.contains('completed');
                 d.classList.toggle('completed');
                 await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
             };
-            d.oncontextmenu = async function(e) {
+            d.oncontextmenu = async (e) => {
                 e.preventDefault();
                 await Core.sb.from('todo').delete().eq('id', t.id);
                 d.remove();
             };
             list.appendChild(d);
         },
-        add: async function(val) {
+        async add(val) {
             const { data } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
             if (data) this.render(data[0]);
         }
     },
 
     Chat: {
-        load: async function() {
+        async load() {
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(50);
             const s = document.getElementById('chat-stream');
             if(s && data) { s.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
         },
-        render: function(m) {
+        render(m) {
             const s = document.getElementById('chat-stream');
             const d = document.createElement('div');
             d.className = 'msg-container';
             const nick = (m.nickname || 'PILOT').toUpperCase();
-            d.innerHTML = '<div class="msg-nick">' + nick + '</div><div class="msg-text">' + m.message + '</div>';
+            d.innerHTML = <div class="msg-nick">${nick}</div><div class="msg-text">${m.message}</div>;
             s.appendChild(d);
             s.scrollTop = s.scrollHeight;
         },
-        send: async function() {
+        async send() {
             const i = document.getElementById('chat-in');
-            const n = Core.user ? Core.user.email.split('@')[0] : 'PILOT';
+            const n = Core.user?.email.split('@')[0];
             if(!i.value) return;
             const { data } = await Core.sb.from('comments').insert([{message: i.value, nickname: n}]).select();
             if(data) { this.render(data[0]); i.value = ''; }
         }
     },
 
-    UI: function() {
-        const todoIn = document.getElementById('todo-in');
-        if(todoIn) {
-            todoIn.addEventListener('keypress', function(e) {
-                if(e.key === 'Enter' && e.target.value) { Core.Todo.add(e.target.value); e.target.value = ''; }
-            });
-        }
-        const chatIn = document.getElementById('chat-in');
-        if(chatIn) {
-            chatIn.addEventListener('keypress', function(e) {
-                if(e.key === 'Enter') Core.Chat.send();
-            });
-        }
+    UI() {
+        document.getElementById('todo-in')?.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter' && e.target.value) { this.Todo.add(e.target.value); e.target.value = ''; }
+        });
+        document.getElementById('chat-in')?.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') this.Chat.send();
+        });
     },
 
     Audio: {
-        setup: function() { 
-            this.el = new Audio('track.mp3'); 
-            this.el.loop = true; 
-            this.el.volume = 0.1; 
-        },
-        toggle: function() { this.el.paused ? this.el.play() : this.el.pause(); }
+        setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop = true; this.el.volume = 0.1; },
+        toggle() { this.el.paused ? this.el.play() : this.el.pause(); }
     },
 
     Canvas: {
-        init: function() {
-            this.cvs = document.getElementById('starfield');
-            if(!this.cvs) return;
-            this.ctx = this.cvs.getContext('2d');
-            this.res();
+        init() {
+            this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d'); this.res();
             window.onresize = () => this.res();
-            this.stars = Array.from({length: 200}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, s: Math.random()*2, v: Math.random()*0.5 }));
-            this.crew = Array.from({length: 3}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, r: Math.random()*6, vr: 0.01, vx: 0.2, vy: 0.1 }));
-            this.ufo = { x: -100, y: 300, v: 1 };
-            this.planet = { x: 200, y: 200, r: 80 };
+            
+            this.stars = Array.from({length: 200}, () => ({
+                x: Math.random() * this.cvs.width,
+                y: Math.random() * this.cvs.height,
+                s: Math.random() * 2,
+                v: Math.random() * 0.5 + 0.1,
+                p: Math.random() * Math.PI
+            }));
+            
+            this.crew = Array.from({length: 3}, () => ({
+                x: Math.random() * this.cvs.width,
+                y: Math.random() * this.cvs.height,
+                r: Math.random() * 6,
+                vr: 0.005, vx: 0.15, vy: 0.05
+            }));
+            
+            this.ufo = { x: -100, y: 350, v: 1.2 };
+            this.planet = { x: 250, y: 250, r: 90 };
+            this.comet = { x: -200, y: 0, active: false };
         },
-        res: function() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
-        drawAstro: function(a) {
-            const ctx = this.ctx; ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.r);
-            ctx.fillStyle = 'white'; ctx.fillRect(-8, -12, 16, 24);
-            ctx.fillStyle = '#111'; ctx.fillRect(-5, -9, 10, 7); 
-            ctx.restore();
-        },
-        drawPlanet: function() {
-            const ctx = this.ctx; const p = this.planet;
-            ctx.save();
-            ctx.shadowBlur = 30; ctx.shadowColor = '#4facfe';
-            const g = ctx.createRadialGradient(p.x-20, p.y-20, 5, p.x, p.y, p.r);
-            g.addColorStop(0, '#4facfe'); g.addColorStop(1, '#001a33');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.3)'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r+40, 15, Math.PI/4, 0, Math.PI*2); ctx.stroke();
-        },
-        draw: function() {
-            const ctx = this.ctx; const cvs = this.cvs;
+        res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        
+        draw() {
+            const ctx = this.ctx, cvs = this.cvs;
             if(!ctx) return;
-            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            ctx.fillStyle = 'white';
-            this.stars.forEach(s => { 
-                s.x -= s.v; if(s.x<0) s.x = cvs.width; 
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, Math.PI*2); ctx.fill(); 
+
+            // 1. ФОН: ГЛУБОКИЙ КОСМОС
+            const bg = ctx.createRadialGradient(cvs.width/2, cvs.height/2, 0, cvs.width/2, cvs.height/2, cvs.width);
+            bg.addColorStop(0, '#041528');
+            bg.addColorStop(1, '#01050a');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+            // 2. МЕРЦАЮЩИЕ ЗВЕЗДЫ
+            this.stars.forEach(s => {
+                s.x -= s.v; if(s.x < 0) s.x = cvs.width;
+                const alpha = 0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p)) * 0.7;
+                ctx.fillStyle = rgba(255, 255, 255, ${alpha});
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill();
             });
-            this.drawPlanet();
-            this.ufo.x += this.ufo.v; if(this.ufo.x > cvs.width+100) this.ufo.x = -100;
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.ufo.x, this.ufo.y + Math.sin(Date.now()/500)*20, 40, 12, 0, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#0ff'; ctx.stroke();
-            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.r += a.vr; this.drawAstro(a); });
+
+            // 3. ПЛАНЕТА С НЕОНОВЫМ СВЕЧЕНИЕМ И ПОЛОСАМИ
+            ctx.save();
+            ctx.shadowBlur = 50; ctx.shadowColor = '#4facfe';
+            const p = this.planet;
+            const pg = ctx.createRadialGradient(p.x-30, p.y-30, 10, p.x, p.y, p.r);
+            pg.addColorStop(0, '#4facfe'); pg.addColorStop(1, '#001a33');
+            ctx.fillStyle = pg;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Атмосферные полосы
+            ctx.clip();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 10;
+            for(let i=0; i<15; i++) {
+                ctx.beginPath();
+                ctx.moveTo(p.x - p.r, p.y - p.r + (i*15));
+                ctx.lineTo(p.x + p.r, p.y - p.r + (i*15) + 10);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Кольцо планеты
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(p.x, p.y, p.r + 50, 20, Math.PI/4, 0, Math.PI*2);
+            ctx.stroke();
+
+            // 4. КОМЕТА С ХВОСТОМ
+            if(!this.comet.active && Math.random() < 0.005) {
+                this.comet = { x: cvs.width + 100, y: Math.random() * cvs.height, active: true };
+            }
+            if(this.comet.active) {
+                this.comet.x -= 8; this.comet.y += 2;
+                const cg = ctx.createLinearGradient(this.comet.x, this.comet.y, this.comet.x + 80, this.comet.y - 20);
+                cg.addColorStop(0, 'rgba(0, 255, 255, 0.6)'); cg.addColorStop(1, 'transparent');
+                ctx.strokeStyle = cg; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x + 80, this.comet.y - 20); ctx.stroke();
+                if(this.comet.x < -100) this.comet.active = false;
+            }
+
+            // 5. НЛО С ОГНЯМИ
+            this.ufo.x += this.ufo.v; if(this.ufo.x > cvs.width + 150) this.ufo.x = -150;
+            let uy = this.ufo.y + Math.sin(Date.now()/800) * 40;
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.ufo.x, uy, 50, 15, 0, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2; ctx.stroke();
+            // Сигнальные огни
+            ctx.fillStyle = (Date.now() % 600 > 300) ? '#f0f' : '#0ff';
+            ctx.beginPath(); ctx.arc(this.ufo.x, uy + 2, 2, 0, Math.PI*2); ctx.fill();
+
+            // 6. КОСМОНАВТЫ
+            this.crew.forEach(a => {
+                a.x += a.vx; a.y += a.vy; a.r += a.vr;
+                ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.r);
+                ctx.fillStyle = 'white'; ctx.fillRect(-8, -12, 16, 24); // Тело
+                ctx.fillStyle = '#222'; ctx.fillRect(-5, -9, 10, 7);   // Шлем
+                ctx.restore();
+            });
         }
     },
-    loop: function() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
 };
 
 window.onload = () => Core.init();
