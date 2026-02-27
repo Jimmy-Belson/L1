@@ -154,6 +154,7 @@ const Core = {
                 d.oncontextmenu = (e) => {
                     e.preventDefault();
                     const menu = document.getElementById('custom-menu');
+                    if(!menu) return;
                     menu.style.display = 'block';
                     menu.style.left = e.pageX + 'px';
                     menu.style.top = e.pageY + 'px';
@@ -222,27 +223,101 @@ const Core = {
             this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
             this.ctx = this.cvs.getContext('2d'); this.res();
             window.addEventListener('resize', () => this.res());
-            this.stars = Array.from({length:200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.3, b:Math.random()}));
-            this.debris = Array.from({length:25}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*3+1, vx:-Math.random()*0.5}));
-            this.crew = Array.from({length:3}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, rot:Math.random()*6, vr:0.005, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3}));
-            this.ufo = {x:-100, y:350, p:[]}; this.comet = {x:-200, y:0, active:false};
+            this.stars = Array.from({length:220}, () => ({
+                x:Math.random()*this.cvs.width, 
+                y:Math.random()*this.cvs.height, 
+                s:Math.random()*2, 
+                v:Math.random()*0.3+0.1, 
+                p:Math.random()*Math.PI
+            }));
+            this.crew = Array.from({length:3}, () => ({
+                x:Math.random()*this.cvs.width, 
+                y:Math.random()*this.cvs.height, 
+                rot:Math.random()*6, 
+                vr:0.005, 
+                vx:(Math.random()-0.5)*0.3, 
+                vy:(Math.random()-0.5)*0.3
+            }));
+            this.ufo = {x:-150, y:350, v:1.2}; 
+            this.comet = {x:-200, y:0, active:false};
         },
         res() { if(!this.cvs) return; this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        
         drawAstro(a) {
             const ctx = this.ctx; ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.rect(-8,-12,16,24); ctx.fill();
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,-7,6,0,Math.PI*2); ctx.fill(); ctx.restore();
+            // Тело
+            ctx.fillStyle = '#fff'; ctx.fillRect(-8,-12,16,24); 
+            // Рюкзак
+            ctx.fillStyle = '#ddd'; ctx.fillRect(-10,-8,2,16);
+            // Шлем
+            ctx.fillStyle = '#111'; ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(-5,-10,10,7,2); ctx.fill(); ctx.stroke();
+            ctx.restore();
         },
+
         drawUFO(u) {
-            const ctx = this.ctx; u.x += 1.1; if(u.x > this.cvs.width + 150) u.x = -150;
-            let uy = u.y + Math.sin(Date.now()/800) * 50;
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 16, 0, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#0ff'; ctx.stroke();
+            const ctx = this.ctx; u.x += u.v; if(u.x > this.cvs.width + 200) u.x = -200;
+            let uy = u.y + Math.sin(Date.now()/700) * 40;
+            ctx.save();
+            // Свечение купола
+            ctx.shadowBlur = 15; ctx.shadowColor = '#0ff';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+            ctx.beginPath(); ctx.arc(u.x, uy-5, 15, Math.PI, 0); ctx.fill();
+            // Корпус
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(u.x, uy, 50, 14, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            // Огни
+            ctx.fillStyle = (Date.now() % 600 > 300) ? '#f0f' : '#0ff';
+            ctx.beginPath(); ctx.arc(u.x, uy+2, 2, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
         },
+
+        drawPlanet() {
+            const ctx = this.ctx; const cvs = this.cvs;
+            const px = cvs.width - 250, py = 250, pr = 90;
+            ctx.save();
+            // Свечение планеты
+            ctx.shadowBlur = 50; ctx.shadowColor = '#4facfe';
+            const g = ctx.createRadialGradient(px-30, py-30, 10, px, py, pr);
+            g.addColorStop(0, '#4facfe'); g.addColorStop(0.8, '#001a33'); g.addColorStop(1, '#000');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
+            
+            // Кольцо (Сатурн)
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.3)'; ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(px, py, pr+60, 20, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
+        },
+
         draw() {
             if(!this.ctx) return;
-            const ctx = this.ctx, cvs = this.cvs; ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); });
+            const ctx = this.ctx, cvs = this.cvs; 
+            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            
+            // Звезды с мерцанием
+            this.stars.forEach(s => { 
+                s.x -= s.v; if(s.x < 0) s.x = cvs.width; 
+                let alpha = 0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p)) * 0.7;
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`; 
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); 
+            });
+
+            // Комета
+            if(!this.comet.active && Math.random() < 0.005) {
+                this.comet = {x:cvs.width + 100, y:Math.random()*cvs.height, active:true};
+            }
+            if(this.comet.active) {
+                this.comet.x -= 8; this.comet.y += 2;
+                const cg = ctx.createLinearGradient(this.comet.x, this.comet.y, this.comet.x+80, this.comet.y-20);
+                cg.addColorStop(0, '#0ff'); cg.addColorStop(1, 'transparent');
+                ctx.strokeStyle = cg; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+80, this.comet.y-20); ctx.stroke();
+                if(this.comet.x < -100) this.comet.active = false;
+            }
+
+            this.drawPlanet();
             this.drawUFO(this.ufo);
             this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.rot += a.vr; this.drawAstro(a); });
         }
