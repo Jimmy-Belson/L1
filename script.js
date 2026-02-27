@@ -2,199 +2,251 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-    Msg(text, type) {
+    Msg(text, type = 'info') {
         const container = document.getElementById('notify-container');
         if (!container) return;
         const t = document.createElement('div');
-        t.className = "toast" + (type === 'error' ? ' error' : '');
-        t.innerHTML = <span>>></span> ${text};
+        t.className = `toast ${type === 'error' ? 'error' : ''}`;
+        t.innerHTML = `<span style="opacity:0.5">>></span> ${text}`;
         container.appendChild(t);
-        setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 400); }, 4000);
+        setTimeout(() => {
+            t.classList.add('hide');
+            setTimeout(() => t.remove(), 400);
+        }, 4000);
     },
 
     TogglePass() {
-        const p = document.getElementById('pass'), b = document.getElementById('toggle-pass');
-        if (!p || !b) return;
-        if (p.type === 'password') {
-            p.type = 'text';
-            b.classList.add('viewing');
-            this.Msg("SENSITIVE_DATA: EXPOSED");
+        const passInput = document.getElementById('pass');
+        const toggleBtn = document.getElementById('toggle-pass');
+        if (!passInput || !toggleBtn) return;
+        if (passInput.type === 'password') {
+            passInput.type = 'text';
+            toggleBtn.classList.add('viewing');
+            this.Msg("DECRYPTING_OVERSIGHT: VISIBLE");
         } else {
-            p.type = 'password';
-            b.classList.remove('viewing');
-            this.Msg("SENSITIVE_DATA: ENCRYPTED");
+            passInput.type = 'password';
+            toggleBtn.classList.remove('viewing');
+            this.Msg("ENCRYPTING_OVERSIGHT: HIDDEN");
         }
     },
 
     init() {
-        this.Canvas.init();
-        this.Audio.setup();
-        this.Draggable.init(); // Функция перетаскивания
+        this.Canvas.init(); 
+        this.Audio.setup(); 
         
         this.sb.auth.onAuthStateChange((event, session) => {
+            const path = window.location.pathname.toLowerCase();
+            const isLoginPage = path.includes('station.html');
+            const isMainPage = path.endsWith('/') || path.includes('index.html');
+
             if (session) {
                 this.user = session.user;
-                if (window.location.pathname.includes('station.html')) window.location.href = 'index.html';
-                this.Chat.load(); this.Todo.load();
-            } else if (window.location.pathname.includes('index.html')) {
-                window.location.href = 'station.html';
+                if (isLoginPage) { window.location.href = 'index.html'; return; }
+                if (document.getElementById('chat-stream')) this.Chat.load();
+                if (document.getElementById('todo-list')) this.Todo.load();
+            } else {
+                if (isMainPage) { window.location.href = 'station.html'; return; }
             }
         });
-        this.UI();
+
+        window.addEventListener('click', () => {
+            const menu = document.getElementById('custom-menu');
+            if(menu) menu.style.display = 'none';
+        });
+
+        if (document.getElementById('clock')) {
+            this.UI();
+            setInterval(() => {
+                const el = document.getElementById('clock');
+                if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+            }, 1000);
+        }
         this.loop();
     },
 
-    UI() {
-        const c = document.getElementById('clock');
-        if(c) setInterval(() => c.innerText = new Date().toLocaleTimeString('ru-RU', {hour12:false}), 1000);
-        
-        document.getElementById('todo-in')?.addEventListener('keypress', (e) => { 
-            if(e.key==='Enter' && e.target.value) { this.Todo.add(e.target.value); e.target.value=''; }
-        });
-        
-        document.getElementById('chat-in')?.addEventListener('keypress', (e) => { 
-            if(e.key==='Enter') this.Chat.send(); 
-        });
-
-        document.getElementById('toggle-pass')?.addEventListener('click', () => this.TogglePass());
+    Auth: async () => {
+        const emailEl = document.getElementById('email');
+        const passEl = document.getElementById('pass');
+        if(!emailEl || !passEl) return;
+        const { error } = await Core.sb.auth.signInWithPassword({email:emailEl.value, password:passEl.value});
+        if(error) Core.Msg("ACCESS_DENIED: " + error.message, "error");
     },
 
-    // --- ФУНКЦИЯ DRAG & DROP ---
-    Draggable: {
-        init() {
-            const handles = document.querySelectorAll('.widget-header');
-            handles.forEach(h => {
-                h.onmousedown = (e) => {
-                    const w = h.parentElement;
-                    let ox = e.clientX - w.offsetLeft;
-                    let oy = e.clientY - w.offsetTop;
-                    document.onmousemove = (e) => {
-                        w.style.left = (e.clientX - ox) + 'px';
-                        w.style.top = (e.clientY - oy) + 'px';
-                        w.style.position = 'absolute';
-                    };
-                    document.onmouseup = () => document.onmousemove = null;
-                };
-            });
-        }
+    Register: async () => {
+        const emailEl = document.getElementById('email');
+        const passEl = document.getElementById('pass');
+        if(!emailEl || !passEl) return;
+        const { error } = await Core.sb.auth.signUp({email:emailEl.value, password:passEl.value});
+        if(error) Core.Msg("REG_ERROR: " + error.message, "error"); 
+        else Core.Msg("PILOT_REGISTERED. INITIATE SESSION.");
     },
 
-    Chat: {
-        async load() {
-            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(50);
-            const s = document.getElementById('chat-stream');
-            if(s && data) { s.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
-        },
-        render(m) {
-            const s = document.getElementById('chat-stream'); if(!s) return;
-            const d = document.createElement('div'); 
-            d.className = 'msg-container';
-            d.innerHTML = <div class="msg-nick">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>;
-            
-            // --- УДАЛЕНИЕ СООБЩЕНИЙ ---
-            d.oncontextmenu = async (e) => {
-                e.preventDefault();
-                if(confirm("DELETE MESSAGE FROM STATION LOG?")) {
-                    await Core.sb.from('comments').delete().eq('id', m.id);
-                    d.remove();
-                    Core.Msg("LOG_ENTRY_DELETED", "error");
-                }
-            };
-            
-            s.appendChild(d);
-            s.scrollTop = s.scrollHeight;
-        },
-        async send() {
-            const i = document.getElementById('chat-in');
-            if(!i.value || !Core.user) return;
-            const n = Core.user.email.split('@')[0];
-            const { data } = await Core.sb.from('comments').insert([{message: i.value, nickname: n}]).select();
-            if(data) { this.render(data[0]); i.value = ''; }
-        }
+    Logout: async () => {
+        await Core.sb.auth.signOut();
+        window.location.href = 'station.html';
     },
 
     Todo: {
         async load() {
-            const { data } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
+            const { data, error } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
+            if (error) return console.error(error);
             const list = document.getElementById('todo-list');
-            if (list && data) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
+            if (list) {
+                list.innerHTML = '';
+                data.forEach(t => this.render(t));
+            }
         },
         render(t) {
-            const list = document.getElementById('todo-list'); if(!list) return;
+            const list = document.getElementById('todo-list');
+            if (!list) return;
             const d = document.createElement('div');
-            d.className = 'task' + (t.is_completed ? ' completed' : '');
+            d.className = `task ${t.is_completed ? 'completed' : ''}`;
+            d.draggable = true;
             d.innerText = '> ' + t.task.toUpperCase();
             d.onclick = async () => {
-                const ns = !d.classList.contains('completed');
+                const newState = !d.classList.contains('completed');
                 d.classList.toggle('completed');
-                await Core.sb.from('todo').update({ is_completed: ns }).eq('id', t.id);
+                await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
             };
-            d.oncontextmenu = async (e) => { 
-                e.preventDefault(); 
-                await Core.sb.from('todo').delete().eq('id', t.id); 
-                d.remove(); 
+            d.oncontextmenu = async (ev) => {
+                ev.preventDefault();
+                d.classList.add('removing');
+                const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+                if(!error) setTimeout(() => d.remove(), 400);
             };
+            d.addEventListener('dragstart', () => setTimeout(() => d.classList.add('dragging'), 0));
+            d.addEventListener('dragend', () => d.classList.remove('dragging'));
             list.appendChild(d);
         },
         async add(val) {
-            const { data } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
-            if (data) this.render(data[0]);
+            const { data, error } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
+            if (!error && data) this.render(data[0]);
+        }
+    },
+
+    Chat: {
+        async load() { 
+            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(50); 
+            if(data) { 
+                const stream = document.getElementById('chat-stream');
+                if(stream) {
+                    stream.innerHTML = ''; 
+                    data.reverse().forEach(m => this.render(m)); 
+                }
+            } 
+        },
+        render(m) { 
+            const s = document.getElementById('chat-stream');
+            if(!s) return;
+            const d = document.createElement('div'); 
+            d.className = 'msg-container';
+            const myNick = Core.user ? Core.user.email.split('@')[0] : null;
+            const isMyMsg = m.nickname === myNick;
+            const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+            d.innerHTML = `
+                <div class="msg-nick" style="${isMyMsg ? 'color: var(--n);' : ''}">
+                    ${(m.nickname||'PILOT').toUpperCase()} ${isMyMsg ? '<span style="font-size:8px;opacity:0.5">(YOU)</span>' : ''}
+                    <span style="opacity:0.4; font-size:9px;">${time}</span>
+                </div>
+                <div class="msg-text">${m.message}</div>
+            `; 
+            if (isMyMsg) {
+                d.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    const menu = document.getElementById('custom-menu');
+                    menu.style.display = 'block';
+                    menu.style.left = e.pageX + 'px';
+                    menu.style.top = e.pageY + 'px';
+                    menu.innerHTML = '<div class="menu-item">Terminate Message</div>';
+                    menu.onclick = async () => {
+                        const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                        if (!error) d.remove();
+                    };
+                };
+            }
+            s.appendChild(d); 
+            s.scrollTop = s.scrollHeight; 
+        },
+        async send() { 
+            const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
+            const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
+            const { data, error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]).select();
+            if(!error && data) this.render(data[0]);
+        }
+    },
+
+    UI() {
+        const todoIn = document.getElementById('todo-in');
+        const todoList = document.getElementById('todo-list');
+        if (todoIn) {
+            todoIn.onkeypress = async (e) => {
+                if (e.key === 'Enter' && e.target.value) {
+                    await this.Todo.add(e.target.value);
+                    e.target.value = '';
+                }
+            };
+        }
+        if (todoList) {
+            todoList.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const draggingItem = document.querySelector('.dragging');
+                if (!draggingItem) return;
+                const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
+                const nextSibling = siblings.find(sibling => {
+                    const box = sibling.getBoundingClientRect();
+                    return e.clientY <= box.top + box.height / 2;
+                });
+                if (nextSibling) todoList.insertBefore(draggingItem, nextSibling);
+                else todoList.appendChild(draggingItem);
+            });
+        }
+        const chatIn = document.getElementById('chat-in');
+        if (chatIn) { chatIn.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); }; }
+    },
+
+    Audio: {
+        setup() { 
+            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
+            this.el.loop = true; this.el.volume = 0.2;
+        },
+        toggle() {
+            const b = document.getElementById('audio-btn');
+            if(!b) return;
+            if(this.el.paused) { this.el.play(); b.classList.add('playing'); }
+            else { this.el.pause(); b.classList.remove('playing'); }
         }
     },
 
     Canvas: {
         init() {
-            this.cvs = document.getElementById('starfield');
-            this.ctx = this.cvs.getContext('2d');
-            this.res();
-            window.onresize = () => this.res();
-            this.stars = Array.from({length: 200}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, s: Math.random()*2, v: Math.random()*0.5 }));
-            this.crew = Array.from({length: 3}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, r: Math.random()*6, vr: 0.005, vx: 0.1, vy: 0.05 }));
-            this.ufo = { x: -100, y: 300, v: 1.2 };
+            this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d'); this.res();
+            window.addEventListener('resize', () => this.res());
+            this.stars = Array.from({length:200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.3, b:Math.random()}));
+            this.debris = Array.from({length:25}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*3+1, vx:-Math.random()*0.5}));
+            this.crew = Array.from({length:3}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, rot:Math.random()*6, vr:0.005, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3}));
+            this.ufo = {x:-100, y:350, p:[]}; this.comet = {x:-200, y:0, active:false};
         },
-        res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        res() { if(!this.cvs) return; this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        drawAstro(a) {
+            const ctx = this.ctx; ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.rect(-8,-12,16,24); ctx.fill();
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,-7,6,0,Math.PI*2); ctx.fill(); ctx.restore();
+        },
+        drawUFO(u) {
+            const ctx = this.ctx; u.x += 1.1; if(u.x > this.cvs.width + 150) u.x = -150;
+            let uy = u.y + Math.sin(Date.now()/800) * 50;
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 16, 0, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#0ff'; ctx.stroke();
+        },
         draw() {
-            const ctx = this.ctx, cvs = this.cvs;
-            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            
-            // Звезды
-            ctx.fillStyle = 'white';
-            this.stars.forEach(s => { 
-                s.x -= s.v; if(s.x<0) s.x = cvs.width; 
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); 
-            });
-
-            // Планета (Классика)
-            const px = cvs.width - 250, py = 250, pr = 100;
-            ctx.save();
-            ctx.shadowBlur = 50; ctx.shadowColor = '#4facfe';
-            const g = ctx.createRadialGradient(px-30, py-30, 10, px, py, pr);
-            g.addColorStop(0, '#4facfe'); g.addColorStop(1, '#001a33');
-            ctx.fillStyle = g;
-            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
-
-            // НЛО
-            this.ufo.x += this.ufo.v; if(this.ufo.x > cvs.width+200) this.ufo.x = -200;
-            ctx.fillStyle = '#111'; ctx.strokeStyle = '#0ff';
-            ctx.beginPath(); ctx.ellipse(this.ufo.x, this.ufo.y + Math.sin(Date.now()/500)*30, 40, 12, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-
-            // Космонавты
-            this.crew.forEach(a => {
-                a.x += a.vx; a.y += a.vy; a.r += a.vr;
-                ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.r);
-                ctx.fillStyle = 'white'; ctx.fillRect(-8, -12, 16, 24);
-                ctx.fillStyle = '#111'; ctx.fillRect(-5, -9, 10, 7);
-                ctx.restore();
-            });
+            if(!this.ctx) return;
+            const ctx = this.ctx, cvs = this.cvs; ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            this.stars.forEach(s => { s.x -= s.v; if(s.x < 0) s.x = cvs.width; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); });
+            this.drawUFO(this.ufo);
+            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.rot += a.vr; this.drawAstro(a); });
         }
     },
-
-    Audio: { 
-        setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop=true; this.el.volume=0.1; },
-        toggle() { this.el.paused ? this.el.play() : this.el.pause(); }
-    },
-
     loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
 };
 
