@@ -1,4 +1,5 @@
 const Core = {
+    // Подключение Supabase
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
@@ -9,384 +10,174 @@ const Core = {
         t.className = `toast ${type === 'error' ? 'error' : ''}`;
         t.innerHTML = `<span style="opacity:0.5">>></span> ${text}`;
         container.appendChild(t);
-        setTimeout(() => {
-            t.classList.add('hide');
-            setTimeout(() => t.remove(), 400);
-        }, 4000);
+        setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 400); }, 4000);
     },
 
     TogglePass() {
-        const passInput = document.getElementById('pass');
-        const toggleBtn = document.getElementById('toggle-pass');
-        if (!passInput || !toggleBtn) return;
-        if (passInput.type === 'password') {
-            passInput.type = 'text';
-            toggleBtn.classList.add('viewing');
-            this.Msg("DECRYPTING_OVERSIGHT: VISIBLE");
-        } else {
-            passInput.type = 'password';
-            toggleBtn.classList.remove('viewing');
-            this.Msg("ENCRYPTING_OVERSIGHT: HIDDEN");
-        }
+        const p = document.getElementById('pass');
+        const b = document.getElementById('toggle-pass');
+        if (!p || !b) return;
+        p.type = p.type === 'password' ? 'text' : 'password';
+        b.classList.toggle('viewing');
     },
 
     init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
-        
         this.sb.auth.onAuthStateChange((event, session) => {
             const path = window.location.pathname.toLowerCase();
-            const isLoginPage = path.includes('station.html');
-            const isMainPage = path.endsWith('/') || path.includes('index.html');
-
             if (session) {
                 this.user = session.user;
-                if (isLoginPage) { window.location.href = 'index.html'; return; }
+                if (path.includes('station.html')) window.location.href = 'index.html';
                 if (document.getElementById('chat-stream')) this.Chat.load();
                 if (document.getElementById('todo-list')) this.Todo.load();
-            } else {
-                if (isMainPage) { window.location.href = 'station.html'; return; }
+            } else if (path.endsWith('/') || path.includes('index.html')) {
+                window.location.href = 'station.html';
             }
         });
-
         window.addEventListener('click', () => {
-            const menu = document.getElementById('custom-menu');
-            if(menu) menu.style.display = 'none';
+            const m = document.getElementById('custom-menu');
+            if(m) m.style.display = 'none';
         });
-
-        if (document.getElementById('clock')) {
-            this.UI();
-            setInterval(() => {
-                const el = document.getElementById('clock');
-                if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-            }, 1000);
-        }
+        this.UI();
         this.loop();
     },
 
-    Auth: async () => {
-        const emailEl = document.getElementById('email');
-        const passEl = document.getElementById('pass');
-        if(!emailEl || !passEl) return;
-        const { error } = await Core.sb.auth.signInWithPassword({email:emailEl.value, password:passEl.value});
-        if(error) Core.Msg("ACCESS_DENIED: " + error.message, "error");
-    },
-
-    Register: async () => {
-        const emailEl = document.getElementById('email');
-        const passEl = document.getElementById('pass');
-        if(!emailEl || !passEl) return;
-        const { error } = await Core.sb.auth.signUp({email:emailEl.value, password:passEl.value});
-        if(error) Core.Msg("REG_ERROR: " + error.message, "error"); 
-        else Core.Msg("PILOT_REGISTERED. INITIATE SESSION.");
-    },
-
-    Logout: async () => {
-        await Core.sb.auth.signOut();
-        window.location.href = 'station.html';
-    },
-
-    Todo: {
-        async load() {
-            const { data, error } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
-            if (error) return console.error(error);
-            const list = document.getElementById('todo-list');
-            if (list) {
-                list.innerHTML = '';
-                data.forEach(t => this.render(t));
-            }
-        },
-        render(t) {
-            const list = document.getElementById('todo-list');
-            if (!list) return;
-            const d = document.createElement('div');
-            d.className = `task ${t.is_completed ? 'completed' : ''}`;
-            d.draggable = true;
-            d.innerText = '> ' + t.task.toUpperCase();
-            d.onclick = async () => {
-                const newState = !d.classList.contains('completed');
-                d.classList.toggle('completed');
-                await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
-            };
-            d.oncontextmenu = async (ev) => {
-                ev.preventDefault();
-                d.classList.add('removing');
-                const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-                if(!error) setTimeout(() => d.remove(), 400);
-            };
-            d.addEventListener('dragstart', () => setTimeout(() => d.classList.add('dragging'), 0));
-            d.addEventListener('dragend', () => d.classList.remove('dragging'));
-            list.appendChild(d);
-        },
-        async add(val) {
-            const { data, error } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
-            if (!error && data) this.render(data[0]);
-        }
+    UI() {
+        const cl = document.getElementById('clock');
+        if (cl) setInterval(() => {
+            const el = document.getElementById('clock');
+            if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        }, 1000);
+        
+        const ti = document.getElementById('todo-in');
+        if (ti) ti.onkeypress = async (e) => { if (e.key === 'Enter' && e.target.value) { await this.Todo.add(e.target.value); e.target.value = ''; } };
+        
+        const ci = document.getElementById('chat-in');
+        if (ci) ci.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
     },
 
     Chat: {
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(50); 
-            if(data) { 
-                const stream = document.getElementById('chat-stream');
-                if(stream) {
-                    stream.innerHTML = ''; 
-                    data.reverse().forEach(m => this.render(m)); 
-                }
-            } 
+            if(data) { const s = document.getElementById('chat-stream'); if(s) { s.innerHTML = ''; data.reverse().forEach(m => this.render(m)); } } 
         },
         render(m) { 
-            const s = document.getElementById('chat-stream');
-            if(!s) return;
-            const d = document.createElement('div'); 
-            d.className = 'msg-container';
-            const myNick = Core.user ? Core.user.email.split('@')[0] : null;
-            const isMyMsg = m.nickname === myNick;
-            const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-            d.innerHTML = `
-                <div class="msg-nick" style="${isMyMsg ? 'color: var(--n);' : ''}">
-                    ${(m.nickname||'PILOT').toUpperCase()} ${isMyMsg ? '<span style="font-size:8px;opacity:0.5">(YOU)</span>' : ''}
-                    <span style="opacity:0.4; font-size:9px;">${time}</span>
-                </div>
-                <div class="msg-text">${m.message}</div>
-            `; 
-            if (isMyMsg) {
+            const s = document.getElementById('chat-stream'); if(!s) return;
+            const d = document.createElement('div'); d.className = 'msg-container';
+            const my = Core.user ? Core.user.email.split('@')[0] : null;
+            const isMy = m.nickname === my;
+            d.innerHTML = `<div class="msg-nick" style="${isMy ? 'color:var(--n);':''}">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`; 
+            if (isMy) {
                 d.oncontextmenu = (e) => {
                     e.preventDefault();
                     const menu = document.getElementById('custom-menu');
-                    if(!menu) return;
-                    menu.style.display = 'block';
-                    menu.style.left = e.pageX + 'px';
-                    menu.style.top = e.pageY + 'px';
+                    menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
                     menu.innerHTML = '<div class="menu-item">Terminate Message</div>';
-                    menu.onclick = async () => {
-                        const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                        if (!error) d.remove();
-                    };
+                    menu.onclick = async () => { if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove(); };
                 };
             }
-            s.appendChild(d); 
-            s.scrollTop = s.scrollHeight; 
+            s.appendChild(d); s.scrollTop = s.scrollHeight; 
         },
         async send() { 
-            const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
-            const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
-            const { data, error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]).select();
-            if(!error && data) this.render(data[0]);
+            const i = document.getElementById('chat-in'); if(!i?.value || !Core.user) return; 
+            const { data } = await Core.sb.from('comments').insert([{message: i.value, nickname: Core.user.email.split('@')[0]}]).select();
+            if(data) { this.render(data[0]); i.value = ''; }
         }
     },
 
-    UI() {
-        const todoIn = document.getElementById('todo-in');
-        const todoList = document.getElementById('todo-list');
-        if (todoIn) {
-            todoIn.onkeypress = async (e) => {
-                if (e.key === 'Enter' && e.target.value) {
-                    await this.Todo.add(e.target.value);
-                    e.target.value = '';
-                }
-            };
-        }
-        if (todoList) {
-            todoList.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const draggingItem = document.querySelector('.dragging');
-                if (!draggingItem) return;
-                const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
-                const nextSibling = siblings.find(sibling => {
-                    const box = sibling.getBoundingClientRect();
-                    return e.clientY <= box.top + box.height / 2;
-                });
-                if (nextSibling) todoList.insertBefore(draggingItem, nextSibling);
-                else todoList.appendChild(draggingItem);
-            });
-        }
-        const chatIn = document.getElementById('chat-in');
-        if (chatIn) { chatIn.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); }; }
-    },
-
-    Audio: {
-        setup() { 
-            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
-            this.el.loop = true; this.el.volume = 0.2;
+    Todo: {
+        async load() {
+            const { data } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
+            const l = document.getElementById('todo-list');
+            if (l && data) { l.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
-        toggle() {
-            const b = document.getElementById('audio-btn');
-            if(!b) return;
-            if(this.el.paused) { this.el.play(); b.classList.add('playing'); }
-            else { this.el.pause(); b.classList.remove('playing'); }
-        }
+        render(t) {
+            const l = document.getElementById('todo-list'); if (!l) return;
+            const d = document.createElement('div'); d.className = `task ${t.is_completed ? 'completed' : ''}`;
+            d.draggable = true; d.innerText = '> ' + t.task.toUpperCase();
+            d.onclick = async () => { d.classList.toggle('completed'); await Core.sb.from('todo').update({ is_completed: d.classList.contains('completed') }).eq('id', t.id); };
+            d.oncontextmenu = async (ev) => { ev.preventDefault(); if(!(await Core.sb.from('todo').delete().eq('id', t.id)).error) d.remove(); };
+            l.appendChild(d);
+        },
+        async add(val) { const { data } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select(); if (data) this.render(data[0]); }
     },
 
     Canvas: {
         init() {
-            this.cvs = document.getElementById('starfield'); 
-            if(!this.cvs) return;
-            this.ctx = this.cvs.getContext('2d'); 
-            this.res();
+            this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d'); this.res();
             window.addEventListener('resize', () => this.res());
-            
-            this.stars = Array.from({length:220}, () => ({
-                x:Math.random()*this.cvs.width, 
-                y:Math.random()*this.cvs.height, 
-                s:Math.random()*2, 
-                v:Math.random()*0.3+0.1, 
-                p:Math.random()*Math.PI
-            }));
-            
-            this.crew = Array.from({length:3}, () => ({
-                x:Math.random()*this.cvs.width, 
-                y:Math.random()*this.cvs.height, 
-                rot:Math.random()*6, 
-                vr:0.005, 
-                vx:(Math.random()-0.5)*0.3, 
-                vy:(Math.random()-0.5)*0.3,
-                phase: Math.random() * Math.PI // Добавлено для плавности конечностей
-            }));
-            
-            // ИСПРАВЛЕНО: Добавлен массив parts
-            this.ufo = {x:-150, y:350, v:1.2, parts: []}; 
+            this.stars = Array.from({length:200}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.3, p:Math.random()*Math.PI}));
+            this.crew = Array.from({length:3}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, rot:Math.random()*6, vr:0.005, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, phase:Math.random()*Math.PI}));
+            this.ufo = {x:-150, y:350, v:1.2, parts: []};
             this.comet = {x:-200, y:0, active:false};
         },
-        
-        res() { 
-            if(!this.cvs) return; 
-            this.cvs.width = window.innerWidth; 
-            this.cvs.height = window.innerHeight; 
-        },
-        
+        res() { if(this.cvs) { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; } },
         drawAstro(a) {
-            const ctx = this.ctx;
-            if (!a.phase) a.phase = 0; // Защита от undefined
-            a.phase += 0.025; 
-            const swing = Math.sin(a.phase) * 6; 
-
-            ctx.save();
-            ctx.translate(a.x, a.y);
-            ctx.rotate(a.rot);
-
-            // Ноги и руки
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
+            const ctx = this.ctx; a.phase += 0.025; a.rot += a.vr;
+            const swing = Math.sin(a.phase) * 6;
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
             ctx.beginPath(); ctx.moveTo(-3, 10); ctx.lineTo(-6 + swing, 22); ctx.stroke(); 
-            ctx.beginPath(); ctx.moveTo(3, 10); ctx.lineTo(6 - swing, 22); ctx.stroke();  
-            ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-14, 8 + swing); ctx.stroke(); 
-            ctx.beginPath(); ctx.moveTo(7, 2); ctx.lineTo(14, 8 - swing); ctx.stroke();  
-
-            // Ранец
-            ctx.fillStyle = '#ccc';
-            ctx.beginPath(); ctx.roundRect(-10, -8, 20, 16, 2); ctx.fill();
-
-            // Тело
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.roundRect(-8, -14, 16, 26, 5); ctx.fill();
-
-            // Визор
-            ctx.fillStyle = '#050505';
-            ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(3, 10); ctx.lineTo(6 - swing, 22); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-14, 8 + swing); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(7, 2); ctx.lineTo(14, 8 - swing); ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-8, -14, 16, 26, 5); ctx.fill();
+            ctx.fillStyle = '#111'; ctx.strokeStyle = '#4facfe';
             ctx.beginPath(); ctx.roundRect(-5, -11, 10, 8, 3); ctx.fill(); ctx.stroke();
-
             ctx.restore();
         },
-
         drawUFO(u) {
-            const ctx = this.ctx;
-            u.x += u.v;
-            if (u.x > this.cvs.width + 250) u.x = -250;
+            const ctx = this.ctx; u.x += u.v; if (u.x > this.cvs.width + 250) u.x = -250;
             let uy = u.y + Math.sin(Date.now() / 600) * 40;
-
-            // Шлейф партиклов
-            if (Math.random() > 0.4) {
-                u.parts.push({ x: u.x - 45, y: uy + (Math.random() - 0.5) * 12, l: 1 });
-            }
+            if (Math.random() > 0.4) u.parts.push({ x: u.x - 45, y: uy, l: 1 });
             u.parts.forEach((p, i) => {
                 p.l -= 0.02; p.x -= 0.5;
                 ctx.fillStyle = `rgba(0, 255, 255, ${p.l})`;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 2.5 * p.l, 0, Math.PI * 2); ctx.fill();
                 if (p.l <= 0) u.parts.splice(i, 1);
             });
-
-            ctx.save();
-            ctx.shadowBlur = 20; ctx.shadowColor = '#0ff';
-            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
+            ctx.save(); ctx.shadowBlur = 20; ctx.shadowColor = '#0ff';
+            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff';
             ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
-            ctx.beginPath(); ctx.arc(u.x, uy - 6, 18, Math.PI, 0); ctx.fill();
-
-            ctx.shadowBlur = 5;
-            const activeIdx = Math.floor(Date.now() / 150) % 5;
+            const idx = Math.floor(Date.now() / 150) % 5;
             for (let i = 0; i < 5; i++) {
-                ctx.fillStyle = (i === activeIdx) ? '#f0f' : '#066';
+                ctx.fillStyle = (i === idx) ? '#f0f' : '#066';
                 ctx.beginPath(); ctx.arc(u.x - 30 + i * 15, uy + 4, 2.5, 0, Math.PI * 2); ctx.fill();
             }
             ctx.restore();
         },
-
         drawPlanet() {
-            const ctx = this.ctx;
-            const px = this.cvs.width - 250, py = 250, pr = 110;
-            
-            ctx.save();
-            ctx.shadowBlur = 60; ctx.shadowColor = 'rgba(79, 172, 254, 0.5)';
-            
-            const g = ctx.createRadialGradient(px - 35, py - 35, 15, px, py, pr);
-            g.addColorStop(0, '#4facfe');
-            g.addColorStop(0.6, '#081a2d');
-            g.addColorStop(1, '#000');
-            ctx.fillStyle = g;
-            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
-            
-            ctx.clip(); 
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
-            ctx.lineWidth = 12;
-            for (let i = 0; i < 12; i++) {
-                ctx.beginPath();
-                ctx.moveTo(px - pr, py - pr + i * 22);
-                ctx.lineTo(px + pr, py - pr + i * 22 + 10);
-                ctx.stroke();
-            }
+            const ctx = this.ctx; const px = this.cvs.width - 250, py = 250, pr = 110;
+            ctx.save(); ctx.shadowBlur = 60; ctx.shadowColor = 'rgba(79, 172, 254, 0.5)';
+            const g = ctx.createRadialGradient(px-35, py-35, 15, px, py, pr);
+            g.addColorStop(0, '#4facfe'); g.addColorStop(0.7, '#081a2d'); g.addColorStop(1, '#000');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+            ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 12;
+            for(let i=0; i<12; i++) { ctx.beginPath(); ctx.moveTo(px-pr, py-pr+i*22); ctx.lineTo(px+pr, py-pr+i*22+10); ctx.stroke(); }
             ctx.restore();
-
-            ctx.save();
-            ctx.translate(px, py);
-            ctx.rotate(Math.PI / 5); 
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)';
-            ctx.lineWidth = 3;
+            ctx.save(); ctx.translate(px, py); ctx.rotate(Math.PI / 5);
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)'; ctx.lineWidth = 4;
             ctx.beginPath(); ctx.ellipse(0, 0, pr + 65, 25, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.1)';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.ellipse(0, 0, pr + 55, 20, 0, 0, Math.PI * 2); ctx.stroke();
             ctx.restore();
         },
-
         draw() {
             if(!this.ctx) return;
-            const ctx = this.ctx, cvs = this.cvs; 
-            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            
-            this.stars.forEach(s => { 
-                s.x -= s.v; if(s.x < 0) s.x = cvs.width; 
-                let alpha = 0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p)) * 0.7;
-                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); 
+            this.ctx.fillStyle = '#01050a'; this.ctx.fillRect(0,0,this.cvs.width,this.cvs.height);
+            this.stars.forEach(s => {
+                s.x -= s.v; if(s.x < 0) s.x = this.cvs.width;
+                this.ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p))})`;
+                this.ctx.beginPath(); this.ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); this.ctx.fill();
             });
-
-            if(!this.comet.active && Math.random() < 0.005) {
-                this.comet = {x:cvs.width + 100, y:Math.random()*cvs.height, active:true};
-            }
-            if(this.comet.active) {
-                this.comet.x -= 8; this.comet.y += 2;
-                const cg = ctx.createLinearGradient(this.comet.x, this.comet.y, this.comet.x+80, this.comet.y-20);
-                cg.addColorStop(0, '#0ff'); cg.addColorStop(1, 'transparent');
-                ctx.strokeStyle = cg; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+80, this.comet.y-20); ctx.stroke();
-                if(this.comet.x < -100) this.comet.active = false;
-            }
-
-            this.drawPlanet();
-            this.drawUFO(this.ufo);
-            this.crew.forEach(a => { 
-                a.x += a.vx; a.y += a.vy; a.rot += a.vr; 
-                this.drawAstro(a); 
-            });
+            this.drawPlanet(); this.drawUFO(this.ufo);
+            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; this.drawAstro(a); });
         }
-    }}
+    },
+
+    Audio: { setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop=true; this.el.volume=0.2; }, toggle() { this.el.paused ? this.el.play() : this.el.pause(); } },
+    
+    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+};
+
+window.onload = () => Core.init();
