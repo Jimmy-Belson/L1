@@ -78,8 +78,13 @@ header {
 
 /* Класс для анимации удаления */
 .task.removing {
-    animation: taskExit 0.4s ease-in forwards !important;
+    animation: taskExit 0.4s cubic-bezier(0.4, 0, 1, 1) forwards !important;
     pointer-events: none;
+}
+
+@keyframes taskExit {
+    0% { transform: translateX(0) scale(1); opacity: 1; filter: blur(0); }
+    100% { transform: translateX(150px) scale(0.9); opacity: 0; filter: blur(10px); }
 }
 
 /* ЧАТ */
@@ -156,8 +161,19 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 .bars { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
 .bar { width: 2px; height: 4px; background: var(--n); transition: 0.3s; }
 .audio-link:hover .bar { background: #fff; }
-.playing .bar { animation: wave 0.5s infinite alternate; }
+.audio-link.playing .bar { 
+    animation: wave 0.6s infinite alternate; 
+}
 
+.audio-link.playing .bar:nth-child(1) { animation-delay: 0.1s; }
+.audio-link.playing .bar:nth-child(2) { animation-delay: 0.3s; }
+.audio-link.playing .bar:nth-child(3) { animation-delay: 0.2s; }
+.audio-link.playing .bar:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes wave { 
+    from { height: 4px; opacity: 0.5; } 
+    to { height: 15px; background: var(--p); opacity: 1; box-shadow: 0 0 10px var(--p); } 
+}
 /* ВХОД */
 #auth-gate { 
     position: fixed; inset: 0; z-index: 500; 
@@ -392,4 +408,21 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     box-shadow: 0 0 10px var(--n);
     width: 6px;
     height: 6px;
+}
+#chat-send {
+    background: transparent;
+    border: 1px solid var(--n);
+    color: var(--n);
+    padding: 0 20px;
+    cursor: pointer;
+    font-family: 'Orbitron';
+    font-size: 11px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+#chat-send:hover {
+    background: var(--n);
+    color: #000;
+    box-shadow: 0 0 20px var(--n), inset 0 0 10px rgba(255,255,255,0.5);
 }
