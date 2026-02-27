@@ -130,31 +130,38 @@ const Core = {
         if(data) { const s = document.getElementById('chat-stream'); s.innerHTML = ''; data.reverse().forEach(m => this.render(m)); } 
     },
     render(m) {
-        const s = document.getElementById('chat-stream'); if(!s) return;
-        const d = document.createElement('div'); d.className = 'msg-container';
-        const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
-        d.innerHTML = `<div class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`;
-        
-        if (isMy) {
-            d.oncontextmenu = (e) => {
-                e.preventDefault();
-                const menu = document.getElementById('custom-menu');
-                if(!menu) return;
-                
-                menu.style.display = 'block'; 
-                menu.style.left = e.pageX + 'px'; 
-                menu.style.top = e.pageY + 'px';
-                menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
-                
-                menu.onclick = async () => { 
-                    const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                    if (!error) d.remove(); 
-                    menu.style.display = 'none'; // Закрываем после клика
-                };
+    const s = document.getElementById('chat-stream'); if(!s) return;
+    const d = document.createElement('div'); d.className = 'msg-container';
+    // Проверка владельца сообщения
+    const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+    d.innerHTML = `<div class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`;
+    
+    if (isMy) {
+        d.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Чтобы окно не дергалось
+            const menu = document.getElementById('custom-menu');
+            if(!menu) return;
+            
+            menu.style.display = 'block'; 
+            menu.style.left = e.pageX + 'px'; 
+            menu.style.top = e.pageY + 'px';
+            menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
+            
+            // Исправленный клик по меню
+            menu.onclick = async (me) => { 
+                me.stopPropagation(); // Остановка всплытия
+                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                if (!error) {
+                    d.style.opacity = '0';
+                    setTimeout(() => d.remove(), 300);
+                }
+                menu.style.display = 'none';
             };
-        }
-        s.appendChild(d); s.scrollTop = s.scrollHeight;
-    },
+        };
+    }
+    s.appendChild(d); s.scrollTop = s.scrollHeight;
+},
     async send() {
         const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return;
         const nick = Core.user.email.split('@')[0];
@@ -177,26 +184,26 @@ const Core = {
     if (!l) return;
 
     const d = document.createElement('div');
+    // Добавляем класс завершения сразу при загрузке
     d.className = `task ${t.is_completed ? 'completed' : ''}`;
     d.draggable = true;
     d.innerText = '> ' + t.task.toUpperCase();
 
-    d.addEventListener('dragstart', () => d.classList.add('dragging'));
-    d.addEventListener('dragend', () => d.classList.remove('dragging'));
-
-    d.onclick = async () => {
-        // Переключаем класс
-        d.classList.toggle('completed');
-        const isNowCompleted = d.classList.contains('completed');
+    // ЛКМ: Перечеркивание
+    d.onclick = async (e) => {
+        e.preventDefault();
+        const isNowCompleted = d.classList.toggle('completed');
         
-        // Отправляем в базу новый статус
+        // Обновляем в Supabase
         await Core.sb.from('todo')
             .update({ is_completed: isNowCompleted })
             .eq('id', t.id);
     };
 
+    // ПКМ: Удаление
     d.oncontextmenu = async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         d.classList.add('removing');
         setTimeout(async () => {
             const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
