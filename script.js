@@ -155,10 +155,33 @@ const Core = {
         },
 
         drawUFO() {
-            const u = this.ufo, ctx = this.ctx;
-            u.x += u.v; if(u.x > this.cvs.width+200) u.x = -200;
-            const uy = u.y + Math.sin(Date.now()/600)*35;
+    const u = this.ufo, ctx = this.ctx;
+    u.x += u.v; if(u.x > this.cvs.width + 250) u.x = -250;
+    const uy = u.y + Math.sin(Date.now() / 600) * 35;
 
+    if (Math.random() > 0.4) {
+        u.parts.push({
+            x: u.x - 45, 
+            y: uy + (Math.random() - 0.5) * 8, 
+            a: 1.0, 
+            s: Math.random() * 3 + 1 
+        });
+    }
+
+   
+    u.parts.forEach((p, i) => {
+        p.x -= 1.2; 
+        p.a -= 0.02; 
+        
+        if (p.a <= 0) {
+            u.parts.splice(i, 1);
+        } else {
+            ctx.fillStyle = `rgba(0, 255, 255, ${p.a})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
             // Купол (Верхняя часть)
             ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
             ctx.strokeStyle = '#0ff'; ctx.lineWidth = 1;
