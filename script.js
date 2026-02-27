@@ -107,16 +107,21 @@ const Core = {
         }
 
         const tl = document.getElementById('todo-list');
-        if(tl) {
-            tl.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const drg = document.querySelector('.dragging');
-                if(!drg) return;
-                const siblings = [...tl.querySelectorAll('.task:not(.dragging)')];
-                const next = siblings.find(sib => e.clientY <= sib.getBoundingClientRect().top + sib.offsetHeight/2);
-                tl.insertBefore(drg, next || null);
-            });
-        }
+if(tl) {
+    tl.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Это обязательно, чтобы drop работал
+        const drg = document.querySelector('.dragging');
+        if(!drg) return;
+
+        // Находим элемент, над которым держим зажатую задачу
+        const siblings = [...tl.querySelectorAll('.task:not(.dragging)')];
+        const next = siblings.find(sib => {
+            return e.clientY <= sib.getBoundingClientRect().top + sib.offsetHeight / 2;
+        });
+
+        tl.insertBefore(drg, next || null);
+    });
+}
 
         window.onclick = () => { 
             const m = document.getElementById('custom-menu');
@@ -175,31 +180,33 @@ const Core = {
             const { data } = await Core.sb.from('todo').insert([{task: task, is_completed: false}]).select();
             if(data) this.render(data[0]);
         },
-        render(t) {
+       render(t) {
     const l = document.getElementById('todo-list'); 
     if (!l) return;
 
     const d = document.createElement('div');
-    // Добавляем класс завершения сразу при загрузке
     d.className = `task ${t.is_completed ? 'completed' : ''}`;
     d.draggable = true;
     d.innerText = '> ' + t.task.toUpperCase();
 
-    // ЛКМ: Перечеркивание
-    d.onclick = async (e) => {
-        e.preventDefault();
+    // Начало перетаскивания
+    d.addEventListener('dragstart', () => {
+        d.classList.add('dragging');
+    });
+
+    // Конец перетаскивания
+    d.addEventListener('dragend', () => {
+        d.classList.remove('dragging');
+        // Тут можно добавить сохранение порядка в базу, если нужно
+    });
+
+    d.onclick = async () => {
         const isNowCompleted = d.classList.toggle('completed');
-        
-        // Обновляем в Supabase
-        await Core.sb.from('todo')
-            .update({ is_completed: isNowCompleted })
-            .eq('id', t.id);
+        await Core.sb.from('todo').update({ is_completed: isNowCompleted }).eq('id', t.id);
     };
 
-    // ПКМ: Удаление
     d.oncontextmenu = async (e) => {
         e.preventDefault();
-        e.stopPropagation();
         d.classList.add('removing');
         setTimeout(async () => {
             const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
