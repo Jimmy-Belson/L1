@@ -220,9 +220,12 @@ const Core = {
 
     Canvas: {
         init() {
-            this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
-            this.ctx = this.cvs.getContext('2d'); this.res();
+            this.cvs = document.getElementById('starfield'); 
+            if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d'); 
+            this.res();
             window.addEventListener('resize', () => this.res());
+            
             this.stars = Array.from({length:220}, () => ({
                 x:Math.random()*this.cvs.width, 
                 y:Math.random()*this.cvs.height, 
@@ -230,134 +233,144 @@ const Core = {
                 v:Math.random()*0.3+0.1, 
                 p:Math.random()*Math.PI
             }));
+            
             this.crew = Array.from({length:3}, () => ({
                 x:Math.random()*this.cvs.width, 
                 y:Math.random()*this.cvs.height, 
                 rot:Math.random()*6, 
                 vr:0.005, 
                 vx:(Math.random()-0.5)*0.3, 
-                vy:(Math.random()-0.5)*0.3
+                vy:(Math.random()-0.5)*0.3,
+                phase: Math.random() * Math.PI // Добавлено для плавности конечностей
             }));
-            this.ufo = {x:-150, y:350, v:1.2}; 
+            
+            // ИСПРАВЛЕНО: Добавлен массив parts
+            this.ufo = {x:-150, y:350, v:1.2, parts: []}; 
             this.comet = {x:-200, y:0, active:false};
         },
-        res() { if(!this.cvs) return; this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        
+        res() { 
+            if(!this.cvs) return; 
+            this.cvs.width = window.innerWidth; 
+            this.cvs.height = window.innerHeight; 
+        },
         
         drawAstro(a) {
-    const ctx = this.ctx;
-    a.phase += 0.025; 
-    a.rot += a.vr;
-    const swing = Math.sin(a.phase) * 6; 
+            const ctx = this.ctx;
+            if (!a.phase) a.phase = 0; // Защита от undefined
+            a.phase += 0.025; 
+            const swing = Math.sin(a.phase) * 6; 
 
-    ctx.save();
-    ctx.translate(a.x, a.y);
-    ctx.rotate(a.rot);
+            ctx.save();
+            ctx.translate(a.x, a.y);
+            ctx.rotate(a.rot);
 
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-3, 10); ctx.lineTo(-6 + swing, 22); ctx.stroke(); // Левая
-    ctx.beginPath(); ctx.moveTo(3, 10); ctx.lineTo(6 - swing, 22); ctx.stroke();  // Правая
+            // Ноги и руки
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(-3, 10); ctx.lineTo(-6 + swing, 22); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(3, 10); ctx.lineTo(6 - swing, 22); ctx.stroke();  
+            ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-14, 8 + swing); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(7, 2); ctx.lineTo(14, 8 - swing); ctx.stroke();  
 
-    ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-14, 8 + swing); ctx.stroke(); // Левая
-    ctx.beginPath(); ctx.moveTo(7, 2); ctx.lineTo(14, 8 - swing); ctx.stroke();  // Правая
+            // Ранец
+            ctx.fillStyle = '#ccc';
+            ctx.beginPath(); ctx.roundRect(-10, -8, 20, 16, 2); ctx.fill();
 
-    ctx.fillStyle = '#ccc';
-    ctx.beginPath(); ctx.roundRect(-10, -8, 20, 16, 2); ctx.fill();
+            // Тело
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.roundRect(-8, -14, 16, 26, 5); ctx.fill();
 
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.roundRect(-8, -14, 16, 26, 5); ctx.fill();
+            // Визор
+            ctx.fillStyle = '#050505';
+            ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(-5, -11, 10, 8, 3); ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#050505';
-    ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(-5, -11, 10, 8, 3); ctx.fill(); ctx.stroke();
-
-    ctx.restore();
-},
+            ctx.restore();
+        },
 
         drawUFO(u) {
-    const ctx = this.ctx;
-    u.x += u.v;
-    if (u.x > this.cvs.width + 250) u.x = -250;
-    let uy = u.y + Math.sin(Date.now() / 600) * 40;
+            const ctx = this.ctx;
+            u.x += u.v;
+            if (u.x > this.cvs.width + 250) u.x = -250;
+            let uy = u.y + Math.sin(Date.now() / 600) * 40;
 
-    if (!u.parts) u.parts = [];
-    if (Math.random() > 0.4) {
-        u.parts.push({ x: u.x - 45, y: uy + (Math.random() - 0.5) * 12, l: 1 });
-    }
-    u.parts.forEach((p, i) => {
-        p.l -= 0.02; p.x -= 0.5;
-        ctx.fillStyle = `rgba(0, 255, 255, ${p.l})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 2.5 * p.l, 0, Math.PI * 2); ctx.fill();
-        if (p.l <= 0) u.parts.splice(i, 1);
-    });
+            // Шлейф партиклов
+            if (Math.random() > 0.4) {
+                u.parts.push({ x: u.x - 45, y: uy + (Math.random() - 0.5) * 12, l: 1 });
+            }
+            u.parts.forEach((p, i) => {
+                p.l -= 0.02; p.x -= 0.5;
+                ctx.fillStyle = `rgba(0, 255, 255, ${p.l})`;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2.5 * p.l, 0, Math.PI * 2); ctx.fill();
+                if (p.l <= 0) u.parts.splice(i, 1);
+            });
 
-    ctx.save();
-    ctx.shadowBlur = 20; ctx.shadowColor = '#0ff';
-    ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.save();
+            ctx.shadowBlur = 20; ctx.shadowColor = '#0ff';
+            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
-    ctx.beginPath(); ctx.arc(u.x, uy - 6, 18, Math.PI, 0); ctx.fill();
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.beginPath(); ctx.arc(u.x, uy - 6, 18, Math.PI, 0); ctx.fill();
 
-    ctx.shadowBlur = 5;
-    const activeIdx = Math.floor(Date.now() / 150) % 5;
-    for (let i = 0; i < 5; i++) {
-        ctx.fillStyle = (i === activeIdx) ? '#f0f' : '#066';
-        ctx.beginPath(); ctx.arc(u.x - 30 + i * 15, uy + 4, 2.5, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
-},
+            ctx.shadowBlur = 5;
+            const activeIdx = Math.floor(Date.now() / 150) % 5;
+            for (let i = 0; i < 5; i++) {
+                ctx.fillStyle = (i === activeIdx) ? '#f0f' : '#066';
+                ctx.beginPath(); ctx.arc(u.x - 30 + i * 15, uy + 4, 2.5, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        },
 
         drawPlanet() {
-    const ctx = this.ctx;
-    const px = this.cvs.width - 250, py = 250, pr = 110;
-    
-    ctx.save();
-    ctx.shadowBlur = 60; ctx.shadowColor = 'rgba(79, 172, 254, 0.5)';
-    
-    const g = ctx.createRadialGradient(px - 35, py - 35, 15, px, py, pr);
-    g.addColorStop(0, '#4facfe');
-    g.addColorStop(0.6, '#081a2d');
-    g.addColorStop(1, '#000');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
-    
-    ctx.clip(); 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
-    ctx.lineWidth = 12;
-    for (let i = 0; i < 12; i++) {
-        ctx.beginPath();
-        ctx.moveTo(px - pr, py - pr + i * 22);
-        ctx.lineTo(px + pr, py - pr + i * 22 + 10);
-        ctx.stroke();
-    }
-    ctx.restore();
+            const ctx = this.ctx;
+            const px = this.cvs.width - 250, py = 250, pr = 110;
+            
+            ctx.save();
+            ctx.shadowBlur = 60; ctx.shadowColor = 'rgba(79, 172, 254, 0.5)';
+            
+            const g = ctx.createRadialGradient(px - 35, py - 35, 15, px, py, pr);
+            g.addColorStop(0, '#4facfe');
+            g.addColorStop(0.6, '#081a2d');
+            g.addColorStop(1, '#000');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+            
+            ctx.clip(); 
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+            ctx.lineWidth = 12;
+            for (let i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.moveTo(px - pr, py - pr + i * 22);
+                ctx.lineTo(px + pr, py - pr + i * 22 + 10);
+                ctx.stroke();
+            }
+            ctx.restore();
 
-    ctx.save();
-    ctx.translate(px, py);
-    ctx.rotate(Math.PI / 5); 
-    ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(0, 0, pr + 65, 25, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(79, 172, 254, 0.1)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(0, 0, pr + 55, 20, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
-},
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(Math.PI / 5); 
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.ellipse(0, 0, pr + 65, 25, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.ellipse(0, 0, pr + 55, 20, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+        },
 
         draw() {
             if(!this.ctx) return;
             const ctx = this.ctx, cvs = this.cvs; 
             ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,cvs.width,cvs.height);
             
-            // Звезды с мерцанием
             this.stars.forEach(s => { 
                 s.x -= s.v; if(s.x < 0) s.x = cvs.width; 
                 let alpha = 0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p)) * 0.7;
-                ctx.fillStyle = `rgba(255,255,255,${alpha})`; 
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
                 ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill(); 
             });
 
-            // Комета
             if(!this.comet.active && Math.random() < 0.005) {
                 this.comet = {x:cvs.width + 100, y:Math.random()*cvs.height, active:true};
             }
@@ -371,10 +384,9 @@ const Core = {
 
             this.drawPlanet();
             this.drawUFO(this.ufo);
-            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.rot += a.vr; this.drawAstro(a); });
+            this.crew.forEach(a => { 
+                a.x += a.vx; a.y += a.vy; a.rot += a.vr; 
+                this.drawAstro(a); 
+            });
         }
-    },
-    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
-};
-
-window.onload = () => Core.init();
+    }}
