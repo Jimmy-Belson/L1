@@ -1,4 +1,5 @@
 const Core = {
+    // Конфиг Supabase
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
@@ -18,29 +19,52 @@ const Core = {
     },
 
     UI() {
-        // Логика Чата
-        const ci = document.getElementById('chat-in');
-        if (ci) ci.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); };
+        // 1. ЧАСЫ
+        const updateClock = () => {
+            const el = document.getElementById('clock');
+            if (el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        };
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // Логика Todo (Drag & Drop)
+        // 2. ЧАТ: Кнопка и Enter
+        const btnSend = document.getElementById('chat-send');
+        if (btnSend) btnSend.onclick = () => this.Chat.send();
+        
+        const chatInput = document.getElementById('chat-in');
+        if (chatInput) chatInput.onkeypress = (e) => { if (e.key === 'Enter') this.Chat.send(); };
+
+        // 3. TODO: Добавление задач
+        const todoInput = document.getElementById('todo-in');
+        if (todoInput) {
+            todoInput.onkeypress = async (e) => {
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                    await this.Todo.add(e.target.value.trim());
+                    e.target.value = '';
+                }
+            };
+        }
+
+        // 4. DRAG & DROP
         const tl = document.getElementById('todo-list');
         if (tl) {
             tl.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                const drg = document.querySelector('.dragging');
-                if (!drg) return;
+                const dragging = document.querySelector('.dragging');
+                if (!dragging) return;
                 const siblings = [...tl.querySelectorAll('.task:not(.dragging)')];
                 const next = siblings.find(sib => {
                     const box = sib.getBoundingClientRect();
                     return e.clientY <= box.top + box.height / 2;
                 });
-                tl.insertBefore(drg, next || null);
+                tl.insertBefore(dragging, next || null);
             });
         }
 
+        // Закрытие меню
         window.onclick = () => { 
             const m = document.getElementById('custom-menu');
-            if(m) m.style.display = 'none'; 
+            if (m) m.style.display = 'none'; 
         };
     },
 
@@ -60,14 +84,14 @@ const Core = {
                     e.preventDefault();
                     const menu = document.getElementById('custom-menu');
                     menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
-                    menu.innerHTML = '<div class="menu-item">Terminate Signal</div>';
+                    menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
                     menu.onclick = async () => { if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove(); };
                 };
             }
             s.appendChild(d); s.scrollTop = s.scrollHeight;
         },
         async send() {
-            const i = document.getElementById('chat-in'); if(!i.value || !Core.user) return;
+            const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return;
             const nick = Core.user.email.split('@')[0];
             const { data } = await Core.sb.from('comments').insert([{message: i.value, nickname: nick}]).select();
             if(data) { this.render(data[0]); i.value = ''; }
@@ -80,7 +104,7 @@ const Core = {
             const l = document.getElementById('todo-list'); if (l && data) { l.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
         render(t) {
-            const l = document.getElementById('todo-list');
+            const l = document.getElementById('todo-list'); if(!l) return;
             const d = document.createElement('div'); d.className = `task ${t.is_completed?'completed':''}`;
             d.draggable = true; d.innerText = '> ' + t.task.toUpperCase();
             d.addEventListener('dragstart', () => d.classList.add('dragging'));
@@ -92,6 +116,10 @@ const Core = {
             };
             d.oncontextmenu = async (e) => { e.preventDefault(); if(!(await Core.sb.from('todo').delete().eq('id', t.id)).error) d.remove(); };
             l.appendChild(d);
+        },
+        async add(val) {
+            const { data } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
+            if (data) this.render(data[0]);
         }
     },
 
@@ -99,9 +127,17 @@ const Core = {
         init() {
             this.cvs = document.getElementById('starfield'); this.ctx = this.cvs.getContext('2d');
             this.res(); window.addEventListener('resize', () => this.res());
-            this.stars = Array.from({length:150}, () => ({x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, s:Math.random()*2, v:Math.random()*0.4}));
-            this.ufo = {x:-200, y:300, v:1.8, parts: []};
-            this.crew = Array.from({length:2}, () => ({x:Math.random()*400, y:Math.random()*400, vx:0.2, vy:0.1, rot:0, p:Math.random()*10}));
+            this.stars = Array.from({length:180}, () => ({
+                x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, 
+                s:Math.random()*2, v:Math.random()*0.4, p:Math.random()*Math.PI
+            }));
+            this.ufo = {x:-200, y:350, v:1.6, parts: []};
+            // Космонавты теперь "дрейфуют" (больше вращения, меньше скорости)
+            this.crew = Array.from({length:3}, () => ({
+                x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, 
+                vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2, 
+                rot:Math.random()*Math.PI*2, vr:0.002 + Math.random()*0.005
+            }));
             this.comet = {x:-100, y:0, active:false};
         },
         res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
@@ -109,84 +145,111 @@ const Core = {
         drawPlanet() {
             const ctx = this.ctx, x = this.cvs.width - 250, y = 250, r = 100;
             ctx.save();
-            // Атмосферное свечение
-            ctx.shadowBlur = 50; ctx.shadowColor = '#4facfe';
+            ctx.shadowBlur = 60; ctx.shadowColor = 'rgba(79, 172, 254, 0.4)';
             const g = ctx.createRadialGradient(x-30, y-30, 10, x, y, r);
-            g.addColorStop(0, '#4facfe'); g.addColorStop(0.8, '#001a33'); g.addColorStop(1, '#000');
+            g.addColorStop(0, '#4facfe'); g.addColorStop(0.7, '#001a33'); g.addColorStop(1, '#000');
             ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-            // Полосы на поверхности
-            ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 10;
-            for(let i=-r; i<r; i+=15) {
+            
+            // Сферические полоски (не выходят за края)
+            ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 8;
+            for(let i=-r; i<r; i+=18) {
                 const w = Math.sqrt(r*r - i*i);
                 ctx.beginPath(); ctx.moveTo(x-w, y+i); ctx.lineTo(x+w, y+i); ctx.stroke();
             }
             ctx.restore();
-            // Кольца
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.ellipse(x, y, r+60, 20, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+            
+            // Кольцо Сатурна
+            ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI/5);
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
         },
 
         drawUFO() {
             const u = this.ufo, ctx = this.ctx;
-            u.x += u.v; if(u.x > this.cvs.width+200) u.x = -200;
-            const uy = u.y + Math.sin(Date.now()/600)*30;
-            // Частицы шлейфа
-            if(Math.random()>0.3) u.parts.push({x:u.x-40, y:uy, a:1});
+            u.x += u.v; if(u.x > this.cvs.width+250) u.x = -250;
+            const uy = u.y + Math.sin(Date.now()/700)*40;
+
+            // Шлейф
+            if(Math.random()>0.4) u.parts.push({x:u.x-45, y:uy, a:1});
             u.parts.forEach((p,i) => {
-                p.x -= 0.8; p.a -= 0.02;
+                p.x -= 0.7; p.a -= 0.015;
                 ctx.fillStyle = `rgba(0,255,255,${p.a})`;
-                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2.5*p.a, 0, Math.PI*2); ctx.fill();
                 if(p.a<=0) u.parts.splice(i,1);
             });
-            // Корпус
+
+            // 1. ВЕРХНИЙ КУПОЛ (ПРОЗРАЧНЫЙ)
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+            ctx.strokeStyle = '#0ff'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(u.x, uy-5, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
+
+            // 2. КОРПУС-ТАРЕЛКА
             ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.ellipse(u.x, uy, 50, 12, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            // Мигающие диоды (5 штук)
+            ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 14, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+            // 3. ОГНИ
+            const active = Math.floor(Date.now()/150)%5;
             for(let i=0; i<5; i++) {
-                ctx.fillStyle = (Math.floor(Date.now()/150)%5 === i) ? '#f0f' : '#066';
-                ctx.beginPath(); ctx.arc(u.x-30+i*15, uy+3, 2, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = (i === active) ? '#f0f' : '#066';
+                ctx.beginPath(); ctx.arc(u.x-30+i*15, uy+4, 2.5, 0, Math.PI*2); ctx.fill();
             }
         },
 
         drawAstro(a) {
-            const ctx = this.ctx; a.x += a.vx; a.y += a.vy; a.p += 0.03;
-            const swing = Math.sin(a.p)*5;
-            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.p*0.1);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-            // Ноги и руки
-            ctx.beginPath(); ctx.moveTo(-4,8); ctx.lineTo(-7,18+swing); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(4,8); ctx.lineTo(7,18-swing); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(-6,0); ctx.lineTo(-12,8+swing); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(12,8-swing); ctx.stroke();
-            // Рюкзак и тело
-            ctx.fillStyle = '#ccc'; ctx.fillRect(-9,-6,18,12);
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-7,-12,14,24,4); ctx.fill();
-            // Визор шлема
+            const ctx = this.ctx;
+            a.x += a.vx; a.y += a.vy; a.rot += a.vr;
+            
+            // Бесконечный экран (чтобы не пропадали)
+            if(a.x > this.cvs.width+100) a.x = -100; if(a.x < -100) a.x = this.cvs.width+100;
+            if(a.y > this.cvs.height+100) a.y = -100; if(a.y < -100) a.y = this.cvs.height+100;
+
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            
+            // Конечности (статичный дрейф)
+            ctx.beginPath(); ctx.moveTo(-4,8); ctx.lineTo(-8,18); ctx.stroke(); // Ноги
+            ctx.beginPath(); ctx.moveTo(4,8); ctx.lineTo(8,18); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-6,0); ctx.lineTo(-13,6); ctx.stroke(); // Руки
+            ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(13,6); ctx.stroke();
+            
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-10,-6,20,12); // Ранец
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-8,-14,16,26,5); ctx.fill(); // Тело
             ctx.fillStyle = '#000'; ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.roundRect(-4,-9,8,6,2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.roundRect(-5,-11,10,8,3); ctx.fill(); ctx.stroke(); // Шлем
             ctx.restore();
         },
 
         draw() {
-            const ctx = this.ctx; ctx.clearRect(0,0,this.cvs.width,this.cvs.height);
+            const ctx = this.ctx;
+            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,this.cvs.width,this.cvs.height);
+            
             // Звезды
             this.stars.forEach(s => {
                 s.x -= s.v; if(s.x < 0) s.x = this.cvs.width;
-                ctx.fillStyle = `rgba(255,255,255,${0.3+Math.abs(Math.sin(Date.now()/1000))})`;
+                ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p))})`;
                 ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill();
             });
-            // Кометы
-            if(!this.comet.active && Math.random() < 0.004) this.comet = {x:this.cvs.width+100, y:Math.random()*400, active:true};
+
+            // КОМЕТЫ (БЕЛЫЕ)
+            if(!this.comet.active && Math.random() < 0.003) this.comet = {x:this.cvs.width+100, y:Math.random()*400, active:true};
             if(this.comet.active) {
-                this.comet.x -= 12; this.comet.y += 3;
-                ctx.strokeStyle = '#0ff'; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+60, this.comet.y-15); ctx.stroke();
+                this.comet.x -= 15; this.comet.y += 3;
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+50, this.comet.y-10); ctx.stroke();
                 if(this.comet.x < -100) this.comet.active = false;
             }
+
             this.drawPlanet();
             this.drawUFO();
             this.crew.forEach(a => this.drawAstro(a));
         }
     },
-    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+
+    loop() {
+        this.Canvas.draw();
+        requestAnimationFrame(() => this.loop());
+    }
 };
+
 window.onload = () => Core.init();
