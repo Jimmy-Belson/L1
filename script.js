@@ -10,6 +10,13 @@ const Core = {
         this.Msg("LOGOUT FAILED", "error");
     }
 },
+async Register() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('pass').value;
+    const { error } = await this.sb.auth.signUp({ email, password: pass });
+    if (error) alert(error.message);
+    else window.location.href = 'index.html';
+},
 
 Audio: {
     el: null,
