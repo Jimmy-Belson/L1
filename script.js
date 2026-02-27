@@ -49,16 +49,16 @@ const Core = {
             }
         },
         toggle() {
-            this.init();
-            const btn = document.getElementById('music-btn'); 
-            if (this.el.paused) {
-                this.el.play();
-                if(btn) btn.classList.add('playing'); 
-            } else {
-                this.el.pause();
-                if(btn) btn.classList.remove('playing');
-            }
-        }
+    this.init();
+    const btn = document.getElementById('music-engine-btn'); 
+    if (this.el.paused) {
+        this.el.play();
+        if(btn) btn.classList.add('playing');
+    } else {
+        this.el.pause();
+        if(btn) btn.classList.remove('playing');
+    }
+},
     },
 
     init() {
@@ -77,9 +77,10 @@ const Core = {
     },
 
     UI() {
-        const musicBtn = document.getElementById('music-btn');
-        if (musicBtn) musicBtn.onclick = () => this.Audio.toggle();
-
+    const musicBtn = document.getElementById('music-engine-btn');
+    if (musicBtn) {
+        musicBtn.onclick = () => this.Audio.toggle();
+    }
         const upClock = () => {
             const el = document.getElementById('clock');
             if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
@@ -163,30 +164,46 @@ const Core = {
             if(data) this.render(data[0]);
         },
         render(t) {
-            const l = document.getElementById('todo-list'); if (!l) return;
+            const l = document.getElementById('todo-list'); 
+            if (!l) return;
+
             const d = document.createElement('div');
-            d.className = `task ${t.is_completed ? 'completed' : ''}`; // ПОЧИНЕНО
+            // ВАЖНО: Используем обратные кавычки для работы классов
+            d.className = `task ${t.is_completed ? 'completed' : ''}`;
             d.draggable = true;
             d.innerText = '> ' + t.task.toUpperCase();
 
+            // Drag & Drop события
             d.addEventListener('dragstart', () => d.classList.add('dragging'));
             d.addEventListener('dragend', () => d.classList.remove('dragging'));
 
+            // КЛИК: Перечеркивание задачи
             d.onclick = async () => {
                 const state = !d.classList.contains('completed');
-                d.classList.toggle('completed');
-                await Core.sb.from('todo').update({ is_completed: state }).eq('id', t.id);
+                d.classList.toggle('completed'); // Визуально переключаем сразу
+                
+                // Обновляем в Supabase
+                await Core.sb.from('todo')
+                    .update({ is_completed: state })
+                    .eq('id', t.id);
             };
 
+            // ПРАВЫЙ КЛИК: Удаление с анимацией
             d.oncontextmenu = async (e) => {
                 e.preventDefault();
-                d.classList.add('removing');
+                d.classList.add('removing'); // Запускаем твою CSS анимацию taskExit
+
                 setTimeout(async () => {
                     const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-                    if (!error) d.remove();
-                    else d.classList.remove('removing');
-                }, 400); 
+                    if (!error) {
+                        d.remove(); 
+                    } else {
+                        d.classList.remove('removing'); // Если ошибка, возвращаем в строй
+                        console.error("TERMINATION_FAILED");
+                    }
+                }, 400); // Задержка под твой CSS (0.4s)
             };
+
             l.appendChild(d);
         }
     },
