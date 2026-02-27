@@ -49,19 +49,17 @@ const Core = {
             }
         },
         toggle() {
-            this.init();
-            const btn = document.getElementById('audio-btn'); 
-            
-            if (this.el.paused) {
-                this.el.play().catch(e => console.log("Нужен клик по странице"));
-                if(btn) btn.classList.add('playing');
-                console.log("MUSIC: START, CLASS: ADDED");
-            } else {
-                this.el.pause();
-                if(btn) btn.classList.remove('playing');
-                console.log("MUSIC: STOP, CLASS: REMOVED");
-            }
-        }
+    this.init();
+    const btn = document.getElementById('audio-btn'); 
+    
+    if (this.el.paused) {
+        this.el.play().catch(e => console.log("Нужен клик по странице"));
+        if(btn) btn.classList.add('playing');
+    } else {
+        this.el.pause();
+        if(btn) btn.classList.remove('playing');
+    }
+},
     },
     init() {
         this.Canvas.init();
@@ -79,7 +77,7 @@ const Core = {
     },
 
     UI() {
-    const musicBtn = document.getElementById('music-engine-btn');
+    const musicBtn = document.getElementById('audio-btn'); 
     if (musicBtn) {
         musicBtn.onclick = () => this.Audio.toggle();
     }
@@ -127,32 +125,22 @@ const Core = {
     },
 
     Chat: {
-        async load() { 
-            const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(30); 
-            if(data) { 
-                const s = document.getElementById('chat-stream'); 
-                if(s) {
-                    s.innerHTML = ''; 
-                    data.reverse().forEach(m => this.render(m)); 
-                }
-            } 
-        },
-        render(m) {
-            const s = document.getElementById('chat-stream'); 
-            if(!s) return;
-            
-            const d = document.createElement('div'); 
-            d.className = 'msg-container';
-            const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
-            d.innerHTML = <div class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>;
-            
-            // ВОТ ТУТ ВОЗВРАЩАЕМ УДАЛЕНИЕ
+    async load() { 
+        const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(30); 
+        if(data) { const s = document.getElementById('chat-stream'); s.innerHTML = ''; data.reverse().forEach(m => this.render(m)); } 
+    },
+    render(m) {
+        const s = document.getElementById('chat-stream'); if(!s) return;
+        const d = document.createElement('div'); d.className = 'msg-container';
+        const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+        d.innerHTML = `<div class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`;
+        
+        if (isMy) {
             d.oncontextmenu = (e) => {
-                if (!isMy) return; // Удалять можно только свои
                 e.preventDefault();
                 const menu = document.getElementById('custom-menu');
                 if(!menu) return;
-
+                
                 menu.style.display = 'block'; 
                 menu.style.left = e.pageX + 'px'; 
                 menu.style.top = e.pageY + 'px';
@@ -161,20 +149,19 @@ const Core = {
                 menu.onclick = async () => { 
                     const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
                     if (!error) d.remove(); 
-                    menu.style.display = 'none';
+                    menu.style.display = 'none'; // Закрываем после клика
                 };
             };
-            s.appendChild(d); 
-            s.scrollTop = s.scrollHeight;
-        },
-        async send() {
-            const i = document.getElementById('chat-in'); 
-            if(!i || !i.value || !Core.user) return;
-            const nick = Core.user.email.split('@')[0];
-            const { data, error } = await Core.sb.from('comments').insert([{message: i.value, nickname: nick}]).select();
-            if(data) { this.render(data[0]); i.value = ''; }
         }
+        s.appendChild(d); s.scrollTop = s.scrollHeight;
     },
+    async send() {
+        const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return;
+        const nick = Core.user.email.split('@')[0];
+        const { data } = await Core.sb.from('comments').insert([{message: i.value, nickname: nick}]).select();
+        if(data) { this.render(data[0]); i.value = ''; }
+    }
+},
 
     Todo: {
         async load() {
@@ -186,48 +173,40 @@ const Core = {
             if(data) this.render(data[0]);
         },
         render(t) {
-            const l = document.getElementById('todo-list'); 
-            if (!l) return;
+    const l = document.getElementById('todo-list'); 
+    if (!l) return;
 
-            const d = document.createElement('div');
-            // ВАЖНО: Используем обратные кавычки для работы классов
-            d.className = `task ${t.is_completed ? 'completed' : ''}`;
-            d.draggable = true;
-            d.innerText = '> ' + t.task.toUpperCase();
+    const d = document.createElement('div');
+    d.className = `task ${t.is_completed ? 'completed' : ''}`;
+    d.draggable = true;
+    d.innerText = '> ' + t.task.toUpperCase();
 
-            // Drag & Drop события
-            d.addEventListener('dragstart', () => d.classList.add('dragging'));
-            d.addEventListener('dragend', () => d.classList.remove('dragging'));
+    d.addEventListener('dragstart', () => d.classList.add('dragging'));
+    d.addEventListener('dragend', () => d.classList.remove('dragging'));
 
-            // КЛИК: Перечеркивание задачи
-            d.onclick = async () => {
-                const state = !d.classList.contains('completed');
-                d.classList.toggle('completed'); // Визуально переключаем сразу
-                
-                // Обновляем в Supabase
-                await Core.sb.from('todo')
-                    .update({ is_completed: state })
-                    .eq('id', t.id);
-            };
+    d.onclick = async () => {
+        // Переключаем класс
+        d.classList.toggle('completed');
+        const isNowCompleted = d.classList.contains('completed');
+        
+        // Отправляем в базу новый статус
+        await Core.sb.from('todo')
+            .update({ is_completed: isNowCompleted })
+            .eq('id', t.id);
+    };
 
-            // ПРАВЫЙ КЛИК: Удаление с анимацией
-            d.oncontextmenu = async (e) => {
-                e.preventDefault();
-                d.classList.add('removing'); // Запускаем твою CSS анимацию taskExit
+    d.oncontextmenu = async (e) => {
+        e.preventDefault();
+        d.classList.add('removing');
+        setTimeout(async () => {
+            const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+            if (!error) d.remove(); 
+            else d.classList.remove('removing');
+        }, 400);
+    };
 
-                setTimeout(async () => {
-                    const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-                    if (!error) {
-                        d.remove(); 
-                    } else {
-                        d.classList.remove('removing'); // Если ошибка, возвращаем в строй
-                        console.error("TERMINATION_FAILED");
-                    }
-                }, 400); // Задержка под твой CSS (0.4s)
-            };
-
-            l.appendChild(d);
-        }
+    l.appendChild(d);
+}
     },
 
     Canvas: {
