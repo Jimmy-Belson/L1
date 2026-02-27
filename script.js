@@ -18,7 +18,7 @@ Audio: {
         if (!this.el) {
             this.el = new Audio('track.mp3'); 
             this.el.loop = true;
-            this.el.volume = 0.2;
+            this.el.volume = 0.05;
         }
     },
     toggle() {
@@ -138,24 +138,47 @@ if (logoutBtn) {
             const { data } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
             const l = document.getElementById('todo-list'); if (l && data) { l.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
-        render(t) {
-            const l = document.getElementById('todo-list'); if(!l) return;
-            const d = document.createElement('div'); d.className = `task ${t.is_completed?'completed':''}`;
-            d.draggable = true; d.innerText = '> ' + t.task.toUpperCase();
-            d.addEventListener('dragstart', () => d.classList.add('dragging'));
-            d.addEventListener('dragend', () => d.classList.remove('dragging'));
-            d.onclick = async () => {
-                const state = !d.classList.contains('completed');
-                d.classList.toggle('completed');
-                await Core.sb.from('todo').update({ is_completed: state }).eq('id', t.id);
-            };
-            d.oncontextmenu = async (e) => { e.preventDefault(); if(!(await Core.sb.from('todo').delete().eq('id', t.id)).error) d.remove(); };
-            l.appendChild(d);
-        },
-        async add(val) {
-            const { data } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
-            if (data) this.render(data[0]);
-        }
+       render(t) {
+    const l = document.getElementById('todo-list');
+    if (!l) return;
+
+    const d = document.createElement('div');
+    d.className = task ${t.is_completed ? 'completed' : ''};
+    d.draggable = true;
+    d.innerText = '> ' + t.task.toUpperCase();
+
+    // Drag & Drop события
+    d.addEventListener('dragstart', () => d.classList.add('dragging'));
+    d.addEventListener('dragend', () => d.classList.remove('dragging'));
+
+    // Клик для отметки выполнения
+    d.onclick = async () => {
+        const state = !d.classList.contains('completed');
+        d.classList.toggle('completed');
+        await Core.sb.from('todo').update({ is_completed: state }).eq('id', t.id);
+    };
+
+    // --- УДАЛЕНИЕ С АНИМАЦИЕЙ ---
+    d.oncontextmenu = async (e) => {
+        e.preventDefault(); // Запрещаем стандартное меню браузера
+        
+        // 1. Добавляем класс анимации из твоего CSS
+        d.classList.add('removing');
+
+        // 2. Ждем 400мс (время анимации taskExit), прежде чем удалить из базы
+        setTimeout(async () => {
+            const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+            if (!error) {
+                d.remove(); // Удаляем из HTML только после анимации
+            } else {
+                d.classList.remove('removing'); // Если ошибка, возвращаем задачу на место
+                console.error("Delete failed");
+            }
+        }, 400); 
+    };
+
+    l.appendChild(d);
+}
     },
 
     Canvas: {
