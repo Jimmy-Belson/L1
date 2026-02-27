@@ -229,39 +229,101 @@ const Core = {
         },
         res() { if(this.cvs) { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; } },
         
-        drawPlanet() {
-            const ctx = this.ctx, x = this.cvs.width - 250, y = 250, r = 100;
-            ctx.save();
-            ctx.shadowBlur = 50; ctx.shadowColor = 'rgba(79, 172, 254, 0.4)';
-            const g = ctx.createRadialGradient(x-30, y-30, 10, x, y, r);
-            g.addColorStop(0, '#4facfe'); g.addColorStop(0.8, '#001a33'); g.addColorStop(1, '#000');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-            ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 10;
-            for(let i=-r; i<r; i+=18) {
-                const w = Math.sqrt(r*r - i*i);
-                ctx.beginPath(); ctx.moveTo(x-w, y+i); ctx.lineTo(x+w, y+i); ctx.stroke();
-            }
-            ctx.restore();
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)'; ctx.lineWidth = 4;
-            ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI/5);
-            ctx.beginPath(); ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2); ctx.stroke();
-            ctx.restore();
-        },
+       drawPlanet() {
+    const ctx = this.ctx, x = this.cvs.width - 250, y = 250, r = 100;
+    ctx.save();
+   
+    ctx.shadowBlur = 50; ctx.shadowColor = 'rgba(79, 172, 254, 0.4)';
+    
+    const g = ctx.createRadialGradient(x-30, y-30, 10, x, y, r);
+    g.addColorStop(0, '#4facfe'); g.addColorStop(0.8, '#001a33'); g.addColorStop(1, '#000');
+    
+    ctx.fillStyle = g; 
+    ctx.beginPath(); 
+    ctx.arc(x, y, r, 0, Math.PI*2); 
+    ctx.fill();
+    
+    
+    ctx.restore();
 
-        drawUFO() {
-            const u = this.ufo, ctx = this.ctx;
-            u.x += u.v; if(u.x > this.cvs.width + 250) u.x = -250;
-            const uy = u.y + Math.sin(Date.now() / 600) * 35;
-            if (Math.random() > 0.4) u.parts.push({x: u.x - 45, y: uy + (Math.random() - 0.5) * 8, a: 1.0, s: Math.random() * 3 + 1});
-            u.parts.forEach((p, i) => {
-                p.x -= 1.2; p.a -= 0.02; 
-                if (p.a <= 0) u.parts.splice(i, 1);
-                else { ctx.fillStyle = `rgba(0, 255, 255, ${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); ctx.fill(); }
-            });
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.2)'; ctx.strokeStyle = '#0ff'; ctx.beginPath(); ctx.arc(u.x, uy-5, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 14, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-        },
+    ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)'; 
+    ctx.lineWidth = 4;
+    ctx.save(); 
+    ctx.translate(x, y); 
+    ctx.rotate(Math.PI/5);
+    ctx.beginPath(); 
+    ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2); 
+    ctx.stroke();
+    ctx.restore();
+},
 
+       drawUFO() {
+    const u = this.ufo, ctx = this.ctx;
+    u.x += u.v; if(u.x > this.cvs.width + 250) u.x = -250;
+    const uy = u.y + Math.sin(Date.now() / 600) * 35; // Покачивание
+
+    // --- ДОБАВЛЯЕМ СЛЕД ИЗ ЧАСТИЦ (ДЛЯ ЭФФЕКТА ДВИЖЕНИЯ) ---
+    if (Math.random() > 0.4) {
+        u.parts.push({
+            x: u.x - 45, 
+            y: uy + (Math.random() - 0.5) * 8, 
+            a: 1.0, // Прозрачность
+            s: Math.random() * 3 + 1 // Размер
+        });
+    }
+
+    // Отрисовка и обновление частиц
+    u.parts.forEach((p, i) => {
+        p.x -= 1.2; // Частицы отстают
+        p.a -= 0.02; // Исчезают
+        
+        if (p.a <= 0) {
+            u.parts.splice(i, 1);
+        } else {
+            ctx.fillStyle = `rgba(0, 255, 255, ${p.a})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    // --- РИСУЕМ САМО НЛО (КЛАССИЧЕСКИЙ ДИСК) ---
+    
+    // 1. Купол (Верхняя часть)
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.2)'; // Полупрозрачный голубой
+    ctx.strokeStyle = '#0ff'; // Яркий неон
+    ctx.lineWidth = 1;
+    ctx.beginPath(); 
+    ctx.arc(u.x, uy - 5, 18, Math.PI, 0); // Полукруг
+    ctx.fill(); 
+    ctx.stroke();
+
+    // 2. Тарелка (Нижняя часть - эллипс)
+    ctx.fillStyle = '#1a1a1a'; // Тёмный металл
+    ctx.strokeStyle = '#0ff'; // Тот же неон
+    ctx.lineWidth = 2;
+    ctx.beginPath(); 
+    ctx.ellipse(u.x, uy, 55, 14, 0, 0, Math.PI * 2); 
+    ctx.fill(); 
+    ctx.stroke();
+
+    // 3. Габаритные огни (Мерцающие)
+    const activeLight = Math.floor(Date.now() / 150) % 5; // Бегущий огонь
+    for (let i = 0; i < 5; i++) {
+        // Активный огонь — ярко-розовый, остальные — тускло-бирюзовые
+        ctx.fillStyle = (i === activeLight) ? '#f0f' : '#066'; 
+        ctx.beginPath(); 
+        ctx.arc(u.x - 30 + i * 15, uy + 4, 2.5, 0, Math.PI * 2); 
+        ctx.fill();
+        
+        // Свечение для активного огня
+        if (i === activeLight) {
+            ctx.shadowBlur = 10; ctx.shadowColor = '#f0f';
+            ctx.beginPath(); ctx.arc(u.x - 30 + i * 15, uy + 4, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0; // Сброс свечения
+        }
+    }
+},
         drawAstro(a) {
     const ctx = this.ctx;
     a.x += a.vx; a.y += a.vy; a.rot += a.vr;
