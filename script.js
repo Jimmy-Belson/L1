@@ -242,15 +242,33 @@ const Core = {
         },
 
         drawAstro(a) {
-            const ctx = this.ctx;
-            a.x += a.vx; a.y += a.vy; a.rot += a.vr;
-            if(a.x > this.cvs.width+100) a.x = -100; if(a.x < -100) a.x = this.cvs.width+100;
-            if(a.y > this.cvs.height+100) a.y = -100; if(a.y < -100) a.y = this.cvs.height+100;
-            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-4,8); ctx.lineTo(-8,18); ctx.stroke(); 
-            ctx.beginPath(); ctx.moveTo(4,8); ctx.lineTo(8,18); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(-8,-14,16,26,5); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.roundRect(-5,-11,10,8,3); ctx.fill(); ctx.restore();
-        },
+    const ctx = this.ctx;
+    a.x += a.vx; a.y += a.vy; a.rot += a.vr;
+    if(a.x > this.cvs.width+100) a.x = -100; if(a.x < -100) a.x = this.cvs.width+100;
+    if(a.y > this.cvs.height+100) a.y = -100; if(a.y < -100) a.y = this.cvs.height+100;
+
+    ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+    
+    ctx.fillStyle = '#ccc'; ctx.fillRect(-10, -6, 20, 12); 
+    ctx.fillStyle = '#fff'; ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(-8, -14, 16, 26, 5); else ctx.rect(-8, -14, 16, 26);
+    ctx.fill();
+
+    ctx.fillStyle = '#000'; ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(-5, -11, 10, 8, 3); else ctx.rect(-5, -11, 10, 8);
+    ctx.fill();
+
+    ctx.strokeStyle = '#fff'; 
+    ctx.lineWidth = 3; 
+    ctx.lineCap = 'round';
+    
+    ctx.beginPath(); ctx.moveTo(-4, 8); ctx.lineTo(-8, 18); ctx.stroke();  
+    ctx.beginPath(); ctx.moveTo(4, 8); ctx.lineTo(8, 18); ctx.stroke();   
+    ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-13, 6); ctx.stroke(); 
+    ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(13, 6); ctx.stroke();   
+    
+    ctx.restore();
+},
 
         draw() {
             if(!this.ctx) return;
