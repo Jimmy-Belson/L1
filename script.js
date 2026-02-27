@@ -2,6 +2,38 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
+    async Logout() {
+    const { error } = await this.sb.auth.signOut();
+    if (!error) {
+        window.location.href = 'station.html'; 
+    } else {
+        this.Msg("LOGOUT FAILED", "error");
+    }
+},
+
+Audio: {
+    el: null,
+    init() {
+       
+        if (!this.el) {
+            this.el = new Audio('track.mp3'); 
+            this.el.loop = true;
+            this.el.volume = 0.2;
+        }
+    },
+    toggle() {
+        this.init();
+        const btn = document.getElementById('music-btn'); 
+        if (this.el.paused) {
+            this.el.play();
+            if(btn) btn.classList.add('playing'); 
+        } else {
+            this.el.pause();
+            if(btn) btn.classList.remove('playing');
+        }
+    }
+},
+
     init() {
         this.Canvas.init();
         this.sb.auth.onAuthStateChange((event, session) => {
@@ -19,11 +51,20 @@ const Core = {
 
     UI() {
         // ЧАСЫ
+const musicBtn = document.getElementById('music-btn');
+if (musicBtn) {
+    musicBtn.onclick = () => this.Audio.toggle();
+}
         const upClock = () => {
             const el = document.getElementById('clock');
             if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
         };
         setInterval(upClock, 1000); upClock();
+
+        const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+    logoutBtn.onclick = () => this.Logout();
+}
 
         // ЧАТ (Кнопка и Enter)
         const btn = document.getElementById('chat-send');
