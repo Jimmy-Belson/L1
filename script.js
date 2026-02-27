@@ -2,46 +2,39 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-    Msg: function(text, type) {
+    Msg(text, type) {
         const container = document.getElementById('notify-container');
         if (!container) return;
         const t = document.createElement('div');
         t.className = "toast" + (type === 'error' ? ' error' : '');
         t.innerHTML = '<span style="opacity:0.5">>></span> ' + text;
         container.appendChild(t);
-        setTimeout(function() {
+        setTimeout(() => {
             t.classList.add('hide');
-            setTimeout(function() { t.remove(); }, 400);
+            setTimeout(() => t.remove(), 400);
         }, 4000);
     },
 
-    TogglePass: function() {
-        const passInput = document.getElementById('pass');
-        const toggleBtn = document.getElementById('toggle-pass');
-        if (!passInput || !toggleBtn) return;
-        if (passInput.type === 'password') {
-            passInput.type = 'text';
-            toggleBtn.classList.add('viewing');
-            this.Msg("DECRYPTING_OVERSIGHT: VISIBLE");
-        } else {
-            passInput.type = 'password';
-            toggleBtn.classList.remove('viewing');
-            this.Msg("ENCRYPTING_OVERSIGHT: HIDDEN");
-        }
+    TogglePass() {
+        const p = document.getElementById('pass');
+        const b = document.getElementById('toggle-pass');
+        if (!p || !b) return;
+        p.type = p.type === 'password' ? 'text' : 'password';
+        b.classList.toggle('viewing');
+        this.Msg(p.type === 'text' ? "DECRYPTING_OVERSIGHT: VISIBLE" : "ENCRYPTING_OVERSIGHT: HIDDEN");
     },
 
-    init: function() {
+    init() {
         this.Canvas.init(); 
         this.Audio.setup(); 
         
-        const self = this;
-        this.sb.auth.onAuthStateChange(function(event, session) {
+        this.sb.auth.onAuthStateChange((event, session) => {
             const path = window.location.pathname.toLowerCase();
             if (session) {
-                self.user = session.user;
+                this.user = session.user;
                 if (path.includes('station.html')) window.location.href = 'index.html';
-                if (document.getElementById('chat-stream')) self.Chat.load();
-                if (document.getElementById('todo-list')) self.Todo.load();
+                if (document.getElementById('chat-stream')) this.Chat.load();
+                if (document.getElementById('todo-list')) this.Todo.load();
             } else {
                 if (path.includes('index.html') || path.endsWith('/')) window.location.href = 'station.html';
             }
@@ -49,7 +42,7 @@ const Core = {
 
         if (document.getElementById('clock')) {
             this.UI();
-            setInterval(function() {
+            setInterval(() => {
                 const el = document.getElementById('clock');
                 if(el) el.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
             }, 1000);
@@ -58,70 +51,60 @@ const Core = {
     },
 
     Auth: async function() {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signInWithPassword({email: email, password: pass});
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = await Core.sb.auth.signInWithPassword({email: e, password: p});
         if(error) Core.Msg("ACCESS_DENIED: " + error.message, "error");
     },
 
     Register: async function() {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('pass').value;
-        const { error } = await Core.sb.auth.signUp({email: email, password: pass});
+        const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+        const { error } = await Core.sb.auth.signUp({email: e, password: p});
         if(error) Core.Msg("REG_ERROR: " + error.message, "error"); 
         else Core.Msg("PILOT_REGISTERED. INITIATE SESSION.");
     },
 
-    Logout: async function() { 
-        await Core.sb.auth.signOut(); 
-        window.location.href = 'station.html'; 
-    },
+    Logout: async () => { await Core.sb.auth.signOut(); window.location.href = 'station.html'; },
 
     Todo: {
-        load: async function() {
+        async load() {
             const { data } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
             const list = document.getElementById('todo-list');
             if (list && data) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
-        render: function(t) {
+        render(t) {
             const list = document.getElementById('todo-list');
             const d = document.createElement('div');
             d.className = 'task' + (t.is_completed ? ' completed' : '');
             d.innerText = '> ' + t.task.toUpperCase();
-            d.onclick = async function() {
-                const newState = !d.classList.contains('completed');
+            d.onclick = async () => {
+                const ns = !d.classList.contains('completed');
                 d.classList.toggle('completed');
-                await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+                await Core.sb.from('todo').update({ is_completed: ns }).eq('id', t.id);
             };
-            d.oncontextmenu = async function(e) {
-                e.preventDefault();
-                await Core.sb.from('todo').delete().eq('id', t.id);
-                d.remove();
-            };
+            d.oncontextmenu = async (e) => { e.preventDefault(); await Core.sb.from('todo').delete().eq('id', t.id); d.remove(); };
             list.appendChild(d);
         },
-        add: async function(val) {
+        async add(val) {
             const { data } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
             if (data) this.render(data[0]);
         }
     },
 
     Chat: {
-        load: async function() {
+        async load() {
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(50);
             const s = document.getElementById('chat-stream');
             if(s && data) { s.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
         },
-        render: function(m) {
+        render(m) {
             const s = document.getElementById('chat-stream');
             const d = document.createElement('div');
             d.className = 'msg-container';
-            const nick = (m.nickname || 'PILOT').toUpperCase();
-            d.innerHTML = '<div class="msg-nick">' + nick + '</div><div class="msg-text">' + m.message + '</div>';
+            d.innerHTML = '<div class="msg-nick">' + (m.nickname || 'PILOT').toUpperCase() + '</div><div class="msg-text">' + m.message + '</div>';
             s.appendChild(d);
             s.scrollTop = s.scrollHeight;
         },
-        send: async function() {
+        async send() {
             const i = document.getElementById('chat-in');
             const n = Core.user ? Core.user.email.split('@')[0] : 'PILOT';
             if(!i.value) return;
@@ -130,55 +113,58 @@ const Core = {
         }
     },
 
-    UI: function() {
-        const todoIn = document.getElementById('todo-in');
-        if(todoIn) {
-            todoIn.addEventListener('keypress', function(e) {
-                if(e.key === 'Enter' && e.target.value) { Core.Todo.add(e.target.value); e.target.value = ''; }
-            });
-        }
-        const chatIn = document.getElementById('chat-in');
-        if(chatIn) {
-            chatIn.addEventListener('keypress', function(e) {
-                if(e.key === 'Enter') Core.Chat.send();
-            });
-        }
+    UI() {
+        document.getElementById('todo-in')?.addEventListener('keypress', (e) => { if(e.key==='Enter' && e.target.value) { this.Todo.add(e.target.value); e.target.value=''; } });
+        document.getElementById('chat-in')?.addEventListener('keypress', (e) => { if(e.key==='Enter') this.Chat.send(); });
     },
 
     Audio: {
-        setup: function() { 
-            this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); 
-            this.el.loop = true; 
-            this.el.volume = 0.1; 
-        },
-        toggle: function() { this.el.paused ? this.el.play() : this.el.pause(); }
+        setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop = true; this.el.volume = 0.1; },
+        toggle() { this.el.paused ? this.el.play() : this.el.pause(); }
     },
 
     Canvas: {
-        init: function() {
-            this.cvs = document.getElementById('starfield');
-            if(!this.cvs) return;
-            this.ctx = this.cvs.getContext('2d');
-            this.res();
+        init() {
+            this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d'); this.res();
             window.onresize = () => this.res();
-            this.stars = Array.from({length: 220}, () => ({
-                x: Math.random() * this.cvs.width,
-                y: Math.random() * this.cvs.height,
-                s: Math.random() * 2.5,
-                v: Math.random() * 0.4 + 0.1,
-                p: Math.random() * Math.PI
-            }));
-            this.crew = Array.from({length: 3}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, r: Math.random()*6, vr: 0.006, vx: 0.1, vy: 0.1 }));
-            this.ufo = { x: -150, y: 280, v: 1.1 };
-            this.planet = { x: 220, y: 220, r: 85 };
+            this.stars = Array.from({length: 250}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, s: Math.random()*2, v: Math.random()*0.3+0.1, p: Math.random()*Math.PI }));
+            this.crew = Array.from({length: 3}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, r: Math.random()*6, vr: 0.005, vx: 0.1, vy: 0.08 }));
+            this.ufo = { x: -200, y: 400, v: 1.5 };
             this.comet = { x: -200, y: 0, active: false };
         },
-        res: function() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
-        draw: function() {
-            const ctx = this.ctx; const cvs = this.cvs;
-            if(!ctx) return;
+        res() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
+        
+        drawUfo(ctx, x, y) {
+            ctx.save();
+            let ty = y + Math.sin(Date.now()/700)*30;
+            // Купол
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.beginPath(); ctx.arc(x, ty-5, 15, Math.PI, 0); ctx.fill();
+            // Корпус
+            ctx.fillStyle = '#222'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(x, ty, 45, 12, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            // Огни
+            ctx.fillStyle = (Date.now()%600 > 300) ? '#f0f' : '#0ff';
+            for(let i=-2; i<=2; i++) { ctx.beginPath(); ctx.arc(x + i*15, ty+2, 2, 0, Math.PI*2); ctx.fill(); }
+            ctx.restore();
+        },
 
-            // Фон градиент
+        drawAstro(ctx, a) {
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.r);
+            // Ранец
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-10, -8, 20, 16);
+            // Тело
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.roundRect(-8, -12, 16, 24, 4); ctx.fill();
+            // Шлем
+            ctx.fillStyle = '#111'; ctx.strokeStyle = '#4facfe'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.roundRect(-5, -10, 10, 7, 2); ctx.fill(); ctx.stroke();
+            ctx.restore();
+        },
+
+        draw() {
+            const ctx = this.ctx, cvs = this.cvs; if(!ctx) return;
+            // Фон
             const bg = ctx.createRadialGradient(cvs.width/2, cvs.height/2, 0, cvs.width/2, cvs.height/2, cvs.width);
             bg.addColorStop(0, '#041528'); bg.addColorStop(1, '#01050a');
             ctx.fillStyle = bg; ctx.fillRect(0,0,cvs.width,cvs.height);
@@ -186,51 +172,43 @@ const Core = {
             // Звезды
             this.stars.forEach(s => {
                 s.x -= s.v; if(s.x < 0) s.x = cvs.width;
-                const alpha = 0.4 + Math.abs(Math.sin(Date.now()/1000 + s.p)) * 0.6;
-                ctx.fillStyle = 'rgba(255,255,255,'+alpha+')';
+                ctx.fillStyle = 'rgba(255,255,255,'+(0.3+Math.abs(Math.sin(Date.now()/1000+s.p))*0.7)+')';
                 ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill();
             });
 
-            // Планета
-            const p = this.planet;
+            // ПЛАНЕТА (СПРАВА)
+            const px = cvs.width - 250, py = 250, pr = 100;
             ctx.save();
-            ctx.shadowBlur = 40; ctx.shadowColor = '#4facfe';
-            const g = ctx.createRadialGradient(p.x-25, p.y-25, 10, p.x, p.y, p.r);
-            g.addColorStop(0, '#4facfe'); g.addColorStop(1, '#001a33');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-            // Полосы
-            ctx.clip();
-            ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 12;
-            for(let i=0; i<12; i++) {
-                ctx.beginPath(); ctx.moveTo(p.x-p.r, p.y-p.r+(i*18)); ctx.lineTo(p.x+p.r, p.y-p.r+(i*18)+15); ctx.stroke();
-            }
+            ctx.shadowBlur = 60; ctx.shadowColor = '#4facfe';
+            const pg = ctx.createRadialGradient(px-30, py-30, 10, px, py, pr);
+            pg.addColorStop(0, '#4facfe'); pg.addColorStop(0.6, '#001a33'); pg.addColorStop(1, '#000');
+            ctx.fillStyle = pg;
+            ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            // Полоски
+            ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 15;
+            for(let i=0; i<15; i++) { ctx.beginPath(); ctx.moveTo(px-pr, py-pr+i*20); ctx.lineTo(px+pr, py-pr+i*20+10); ctx.stroke(); }
             ctx.restore();
+            // Кольцо
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)'; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.ellipse(px, py, pr+60, 25, Math.PI/6, 0, Math.PI*2); ctx.stroke();
 
             // Комета
-            if(!this.comet.active && Math.random() < 0.004) this.comet = {x:cvs.width+100, y:Math.random()*cvs.height, active:true};
+            if(!this.comet.active && Math.random() < 0.005) this.comet = {x:cvs.width+100, y:Math.random()*cvs.height, active:true};
             if(this.comet.active) {
-                this.comet.x -= 7; this.comet.y += 2;
-                ctx.strokeStyle = 'rgba(0,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+70, this.comet.y-20); ctx.stroke();
+                this.comet.x -= 10; this.comet.y += 3;
+                const cg = ctx.createLinearGradient(this.comet.x, this.comet.y, this.comet.x+100, this.comet.y-30);
+                cg.addColorStop(0, '#0ff'); cg.addColorStop(1, 'transparent');
+                ctx.strokeStyle = cg; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+100, this.comet.y-30); ctx.stroke();
                 if(this.comet.x < -100) this.comet.active = false;
             }
 
-            // НЛО
+            // НЛО и Космонавты
             this.ufo.x += this.ufo.v; if(this.ufo.x > cvs.width+200) this.ufo.x = -200;
-            let uy = this.ufo.y + Math.sin(Date.now()/700)*35;
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.ufo.x, uy, 45, 14, 0, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#0ff'; ctx.stroke();
-
-            // Космонавты
-            this.crew.forEach(a => {
-                a.x += a.vx; a.y += a.vy; a.r += a.vr;
-                ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.r);
-                ctx.fillStyle = 'white'; ctx.fillRect(-7, -11, 14, 22);
-                ctx.fillStyle = '#222'; ctx.fillRect(-4, -8, 8, 6);
-                ctx.restore();
-            });
+            this.drawUfo(ctx, this.ufo.x, this.ufo.y);
+            this.crew.forEach(a => { a.x += a.vx; a.y += a.vy; a.r += a.vr; this.drawAstro(ctx, a); });
         }
     },
-    loop: function() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
+    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
 };
-
 window.onload = () => Core.init();
