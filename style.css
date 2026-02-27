@@ -469,3 +469,10 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     from { height: 3px; background: var(--n); }
     to { height: 12px; background: var(--p); }
 }
+.task.completed {
+    text-decoration: line-through !important;
+    color: var(--p) !important; /* Цвет меняется на розовый */
+    opacity: 0.6;
+    filter: grayscale(1);
+    border-bottom: 1px solid rgba(255, 0, 255, 0.2);
+}
