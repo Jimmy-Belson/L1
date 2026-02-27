@@ -503,3 +503,9 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     background: var(--p);
     color: #000;
 }
+.task.dragging {
+    opacity: 0.4;
+    background: var(--glass);
+    border: 1px dashed var(--n);
+    transform: scale(0.95);
+}
