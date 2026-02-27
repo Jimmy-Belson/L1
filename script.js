@@ -132,30 +132,26 @@ const Core = {
     render(m) {
     const s = document.getElementById('chat-stream'); if(!s) return;
     const d = document.createElement('div'); d.className = 'msg-container';
-    // Проверка владельца сообщения
     const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
     d.innerHTML = `<div class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</div><div class="msg-text">${m.message}</div>`;
     
     if (isMy) {
         d.oncontextmenu = (e) => {
             e.preventDefault();
-            e.stopPropagation(); // Чтобы окно не дергалось
+            e.stopPropagation(); // Остановка «дерганья»
             const menu = document.getElementById('custom-menu');
             if(!menu) return;
             
-            menu.style.display = 'block'; 
-            menu.style.left = e.pageX + 'px'; 
-            menu.style.top = e.pageY + 'px';
             menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
+            menu.style.display = 'block'; 
+            menu.style.position = 'fixed'; // Чтобы не влияло на скролл
+            menu.style.left = e.clientX + 'px'; // Используем ClientX вместо PageX
+            menu.style.top = e.clientY + 'px';
             
-            // Исправленный клик по меню
             menu.onclick = async (me) => { 
-                me.stopPropagation(); // Остановка всплытия
+                me.stopPropagation();
                 const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                if (!error) {
-                    d.style.opacity = '0';
-                    setTimeout(() => d.remove(), 300);
-                }
+                if (!error) d.remove(); 
                 menu.style.display = 'none';
             };
         };
