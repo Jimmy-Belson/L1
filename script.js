@@ -176,26 +176,26 @@ const Core = {
         const chatIn = document.getElementById('chat-in'); if (chatIn) { chatIn.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); }; }
     },
 
-   Audio: {
+  Audio: {
         el: null,
-        // Метод для создания плеера, если его еще нет
-        getEl() {
+        // Переименовали в setup, чтобы Core.init() не выдавал ошибку
+        setup() {
             if (!this.el) {
-                this.el = new Audio('track.mp3');
+                this.el = new Audio('track.mp3'); 
                 this.el.loop = true;
                 this.el.volume = 0.1;
             }
-            return this.el;
+            
         },
         toggle() {
-            const player = this.getEl();
+            this.setup();
             const btn = document.getElementById('audio-btn'); 
             
-            if (player.paused) {
-                player.play().catch(e => console.log("Нужен клик по странице"));
+            if (this.el.paused) {
+                this.el.play().catch(e => console.log("Нужен клик по странице"));
                 if(btn) btn.classList.add('playing');
             } else {
-                player.pause();
+                this.el.pause();
                 if(btn) btn.classList.remove('playing');
             }
         }
