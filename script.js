@@ -112,54 +112,55 @@ const Core = {
         }
     },
 
-    Chat: {
+   Chat: {
         async load() { 
+            // Запрашиваем все данные (*), чтобы получить created_at
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(50); 
             if(data) { 
                 const stream = document.getElementById('chat-stream');
                 if(stream) { stream.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
             } 
         },
-       render(m) {
-    const s = document.getElementById('chat-stream'); 
-    if(!s) return;
+        render(m) {
+            const s = document.getElementById('chat-stream'); 
+            if(!s) return;
 
-    const d = document.createElement('div'); 
-    d.className = 'msg-container';
+            const d = document.createElement('div'); 
+            d.className = 'msg-container';
+            const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+            
+            // Форматируем время
+            const date = m.created_at ? new Date(m.created_at) : new Date();
+            const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-    const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
-    
-    // Чистая структура: Ник и Текст отдельно
-    d.innerHTML = `
-        <div class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">
-            ${(m.nickname || 'PILOT').toUpperCase()}
-        </div>
-        <div class="msg-text">${m.message}</div>
-    `;
+            d.innerHTML = `
+                <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span class="msg-nick" style="font-size:10px; font-family:'Orbitron'; ${isMy ? 'color:var(--n)' : 'color:var(--p)'}">
+                        ${(m.nickname || 'PILOT').toUpperCase()}
+                    </span>
+                    <span class="msg-time" style="font-size:9px; opacity:0.4; font-family:'Share Tech Mono'">${timeStr}</span>
+                </div>
+                <div class="msg-text">${m.message}</div>
+            `;
 
-    // Логика удаления (ПКМ)
-    if (isMy) {
-        d.oncontextmenu = (e) => {
-            e.preventDefault(); e.stopPropagation();
-            const menu = document.getElementById('custom-menu');
-            if(!menu) return;
-            menu.style.display = 'block';
-            menu.style.position = 'fixed';
-            menu.style.left = e.clientX + 'px';
-            menu.style.top = e.clientY + 'px';
-            menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
-            menu.onclick = async (me) => {
-                me.stopPropagation();
-                if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove();
-                menu.style.display = 'none';
-            };
-        };
-    }
-
-    s.appendChild(d);
-    s.scrollTop = s.scrollHeight;
-},
-
+            if (isMy) {
+                d.oncontextmenu = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    const menu = document.getElementById('custom-menu');
+                    if(!menu) return;
+                    menu.style.display = 'block'; menu.style.position = 'fixed';
+                    menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+                    menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
+                    menu.onclick = async (me) => {
+                        me.stopPropagation();
+                        if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove();
+                        menu.style.display = 'none';
+                    };
+                };
+            }
+            s.appendChild(d);
+            s.scrollTop = s.scrollHeight;
+        },
         async send() { 
             const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
             const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
@@ -167,7 +168,7 @@ const Core = {
             if(!error && data) this.render(data[0]);
         }
     },
-
+    
     UI() {
         const todoIn = document.getElementById('todo-in'), todoList = document.getElementById('todo-list');
         if (todoIn) { todoIn.onkeypress = async (e) => { if (e.key === 'Enter' && e.target.value) { await this.Todo.add(e.target.value); e.target.value = ''; } }; }
@@ -325,5 +326,12 @@ Canvas: {
             this.crew.forEach(a => this.drawAstro(a));
         }
     },
-    loop() { this.Canvas.draw(); requestAnimationFrame(() => this.loop()); }
+     loop() {
+        if (this.Canvas && this.Canvas.draw) {
+            this.Canvas.draw();
+        }
+        requestAnimationFrame(() => this.loop());
+    }
 };
+
+;
