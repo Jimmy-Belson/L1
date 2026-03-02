@@ -209,68 +209,180 @@ const Core = {
 
     Canvas: {
         init() {
-            this.cvs = document.getElementById('starfield'); if(!this.cvs) return;
-            this.ctx = this.cvs.getContext('2d'); this.res();
-            window.addEventListener('resize', () => this.res());
-            this.stars = Array.from({length:250}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, s: Math.random()*2.5, v: Math.random()*0.4+0.1, phase: Math.random()*Math.PI }));
-            this.crew = Array.from({length:3}, () => ({ x: Math.random()*this.cvs.width, y: Math.random()*this.cvs.height, rot: Math.random()*6, vr: 0.005, vx: (Math.random()-0.5)*0.2, vy: (Math.random()-0.5)*0.2 }));
-            this.ufo = {x: -150, y: 250, speed: 1.2}; this.comet = {x: -200, y: 0, active: false};
-            this.planet = { x: 200, y: 200, r: 80 };
+            this.cvs = document.getElementById('starfield'); 
+            if(!this.cvs) return;
+            this.ctx = this.cvs.getContext('2d');
+            this.res(); window.addEventListener('resize', () => this.res());
+            
+            // Звёзды (мерцающие)
+            this.stars = Array.from({length:150}, () => ({
+                x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, 
+                s:Math.random()*2, v:Math.random()*0.3, p:Math.random()*Math.PI
+            }));
+            
+            // НЛО (детализированное)
+            this.ufo = {x:-250, y:350, v:2.1, parts: []}; // Увеличили скорость
+            
+            // Астронавты (детализированные)
+            this.crew = Array.from({length:3}, () => ({
+                x:Math.random()*this.cvs.width, y:Math.random()*this.cvs.height, 
+                vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3, 
+                rot:Math.random()*Math.PI*2, vr:0.005, p:Math.random()*Math.PI*2
+            }));
+            
+            // Комета
+            this.comet = {x:-100, y:0, active:false};
         },
-        res() { if(!this.cvs) return; this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
-        draw() {
-            if(!this.ctx) return; const ctx = this.ctx, cvs = this.cvs;
-            const bg = ctx.createRadialGradient(cvs.width/2, cvs.height/2, 0, cvs.width/2, cvs.height/2, cvs.width);
-            bg.addColorStop(0, '#020b16'); bg.addColorStop(1, '#01050a');
-            ctx.fillStyle = bg; ctx.fillRect(0, 0, cvs.width, cvs.height);
-
-            // ПЛАНЕТА С ПАТТЕРНОМ
+        res() { if(this.cvs) { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; } },
+        
+        // --- ПРОРАБОТАННАЯ ПЛАНЕТА ---
+        drawPlanet() {
+            const ctx = this.ctx, x = this.cvs.width - 250, y = 250, r = 100;
             ctx.save();
-            const p = this.planet;
-            const pGrad = ctx.createRadialGradient(p.x-20, p.y-20, 10, p.x, p.y, p.r);
-            pGrad.addColorStop(0, '#4facfe'); pGrad.addColorStop(1, '#001a33');
-            ctx.fillStyle = pGrad;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-            // Атмосферные полосы
-            ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 15;
-            for(let i=0; i<10; i++) { ctx.beginPath(); ctx.moveTo(p.x-p.r, p.y-p.r + i*20); ctx.lineTo(p.x+p.r, p.y-p.r + i*20 + 10); ctx.stroke(); }
-            ctx.restore();
-            // Кольцо
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r+50, 20, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+            
+            // 1. Мягкая внешняя атмосфера (Swaying atmosphere)
+            ctx.shadowBlur = 50; 
+            ctx.shadowColor = 'rgba(79, 172, 254, 0.4)';
+            
+            // 2. Глубокий градиент поверхности (Planet Core)
+            const planetGrad = ctx.createRadialGradient(x-30, y-30, 10, x, y, r);
+            planetGrad.addColorStop(0, '#4facfe'); // Яркий центр
+            planetGrad.addColorStop(0.8, '#001a33'); // Глубокий синий
+            planetGrad.addColorStop(1, '#000'); // Черная тень
+            
+            ctx.fillStyle = planetGrad; 
+            ctx.beginPath(); 
+            ctx.arc(x, y, r, 0, Math.PI*2); 
+            ctx.fill();
+            
+            // 3. Тень для объема (Atmospheric Shadow)
+            ctx.shadowBlur = 0; // Сброс тени
+            const shadowGrad = ctx.createLinearGradient(x-r, y-r, x+r, y+r);
+            shadowGrad.addColorStop(0, 'rgba(0,0,0,0.1)'); // Свет
+            shadowGrad.addColorStop(0.6, 'rgba(0,0,0,0.8)'); // Тень
+            shadowGrad.addColorStop(1, 'rgba(0,0,0,1)'); // Полная тень
+            
+            ctx.fillStyle = shadowGrad; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+            
+            ctx.restore(); // Сброс всех стилей и теней
 
-            // ЗВЕЗДЫ
-            this.stars.forEach(s => {
-                s.x -= s.v; if(s.x < 0) s.x = cvs.width;
-                const op = Math.abs(Math.sin(Date.now()/1000 + s.phase));
-                ctx.fillStyle = `rgba(255, 255, 255, ${op * 0.8})`;
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill();
-            });
+            // 4. Кольцо планеты (Subtle Ring)
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)'; // Очень тусклое
+            ctx.lineWidth = 4;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI/5);
+            ctx.beginPath(); ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2); ctx.stroke(); ctx.restore();
+        },
 
-            // КОМЕТА
-            if(!this.comet.active && Math.random() < 0.005) { this.comet = {x: cvs.width+100, y: Math.random()*cvs.height, active: true}; }
-            if(this.comet.active) {
-                this.comet.x -= 7; this.comet.y += 2;
-                ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)'; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+60, this.comet.y-15); ctx.stroke();
-                if(this.comet.x < -100) this.comet.active = false;
+        // --- ДЕТАЛИЗИРОВАННОЕ НЛО ---
+        drawUFO() {
+            const u = this.ufo, ctx = this.ctx;
+            u.x += u.v; if(u.x > this.cvs.width + 250) u.x = -250;
+            const uy = u.y + Math.sin(Date.now() / 600) * 35; // Покачивание
+
+            // 1. Инверсионный след (Particles)
+            if (Math.random() > 0.4) {
+                u.parts.push({
+                    x: u.x - 45, 
+                    y: uy + (Math.random() - 0.5) * 8, 
+                    a: 1.0, // Прозрачность
+                    s: Math.random() * 3 + 1 // Размер
+                });
             }
 
-            // НЛО
-            this.ufo.x += this.ufo.speed; if(this.ufo.x > cvs.width+200) this.ufo.x = -200;
-            let uy = this.ufo.y + Math.sin(Date.now()/1000) * 30;
-            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.ufo.x, uy, 50, 15, 0, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#0ff'; ctx.stroke();
-
-            // КОСМОНАВТЫ
-            this.crew.forEach(a => {
-                a.x += a.vx; a.y += a.vy; a.rot += a.vr;
-                ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-                ctx.fillStyle = 'white'; ctx.fillRect(-6, -10, 12, 20);
-                ctx.fillStyle = '#222'; ctx.fillRect(-4, -8, 8, 6);
-                ctx.restore();
+            u.parts.forEach((p, i) => {
+                p.x -= 1.2; p.a -= 0.02; // Частицы отстают и исчезают
+                if (p.a <= 0) u.parts.splice(i, 1);
+                else { ctx.fillStyle = `rgba(0, 255, 255, ${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); ctx.fill(); }
             });
+
+            // 2. Классический диск (Metal Hull)
+            // Купол
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.2)'; // Полупрозрачный голубой
+            ctx.strokeStyle = '#0ff'; // Яркий неон
+            ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(u.x, uy - 5, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
+
+            // Тарелка (Темный металл с неоном)
+            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#0ff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+            // 3. Мерцающие неоновые огни (Running Lights)
+            const activeLight = Math.floor(Date.now() / 150) % 5;
+            for (let i = 0; i < 5; i++) {
+                ctx.fillStyle = (i === activeLight) ? '#f0f' : '#066'; // Активный огонь — розовый
+                ctx.beginPath(); ctx.arc(u.x - 30 + i * 15, uy + 4, 2.5, 0, Math.PI * 2); ctx.fill();
+                
+                if (i === activeLight) { // Свечение для активного огня
+                    ctx.shadowBlur = 10; ctx.shadowColor = '#f0f';
+                    ctx.beginPath(); ctx.arc(u.x - 30 + i * 15, uy + 4, 3, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0; // Сброс
+                }
+            }
+        },
+
+        // --- ДЕТАЛИЗИРОВАННЫЕ АСТРОНАВТЫ ---
+        drawAstro(a) {
+            const ctx = this.ctx, time = Date.now();
+            a.x += a.vx; a.y += a.vy; a.rot += a.vr;
+            
+            // Бесконечное пространство
+            if(a.x > this.cvs.width+100) a.x = -100; if(a.x < -100) a.x = this.cvs.width+100;
+            if(a.y > this.cvs.height+100) a.y = -100; if(a.y < -100) a.y = this.cvs.height+100;
+
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+            
+            // 1. Костюм (Body & Helmet)
+            ctx.fillStyle = '#fff'; ctx.fillRect(-8, -12, 16, 24); // Тело
+            ctx.fillStyle = '#fefefe'; ctx.fillRect(-7, -19, 14, 10); // Шлем
+            
+            // Визор (Мерцающий)
+            ctx.fillStyle = `rgba(0, 242, 255, ${0.7 + Math.sin(time/200 + a.p)*0.2})`; ctx.fillRect(-5, -17, 10, 6);
+            
+            // 2. Рюкзак (Life Support)
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-10, -8, 20, 16);
+            // Мерцающий индикатор
+            ctx.fillStyle = (Math.sin(time/300 + a.p) > 0) ? '#f00' : '#033'; ctx.beginPath(); ctx.arc(-7, -4, 1.5, 0, Math.PI*2); ctx.fill();
+
+            // 3. Конечности (Arms & Legs)
+            ctx.fillStyle = '#fff'; ctx.fillRect(-12, -10, 4, 14); // Рука л
+            ctx.fillRect(8, -10, 4, 14); // Рука п
+            ctx.fillRect(-6, 12, 5, 8); // Нога л
+            ctx.fillRect(1, 12, 5, 8); // Нога п
+
+            ctx.restore();
+        },
+
+        // --- ГЛАВНЫЙ ЦИКЛ ---
+        draw() {
+            if(!this.ctx) return;
+            const ctx = this.ctx;
+            
+            // Фоновая заливка (Глубокий космос)
+            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,this.cvs.width,this.cvs.height);
+            
+            // 1. Отрисовка Звёзд
+            this.stars.forEach(s => {
+                s.x -= s.v; if(s.x < 0) s.x = this.cvs.width;
+                // Мерцание (Sinusoidal opacity)
+                ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p))})`;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill();
+            });
+            
+            // 2. Отрисовка Кометы
+            if(!this.comet.active && Math.random() < 0.003) this.comet = {x:this.cvs.width+100, y:Math.random()*400, active:true};
+            if(this.comet.active) {
+                this.comet.x -= 15; this.comet.y += 3;
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(this.comet.x, this.comet.y); ctx.lineTo(this.comet.x+40, this.comet.y-10); ctx.stroke();
+                if(this.comet.x < -100) this.comet.active = false;
+            }
+            
+            // 3. Сначала планета (она на фоне)
+            this.drawPlanet(); 
+            
+            // 4. Потом НЛО
+            this.drawUFO(); 
+            
+            // 5. И сверху астронавты
+            this.crew.forEach(a => this.drawAstro(a));
         }
     },
-    loop() { Core.Canvas.draw(); requestAnimationFrame(() => Core.loop()); }
-};
-window.onload = () => Core.init();
+}
