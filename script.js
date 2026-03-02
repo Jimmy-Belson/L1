@@ -120,33 +120,40 @@ const Core = {
                 if(stream) { stream.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
             } 
         },
-        render(m) { 
-            const s = document.getElementById('chat-stream'); if(!s) return;
-            const d = document.createElement('div'); d.className = 'msg-container';
-            const myNick = Core.user ? Core.user.email.split('@')[0] : null;
-            const isMyMsg = m.nickname === myNick;
-            const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-            d.innerHTML = `
-                <div class="msg-nick" style="${isMyMsg ? 'color: var(--n);' : ''}">
-                    ${(m.nickname||'PILOT').toUpperCase()} ${isMyMsg ? '<span style="font-size:8px;opacity:0.5">(YOU)</span>' : ''}
-                    <span style="opacity:0.4; font-size:9px;">${time}</span>
-                </div>
-                <div class="msg-text">${m.message}</div>
-            `; 
-            if (isMyMsg) {
-                d.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    const menu = document.getElementById('custom-menu');
-                    menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
-                    menu.innerHTML = '<div class="menu-item">Terminate Message</div>';
-                    menu.onclick = async () => {
-                        const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                        if (!error) d.remove();
-                    };
-                };
-            }
-            s.appendChild(d); s.scrollTop = s.scrollHeight; 
-        },
+        render(m) {
+    const s = document.getElementById('chat-stream'); if(!s) return;
+    const d = document.createElement('div'); d.className = 'msg-container';
+    
+    // Форматируем время (ЧЧ:ММ)
+    const date = new Date(m.created_at);
+    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+    
+    d.innerHTML = `
+        <div class="msg-header">
+            <span class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</span>
+            <span class="msg-time">${timeStr}</span>
+        </div>
+        <div class="msg-text">${m.message}</div>
+    `;
+    
+    if (isMy) {
+        d.oncontextmenu = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const menu = document.getElementById('custom-menu');
+            if(!menu) return;
+            menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+            menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
+            menu.onclick = async (me) => { 
+                me.stopPropagation();
+                if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove(); 
+                menu.style.display = 'none';
+            };
+        };
+    }
+    s.appendChild(d); s.scrollTop = s.scrollHeight;
+},
         async send() { 
             const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
             const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
