@@ -561,3 +561,6 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     letter-spacing: 2px;
     text-align: center;
 }
+#ambient-station {
+    pointer-events: none !important; /* Это позволит кликать по кнопкам СКВОЗЬ картинку */
+}
