@@ -91,21 +91,64 @@ const Core = { // Исправлено: const с маленькой буквы
             const list = document.getElementById('todo-list');
             if (list) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
-        render(t) {
-            const list = document.getElementById('todo-list'); if (!list) return;
+       render(t) {
+            const list = document.getElementById('todo-list'); 
+            if (!list) return;
+
             const d = document.createElement('div');
+            // Устанавливаем класс: если задача выполнена в базе, сразу вешаем .completed
             d.className = `task ${t.is_completed ? 'completed' : ''}`;
-            d.draggable = true; d.innerText = '> ' + t.task.toUpperCase();
+            
+            // Включаем возможность перетаскивания
+            d.draggable = true; 
+            d.innerText = '> ' + t.task.toUpperCase();
+
+            // 1. ЛКМ: Переключение статуса выполнено/не выполнено
             d.onclick = async () => {
-                const newState = !d.classList.contains('completed');
+                const isDone = d.classList.contains('completed');
+                const newState = !isDone;
+                
+                // Сначала меняем визуально для скорости отклика
                 d.classList.toggle('completed');
-                await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+                
+                // Обновляем в Supabase
+                const { error } = await Core.sb.from('todo')
+                    .update({ is_completed: newState })
+                    .eq('id', t.id);
+                
+                if (error) {
+                    Core.Msg("SYNC_ERROR: STATUS_NOT_UPDATED", "error");
+                    d.classList.toggle('completed'); // Откатываем если ошибка
+                }
             };
+
+            // 2. ПКМ: Удаление задачи
             d.oncontextmenu = async (ev) => {
-                ev.preventDefault(); d.classList.add('removing');
+                ev.preventDefault();
+                // Добавляем класс анимации удаления (если прописан в CSS)
+                d.classList.add('removing');
+                
                 const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-                if(!error) setTimeout(() => d.remove(), 400);
+                
+                if (!error) {
+                    // Ждем завершения анимации и убираем из DOM
+                    setTimeout(() => d.remove(), 400);
+                } else {
+                    d.classList.remove('removing');
+                    Core.Msg("TERMINATE_ERROR: SIGNAL_LOST", "error");
+                }
             };
+
+            // 3. Drag-and-Drop события
+            d.addEventListener('dragstart', () => {
+                // Используем setTimeout, чтобы класс добавился после того, как "призрак" элемента подцепился мышкой
+                setTimeout(() => d.classList.add('dragging'), 0);
+            });
+
+            d.addEventListener('dragend', () => {
+                d.classList.remove('dragging');
+            });
+
             list.appendChild(d);
         },
         async add(val) {
@@ -123,22 +166,46 @@ const Core = { // Исправлено: const с маленькой буквы
             } 
         },
         render(m) {
-            const s = document.getElementById('chat-stream'); if(!s) return;
-            const d = document.createElement('div'); d.className = 'msg-container';
-            const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
-            const date = m.created_at ? new Date(m.created_at) : new Date();
-            const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const s = document.getElementById('chat-stream'); 
+    if(!s) return;
 
-            d.innerHTML = `
-                <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</span>
-                    <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
-                </div>
-                <div class="msg-text">${m.message}</div>
-            `;
-            s.appendChild(d);
-            s.scrollTop = s.scrollHeight;
-        },
+    const d = document.createElement('div'); 
+    d.className = 'msg-container';
+    const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+    const date = m.created_at ? new Date(m.created_at) : new Date();
+    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    d.innerHTML = `
+        <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">${(m.nickname || 'PILOT').toUpperCase()}</span>
+            <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
+        </div>
+        <div class="msg-text">${m.message}</div>
+    `;
+
+    // --- ВОЗВРАЩАЕМ УДАЛЕНИЕ ---
+    if (isMy) {
+        d.oncontextmenu = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const menu = document.getElementById('custom-menu');
+            if(!menu) return;
+            menu.style.display = 'block';
+            menu.style.position = 'fixed';
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
+            menu.onclick = async (me) => {
+                me.stopPropagation();
+                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                if (!error) d.remove();
+                menu.style.display = 'none';
+            };
+        };
+    }
+
+    s.appendChild(d);
+    s.scrollTop = s.scrollHeight;
+},
         async send() { 
             const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
             const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
