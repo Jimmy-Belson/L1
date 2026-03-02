@@ -552,3 +552,12 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     0%, 100% { transform: translateY(0) rotate(0deg); }
     50% { transform: translateY(-20px) rotate(3deg); }
 }
+.station-id-label {
+    margin-top: 15px; /* Отступ от картинки вниз */
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: #0ff;
+    text-shadow: 0 0 10px #0ff;
+    letter-spacing: 2px;
+    text-align: center;
+}
