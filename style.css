@@ -530,7 +530,7 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     position: fixed;
     /* Центрируем относительно экрана */
     top: 70%;
-    left: 30%;
+    left: 35%;
     transform: translate(-50%, -50%);
     
     /* Уменьшаем размер: 250px-300px — это примерно в 2 раза меньше, чем сейчас */
