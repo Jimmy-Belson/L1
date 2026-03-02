@@ -199,11 +199,7 @@ const Core = { // Исправлено: const с маленькой буквы
                 const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
                 if (!error) d.remove();
                 menu.style.display = 'none';
-                const station = document.getElementById('station-deco');
-if(station) {
-    station.style.transform = 'translateX(2px)';
-    setTimeout(() => station.style.transform = 'translateX(0)', 100);
-}
+                
             };
         };
     }
