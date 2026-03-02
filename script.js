@@ -210,11 +210,12 @@ Canvas: {
         init() {
             this.cvs = document.getElementById('starfield'); 
             if(!this.cvs) return;
-            this.ctx = this.ctx || this.cvs.getContext('2d');
+            this.ctx = this.cvs.getContext('2d');
             this.res();
+            window.addEventListener('resize', () => this.res());
             
-            // Звёзды
-            this.stars = Array.from({length:150}, () => ({
+            // Инициализация объектов
+            this.stars = Array.from({length: 150}, () => ({
                 x: Math.random() * this.cvs.width, 
                 y: Math.random() * this.cvs.height, 
                 s: Math.random() * 2, 
@@ -222,11 +223,9 @@ Canvas: {
                 p: Math.random() * Math.PI
             }));
             
-            // НЛО с массивом для частиц
             this.ufo = { x: -250, y: 350, v: 2.1, parts: [] };
             
-            // Астронавты с фазой мерцания p
-            this.crew = Array.from({length:3}, () => ({
+            this.crew = Array.from({length: 3}, () => ({
                 x: Math.random() * this.cvs.width, 
                 y: Math.random() * this.cvs.height, 
                 vx: (Math.random() - 0.5) * 0.3, 
@@ -250,65 +249,42 @@ Canvas: {
             const ctx = this.ctx, x = this.cvs.width - 250, y = 250, r = 100;
             ctx.save();
             
-            // Свечение атмосферы
-            ctx.shadowBlur = 50; 
-            ctx.shadowColor = 'rgba(79, 172, 254, 0.4)';
+            // Атмосфера
+            ctx.shadowBlur = 40; ctx.shadowColor = 'rgba(79, 172, 254, 0.5)';
             
-            // Основной градиент
+            // Поверхность (Градиент)
             const g = ctx.createRadialGradient(x-30, y-30, 10, x, y, r);
-            g.addColorStop(0, '#4facfe'); 
-            g.addColorStop(0.8, '#001a33'); 
-            g.addColorStop(1, '#000');
+            g.addColorStop(0, '#4facfe'); g.addColorStop(0.8, '#001a33'); g.addColorStop(1, '#000');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
             
-            ctx.fillStyle = g; 
-            ctx.beginPath(); 
-            ctx.arc(x, y, r, 0, Math.PI*2); 
-            ctx.fill();
-            
-            // Наложение тени для объема
-            ctx.shadowBlur = 0;
-            const sG = ctx.createLinearGradient(x-r, y-r, x+r, y+r);
-            sG.addColorStop(0, 'rgba(0,0,0,0)');
-            sG.addColorStop(1, 'rgba(0,0,0,0.6)');
-            ctx.fillStyle = sG; ctx.fill();
-            
+            // Кольцо
             ctx.restore();
-
-            // Кольцо (безопасная отрисовка)
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)'; 
-            ctx.lineWidth = 4;
-            ctx.save(); 
-            ctx.translate(x, y); 
-            ctx.rotate(Math.PI/5);
-            ctx.beginPath(); 
-            if (ctx.ellipse) ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2);
-            else ctx.arc(0, 0, r+70, 0, Math.PI*2); // Фолбэк для старых систем
-            ctx.stroke(); 
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)'; ctx.lineWidth = 3;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI/5);
+            ctx.beginPath(); ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2); ctx.stroke();
             ctx.restore();
         },
 
         drawUFO() {
             const u = this.ufo, ctx = this.ctx;
-            u.x += u.v; 
-            if(u.x > this.cvs.width + 300) { u.x = -300; u.parts = []; }
+            u.x += u.v; if(u.x > this.cvs.width + 300) { u.x = -300; u.parts = []; }
             const uy = u.y + Math.sin(Date.now() / 600) * 35;
 
-            // Частицы хвоста
-            if (Math.random() > 0.5) u.parts.push({x: u.x - 40, y: uy, a: 1.0, s: Math.random()*2+1});
+            // След (частицы)
+            if (Math.random() > 0.5) u.parts.push({x: u.x - 45, y: uy, a: 1.0, s: Math.random()*2+1});
             u.parts.forEach((p, i) => {
-                p.x -= 1; p.a -= 0.02;
+                p.x -= 1; p.a -= 0.015;
                 if(p.a <= 0) u.parts.splice(i, 1);
                 else { ctx.fillStyle = `rgba(0,255,255,${p.a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill(); }
             });
 
-            // Корпус
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.2)'; ctx.strokeStyle = '#0ff';
+            // Кабина и Диск
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)'; ctx.strokeStyle = '#0ff';
             ctx.beginPath(); ctx.arc(u.x, uy-5, 18, Math.PI, 0); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); 
-            if(ctx.ellipse) ctx.ellipse(u.x, uy, 55, 14, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.ellipse(u.x, uy, 55, 14, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
             // Огни
-            const light = Math.floor(Date.now() / 150) % 5;
+            const light = Math.floor(Date.now() / 200) % 5;
             for(let i=0; i<5; i++) {
                 ctx.fillStyle = (i === light) ? '#f0f' : '#066';
                 ctx.beginPath(); ctx.arc(u.x-30+(i*15), uy+4, 2.5, 0, Math.PI*2); ctx.fill();
@@ -316,31 +292,31 @@ Canvas: {
         },
 
         drawAstro(a) {
-            const ctx = this.ctx;
+            const ctx = this.ctx, time = Date.now();
             a.x += a.vx; a.y += a.vy; a.rot += a.vr;
-            if(a.x > this.cvs.width+100) a.x = -100;
-            if(a.y > this.cvs.height+100) a.y = -100;
+            if(a.x > this.cvs.width+100) a.x = -100; if(a.y > this.cvs.height+100) a.y = -100;
 
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
             // Костюм
-            ctx.fillStyle = '#fff'; ctx.fillRect(-8, -12, 16, 24); 
+            ctx.fillStyle = '#fff'; ctx.fillRect(-8, -12, 16, 24); // Тело
             ctx.fillRect(-7, -19, 14, 10); // Шлем
-            // Визор
-            ctx.fillStyle = `rgba(0, 242, 255, ${0.6 + Math.sin(Date.now()/300 + a.p)*0.3})`;
+            // Визор (мерцает)
+            ctx.fillStyle = `rgba(0, 242, 255, ${0.5 + Math.sin(time/400 + a.p)*0.4})`;
             ctx.fillRect(-5, -17, 10, 6);
-            // Рюкзак
-            ctx.fillStyle = '#ccc'; ctx.fillRect(-10, -8, 2, 12); ctx.fillRect(8, -8, 2, 12);
+            // Детали (рюкзак)
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-9, -8, 18, 14);
             ctx.restore();
         },
 
         draw() {
             if(!this.ctx) return;
             const ctx = this.ctx;
-            ctx.fillStyle = '#01050a'; ctx.fillRect(0,0,this.cvs.width,this.cvs.height);
+            ctx.fillStyle = '#01050a'; ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
             
+            // Звёзды
             this.stars.forEach(s => {
                 s.x -= s.v; if(s.x < 0) s.x = this.cvs.width;
-                ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.abs(Math.sin(Date.now()/1000 + s.p))})`;
+                ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.abs(Math.sin(Date.now()/1000 + s.p))})`;
                 ctx.beginPath(); ctx.arc(s.x, s.y, s.s/2, 0, Math.PI*2); ctx.fill();
             });
 
@@ -348,5 +324,6 @@ Canvas: {
             this.drawUFO();
             this.crew.forEach(a => this.drawAstro(a));
         }
-    }
-}
+    },
+    loop() { this.Canvas.draw(); requestAnimationFrame(() => this.loop()); }
+};
