@@ -216,22 +216,62 @@ const Core = { // Исправлено: const с маленькой буквы
 
     UI() {
         const todoIn = document.getElementById('todo-in');
+        const todoList = document.getElementById('todo-list');
+        const chatIn = document.getElementById('chat-in');
+
+        // 1. Ввод новых задач
         if (todoIn) { 
             todoIn.onkeypress = async (e) => { 
-                if (e.key === 'Enter' && e.target.value) { 
+                if (e.key === 'Enter' && e.target.value.trim()) { 
                     await this.Todo.add(e.target.value); 
                     e.target.value = ''; 
                 } 
             }; 
         }
-        const chatIn = document.getElementById('chat-in'); 
+
+        // 2. Логика Drag-and-Drop (Перетаскивание)
+        if (todoList) {
+            // Вспомогательная функция для определения позиции вставки
+            const getDragAfterElement = (container, y) => {
+                const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            };
+
+            todoList.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Разрешаем сброс (Drop)
+                const draggingItem = document.querySelector('.dragging');
+                if (!draggingItem) return;
+
+                const nextSibling = getDragAfterElement(todoList, e.clientY);
+
+                if (nextSibling == null) {
+                    todoList.appendChild(draggingItem);
+                } else {
+                    todoList.insertBefore(draggingItem, nextSibling);
+                }
+            });
+        }
+
+        // 3. Отправка сообщений в чат
         if (chatIn) { 
             chatIn.onkeypress = (e) => { 
-                if(e.key === 'Enter') this.Chat.send(); 
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                    this.Chat.send(); 
+                }
             }; 
         }
     },
-
+    
     Audio: {
         el: null,
         setup() {
