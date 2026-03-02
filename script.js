@@ -338,35 +338,51 @@ const Core = { // Исправлено: const с маленькой буквы
             } 
         },
         
-        // Отрисовка проработанной планеты
-        drawPlanet() {
-            const ctx = this.ctx, x = this.cvs.width - 250, y = 250, r = 100;
+       drawPlanet() {
+            const ctx = this.ctx;
+            const img = document.getElementById('planet-pic');
+            if (!img || !img.complete) return;
+
+            const padding = 50; 
+            const r = 80;       
+            
+            const x = this.cvs.width - r - padding; 
+            const y = r + padding + 40; 
+
             ctx.save();
+
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = 'rgba(100, 200, 255, 0.3)';
+            ctx.fillStyle = 'rgba(0,0,0,0.01)';
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+
+            // 2. САМА ФОТОГРАФИЯ
+            ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+
+            // 3. ОБЪЕМНАЯ ТЕНЬ (Накладываем поверх фото)
+            ctx.save();
+            const shadowGrad = ctx.createRadialGradient(
+                x - r/3, y - r/3, r/4, // Точка света
+                x, y, r                // Граница тени
+            );
+            shadowGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            shadowGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
             
-            // Атмосферное свечение (тени)
-            ctx.shadowBlur = 40; 
-            ctx.shadowColor = 'rgba(79, 172, 254, 0.5)';
-            
-            // Поверхность планеты (радиальный градиент)
-            const g = ctx.createRadialGradient(x-30, y-30, 10, x, y, r);
-            g.addColorStop(0, '#4facfe'); // Яркий центр
-            g.addColorStop(0.8, '#001a33'); // Глубокий синий
-            g.addColorStop(1, '#000'); // Черная тень
-            
-            ctx.fillStyle = g; 
-            ctx.beginPath(); 
-            ctx.arc(x, y, r, 0, Math.PI*2); 
+            ctx.fillStyle = shadowGrad;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
             ctx.fill();
-            
-            // Отрисовка кольца
-            ctx.restore(); // Сброс теней
-            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)'; 
-            ctx.lineWidth = 3;
-            ctx.save(); 
-            ctx.translate(x, y); 
-            ctx.rotate(Math.PI/5); // Наклон кольца
-            ctx.beginPath(); 
-            ctx.ellipse(0, 0, r+70, 25, 0, 0, Math.PI*2); // Овальное кольцо
+            ctx.restore();
+
+            // 4. ДЕЛИКАТНОЕ КОЛЬЦО
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.1)';
+            ctx.lineWidth = 2;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(Math.PI/6);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r + 40, 15, 0, 0, Math.PI*2);
             ctx.stroke();
             ctx.restore();
         },
