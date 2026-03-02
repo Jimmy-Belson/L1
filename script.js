@@ -120,40 +120,46 @@ const Core = {
                 if(stream) { stream.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
             } 
         },
-        render(m) {
-    const s = document.getElementById('chat-stream'); if(!s) return;
-    const d = document.createElement('div'); d.className = 'msg-container';
-    
-    // Форматируем время (ЧЧ:ММ)
-    const date = new Date(m.created_at);
-    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+       render(m) {
+    const s = document.getElementById('chat-stream'); 
+    if(!s) return;
+
+    const d = document.createElement('div'); 
+    d.className = 'msg-container';
 
     const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
     
+    // Чистая структура: Ник и Текст отдельно
     d.innerHTML = `
-        <div class="msg-header">
-            <span class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</span>
-            <span class="msg-time">${timeStr}</span>
+        <div class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">
+            ${(m.nickname || 'PILOT').toUpperCase()}
         </div>
         <div class="msg-text">${m.message}</div>
     `;
-    
+
+    // Логика удаления (ПКМ)
     if (isMy) {
         d.oncontextmenu = (e) => {
             e.preventDefault(); e.stopPropagation();
             const menu = document.getElementById('custom-menu');
             if(!menu) return;
-            menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+            menu.style.display = 'block';
+            menu.style.position = 'fixed';
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
             menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
-            menu.onclick = async (me) => { 
+            menu.onclick = async (me) => {
                 me.stopPropagation();
-                if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove(); 
+                if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove();
                 menu.style.display = 'none';
             };
         };
     }
-    s.appendChild(d); s.scrollTop = s.scrollHeight;
+
+    s.appendChild(d);
+    s.scrollTop = s.scrollHeight;
 },
+
         async send() { 
             const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
             const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
@@ -185,7 +191,7 @@ const Core = {
                 this.el.loop = true;
                 this.el.volume = 0.1;
             }
-            
+
         },
         toggle() {
             this.setup();
