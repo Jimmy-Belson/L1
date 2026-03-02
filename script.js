@@ -120,48 +120,39 @@ const Core = {
                 if(stream) { stream.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
             } 
         },
-      render(m) {
-    const s = document.getElementById('chat-stream'); 
-    if(!s) return;
-
-    const d = document.createElement('div'); 
-    d.className = 'msg-container';
+        render(m) {
+    const s = document.getElementById('chat-stream'); if(!s) return;
+    const d = document.createElement('div'); d.className = 'msg-container';
     
+    // Форматируем время (ЧЧ:ММ)
+    const date = new Date(m.created_at);
+    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
     const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
     
-    // МАКСИМАЛЬНО ПРОСТОЙ HTML (как был раньше)
     d.innerHTML = `
-        <div class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">
-            ${(m.nickname || 'PILOT').toUpperCase()}
+        <div class="msg-header">
+            <span class="msg-nick" style="${isMy?'color:var(--n)':''}">${(m.nickname||'PILOT').toUpperCase()}</span>
+            <span class="msg-time">${timeStr}</span>
         </div>
         <div class="msg-text">${m.message}</div>
     `;
-
-    // ПКМ для удаления (это не ломает дизайн)
+    
     if (isMy) {
         d.oncontextmenu = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+            e.preventDefault(); e.stopPropagation();
             const menu = document.getElementById('custom-menu');
             if(!menu) return;
-            
-            menu.style.display = 'block'; 
-            menu.style.position = 'fixed'; // Это важно, чтобы не дергался сайт
-            menu.style.left = e.clientX + 'px'; 
-            menu.style.top = e.clientY + 'px';
+            menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
             menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
-            
             menu.onclick = async (me) => { 
                 me.stopPropagation();
-                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                if (!error) d.remove(); 
+                if (!(await Core.sb.from('comments').delete().eq('id', m.id)).error) d.remove(); 
                 menu.style.display = 'none';
             };
         };
     }
-
-    s.appendChild(d); 
-    s.scrollTop = s.scrollHeight;
+    s.appendChild(d); s.scrollTop = s.scrollHeight;
 },
         async send() { 
             const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
@@ -185,11 +176,28 @@ const Core = {
         const chatIn = document.getElementById('chat-in'); if (chatIn) { chatIn.onkeypress = (e) => { if(e.key === 'Enter') this.Chat.send(); }; }
     },
 
-    Audio: {
-        setup() { this.el = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3'); this.el.loop = true; this.el.volume = 0.2; },
+   Audio: {
+        el: null,
+        // Метод для создания плеера, если его еще нет
+        getEl() {
+            if (!this.el) {
+                this.el = new Audio('track.mp3');
+                this.el.loop = true;
+                this.el.volume = 0.1;
+            }
+            return this.el;
+        },
         toggle() {
-            const b = document.getElementById('audio-btn'); if(!b) return;
-            if(this.el.paused) { this.el.play(); b.classList.add('playing'); } else { this.el.pause(); b.classList.remove('playing'); }
+            const player = this.getEl();
+            const btn = document.getElementById('audio-btn'); 
+            
+            if (player.paused) {
+                player.play().catch(e => console.log("Нужен клик по странице"));
+                if(btn) btn.classList.add('playing');
+            } else {
+                player.pause();
+                if(btn) btn.classList.remove('playing');
+            }
         }
     },
 
