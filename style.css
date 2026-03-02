@@ -78,8 +78,13 @@ header {
 
 /* Класс для анимации удаления */
 .task.removing {
-    animation: taskExit 0.4s ease-in forwards !important;
+    animation: taskExit 0.4s cubic-bezier(0.4, 0, 1, 1) forwards !important;
     pointer-events: none;
+}
+
+@keyframes taskExit {
+    0% { transform: translateX(0) scale(1); opacity: 1; filter: blur(0); }
+    100% { transform: translateX(150px) scale(0.9); opacity: 0; filter: blur(10px); }
 }
 
 /* ЧАТ */
@@ -156,8 +161,19 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 .bars { display: flex; align-items: flex-end; gap: 2px; height: 15px; }
 .bar { width: 2px; height: 4px; background: var(--n); transition: 0.3s; }
 .audio-link:hover .bar { background: #fff; }
-.playing .bar { animation: wave 0.5s infinite alternate; }
+.audio-link.playing .bar { 
+    animation: wave 0.6s infinite alternate; 
+}
 
+.audio-link.playing .bar:nth-child(1) { animation-delay: 0.1s; }
+.audio-link.playing .bar:nth-child(2) { animation-delay: 0.3s; }
+.audio-link.playing .bar:nth-child(3) { animation-delay: 0.2s; }
+.audio-link.playing .bar:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes wave { 
+    from { height: 4px; opacity: 0.5; } 
+    to { height: 15px; background: var(--p); opacity: 1; box-shadow: 0 0 10px var(--p); } 
+}
 /* ВХОД */
 #auth-gate { 
     position: fixed; inset: 0; z-index: 500; 
@@ -196,8 +212,10 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     position: relative;
     border: 1px solid rgba(0, 242, 255, 0.3);
     background: rgba(1, 5, 10, 0.85) !important;
-    padding: 50px !important;
+    width: 420px; 
+    padding: 50px 30px !important; 
     overflow: hidden;
+    animation: panelPulse 6s infinite alternate;
 }
 
 /* Линия сканера */
@@ -229,21 +247,21 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
 .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
-/* Текст с эффектом свечения */
+
 .glitch-text {
     font-family: 'Orbitron';
     color: var(--n);
     text-shadow: 0 0 10px var(--n);
-    letter-spacing: 4px;
+    letter-spacing: 2px; 
+    font-size: 24px;     
     margin-bottom: 5px;
-}
+    white-space: nowrap; 
 
-/* Кнопки */
 .main-btn { flex: 2; background: rgba(0, 242, 255, 0.1); }
 .sub-btn { flex: 1; border-color: var(--p); color: var(--p); }
 .sub-btn:hover { background: var(--p); color: #000; box-shadow: 0 0 15px var(--p); }
 
-/* Анимация пульсации рамки */
+
 .login-frame {
     animation: panelPulse 6s infinite alternate;
 }
@@ -392,4 +410,102 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     box-shadow: 0 0 10px var(--n);
     width: 6px;
     height: 6px;
+}
+#chat-send {
+    background: transparent;
+    border: 1px solid var(--n);
+    color: var(--n);
+    padding: 0 20px;
+    cursor: pointer;
+    font-family: 'Orbitron';
+    font-size: 11px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+#chat-send:hover {
+    background: var(--n);
+    color: #000;
+    box-shadow: 0 0 20px var(--n), inset 0 0 10px rgba(255,255,255,0.5);
+}
+}
+.audio-link.playing .bar {
+    animation: barWave 0.6s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+@keyframes barWave {
+    from { height: 4px; background: var(--n); }
+    to { height: 18px; background: var(--p); box-shadow: 0 0 10px var(--p); }
+}
+.audio-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 15px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px; /* Высота зоны волн */
+}
+
+.bar {
+    width: 2px;
+    height: 3px;
+    background: var(--n);
+    transition: 0.2s;
+}
+
+/* Сама анимация при активации */
+.audio-link.playing .bar {
+    animation: barWave 0.6s infinite alternate;
+}
+
+@keyframes barWave {
+    from { height: 3px; background: var(--n); }
+    to { height: 12px; background: var(--p); }
+}
+.task.completed {
+    text-decoration: line-through !important;
+    color: var(--p) !important; /* Цвет меняется на розовый */
+    opacity: 0.6;
+    filter: grayscale(1);
+    border-bottom: 1px solid rgba(255, 0, 255, 0.2);
+}
+#custom-menu {
+    position: fixed; /* Обязательно fixed */
+    z-index: 10000;
+    background: #01050a;
+    border: 1px solid var(--p);
+    box-shadow: 0 0 15px var(--p);
+    min-width: 150px;
+    display: none; /* Скрыто по умолчанию */
+}
+
+.menu-item {
+    color: var(--p);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    padding: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    text-align: center;
+    border: none;
+    background: transparent;
+    transition: 0.2s;
+}
+
+.menu-item:hover {
+    background: var(--p);
+    color: #000;
+}
+.task.dragging {
+    opacity: 0.4;
+    background: var(--glass);
+    border: 1px dashed var(--n);
+    transform: scale(0.95);
 }
