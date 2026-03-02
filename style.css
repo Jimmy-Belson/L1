@@ -527,49 +527,28 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     pointer-events: none; /* Чтобы клики проходили сквозь холст */
 }
  #ambient-station {
-    /* Фиксируем на месте, чтобы не толкала другие блоки */
     position: fixed;
+    /* Центрируем относительно экрана */
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%); /* Точно по центру */
+    transform: translate(-50%, -50%);
     
-    /* Размер: делаем в 2 раза меньше (подбери под себя) */
-    width: 350px; 
-    height: auto;
-    
-    z-index: -1; /* Уводим на задний план под текст */
-    pointer-events: none; /* Чтобы можно было кликать сквозь неё */
-    opacity: 0.6;
+    /* Уменьшаем размер: 250px-300px — это примерно в 2 раза меньше, чем сейчас */
+    width: 280px; 
+    z-index: 0; /* Чтобы была за текстом */
+    pointer-events: none; /* Чтобы можно было нажимать на кнопки сквозь неё */
+    opacity: 0.5; /* Делаем её "фоновой" */
 }
 
 #ambient-station img {
     width: 100%;
     height: auto;
-    /* Синее свечение и яркость */
-    filter: brightness(1.1) contrast(1.1) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
-    animation: slowRotate 30s linear infinite;
+    /* Эффект голограммы */
+    filter: brightness(1.2) contrast(1.1) drop-shadow(0 0 15px rgba(0, 255, 255, 0.4));
+    animation: slowFloat 15s ease-in-out infinite;
 }
 
-/* Эффект сканирующей полоски прямо на станции */
-.scan-effect {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: rgba(0, 255, 255, 0.4);
-    box-shadow: 0 0 15px #0ff;
-    animation: scanAnim 5s linear infinite;
-}
-
-/* Медленное вращение для жизни */
-@keyframes slowRotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-@keyframes scanAnim {
-    0% { top: 0%; opacity: 0; }
-    50% { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
+@keyframes slowFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(3deg); }
 }
