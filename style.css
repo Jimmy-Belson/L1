@@ -526,50 +526,54 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     background: #01050a; /* Фоновый цвет на случай сбоя JS */
     pointer-events: none; /* Чтобы клики проходили сквозь холст */
 }
-
-#station-deco.panel {
+ #bg-station {
     position: relative;
+    width: 100%;
+    height: 250px; /* Регулируй высоту этого "пролета" между блоками */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 20, 30, 0.4); /* Чуть темнее фон для акцента */
-    padding: 10px 0;
-    margin: 10px 0; /* Отступы между панелями */
+    margin: 20px 0; /* Отступы от чата и туду */
+    background: transparent !important; /* Убираем фон */
+    border: none !important;       /* Убираем любые рамки */
     overflow: hidden;
-    min-height: 120px;
-    border: 1px solid var(--border);
+    pointer-events: none;          /* Чтобы не мешал кликам */
 }
 
-/* Стилизация самой картинки */
-#station-img {
-    width: 85%;
+#bg-station img {
+    width: 140%; /* Делаем крупнее, чтобы убрать пустоту по бокам */
     height: auto;
-    max-height: 150px;
-    object-fit: contain;
-    /* Эффект синей голограммы */
-    filter: saturate(0) sepia(100%) hue-rotate(170deg) brightness(0.9) contrast(1.1) drop-shadow(0 0 8px rgba(0, 255, 255, 0.5));
+    filter: brightness(0.8) contrast(1.2) drop-shadow(0 0 15px rgba(0, 255, 255, 0.3));
+    opacity: 0.7; /* Делаем чуть прозрачным, чтобы сливался с фоном */
+    animation: slowDrift 15s ease-in-out infinite;
 }
 
-/* Подпись под картинкой */
-.station-label {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 9px;
-    color: var(--n, #0ff);
-    margin-top: 5px;
-    letter-spacing: 1px;
-    opacity: 0.8;
+#bg-station .station-label {
+    position: absolute;
+    bottom: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    color: #0ff;
+    text-align: center;
+    text-shadow: 0 0 5px #0ff;
+    letter-spacing: 2px;
+    font-size: 10px;
 }
 
-/* Бегущая линия сканера */
-.scan-line {
+/* Эффект медленного плавания в пустоте */
+@keyframes slowDrift {
+    0%, 100% { transform: scale(1) translateY(0) rotate(0deg); }
+    50% { transform: scale(1.05) translateY(-10px) rotate(2deg); }
+}
+
+/* Тонкая линия сканера, проходящая сквозь пустоту */
+#bg-station .scan-line {
     position: absolute;
     width: 100%;
     height: 1px;
-    background: rgba(0, 255, 255, 0.5);
-    box-shadow: 0 0 10px #0ff;
-    z-index: 2;
-    animation: scanVertical 4s linear infinite;
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    animation: scanVertical 5s linear infinite;
 }
 
 @keyframes scanVertical {
