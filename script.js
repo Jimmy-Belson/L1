@@ -168,7 +168,7 @@ const Core = {
             if(!error && data) this.render(data[0]);
         }
     },
-    
+
     UI() {
         const todoIn = document.getElementById('todo-in'), todoList = document.getElementById('todo-list');
         if (todoIn) { todoIn.onkeypress = async (e) => { if (e.key === 'Enter' && e.target.value) { await this.Todo.add(e.target.value); e.target.value = ''; } }; }
@@ -334,4 +334,4 @@ Canvas: {
     }
 };
 
-;
+
