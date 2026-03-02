@@ -421,19 +421,64 @@ const Core = { // Исправлено: const с маленькой буквы
         // Отрисовка детализированного астронавта
         drawAstro(a) {
             const ctx = this.ctx, time = Date.now();
-            a.x += a.vx; a.y += a.vy; a.rot += a.vr; // Движение и вращение
-            // Бесконечное пространство (возврат с другой стороны экрана)
-            if(a.x > this.cvs.width+100) a.x = -100; if(a.y > this.cvs.height+100) a.y = -100;
+            a.x += a.vx; a.y += a.vy; a.rot += a.vr;
+            
+            // Границы экрана
+            if(a.x > this.cvs.width + 100) a.x = -100;
+            if(a.x < -100) a.x = this.cvs.width + 100;
+            if(a.y > this.cvs.height + 100) a.y = -100;
+            if(a.y < -100) a.y = this.cvs.height + 100;
 
-            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
-            // 1. Костюм (Тело и Шлем)
-            ctx.fillStyle = '#fff'; ctx.fillRect(-8, -12, 16, 24); // Тело
-            ctx.fillRect(-7, -19, 14, 10); // Шлем
-            // 2. Визор шлема (голубое мерцание)
-            ctx.fillStyle = `rgba(0, 242, 255, ${0.5 + Math.sin(time/400 + a.p)*0.4})`;
-            ctx.fillRect(-5, -17, 10, 6);
-            // 3. Детали (рюкзак)
-            ctx.fillStyle = '#ccc'; ctx.fillRect(-9, -8, 18, 14);
+            ctx.save();
+            ctx.translate(a.x, a.y);
+            ctx.rotate(a.rot);
+
+            // 1. Рюкзак (Life Support System)
+            ctx.fillStyle = '#bcbcbc';
+            ctx.fillRect(-10, -8, 20, 16); 
+            // Маленький красный индикатор на рюкзаке
+            ctx.fillStyle = Math.sin(time / 500) > 0 ? '#f00' : '#500';
+            ctx.fillRect(6, -6, 2, 2);
+
+            // 2. Скафандр (Туловище)
+            ctx.fillStyle = '#eee';
+            ctx.beginPath();
+            ctx.roundRect(-8, -10, 16, 20, 4);
+            ctx.fill();
+
+            // 3. Ноги
+            ctx.fillRect(-7, 8, 6, 8);  // Левая
+            ctx.fillRect(1, 8, 6, 8);   // Правая
+
+            // 4. Руки (в позе невесомости)
+            ctx.save();
+            ctx.rotate(Math.sin(time / 1000 + a.p) * 0.2);
+            ctx.fillRect(-12, -8, 5, 12); // Левая
+            ctx.fillRect(7, -8, 5, 12);  // Правая
+            ctx.restore();
+
+            // 5. Шлем
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, -14, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 6. Визор (Отражение космоса)
+            const vGrad = ctx.createLinearGradient(0, -18, 0, -10);
+            vGrad.addColorStop(0, '#001a33');
+            vGrad.addColorStop(0.5, '#00d2ff');
+            vGrad.addColorStop(1, '#001a33');
+            ctx.fillStyle = vGrad;
+            ctx.beginPath();
+            ctx.ellipse(0, -14, 6, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Блик на стекле
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(-2, -15, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
             ctx.restore();
         },
 
