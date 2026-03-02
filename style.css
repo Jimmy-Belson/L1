@@ -516,3 +516,13 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     gap: 5px;
     min-height: 50px; 
 }
+#starfield {
+    position: fixed; /* Зафиксировать на экране */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1; /* ПОЗАДИ всего интерфейса */
+    background: #01050a; /* Фоновый цвет на случай сбоя JS */
+    pointer-events: none; /* Чтобы клики проходили сквозь холст */
+}
