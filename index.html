@@ -42,11 +42,18 @@
                 <div id="todo-list"></div>
             </section>
 
-            <section id="station-deco" class="panel">
-                <div class="scan-line"></div>
-                <img id="station-img" src="img/station.png" alt="ORBITAL_DEBRIS">
-                <div class="station-label">DEBRIS_SCAN: ACTIVE // SECTOR_B14</div>
-            </section>
+            <section class="panel" style="min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+    <div class="scan-line"></div>
+    
+    <img src="img/station.png" style="width: 85%; height: auto; z-index: 1; filter: drop-shadow(0 0 10px #0ff);">
+    
+    <div style="font-family: 'Orbitron'; font-size: 11px; color: #0ff; margin-top: 10px; text-transform: uppercase;">
+        Orbital_Debris
+    </div>
+    <div style="font-family: 'Share Tech Mono'; font-size: 9px; color: #0ff; opacity: 0.6;">
+        SCAN_ACTIVE // SECTOR_B14
+    </div>
+</section>
 
             <section class="panel chat-panel">
                 </section>
