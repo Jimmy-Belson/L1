@@ -529,7 +529,7 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
  #ambient-station {
     position: fixed;
     /* Центрируем относительно экрана */
-    top: 70%;
+    top: 75%;
     left: 35%;
     transform: translate(-50%, -50%);
     
