@@ -2,193 +2,47 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=600, initial-scale=0.5, maximum-scale=1.0, user-scalable=yes">
     <title>ORBITRON - USER_PROFILE</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Специфичные стили для страницы профиля */
-        .profile-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            padding: 20px;
-        }
-        .profile-card {
-            width: 100%;
-            max-width: 450px;
-            background: rgba(0, 15, 25, 0.9);
-            border: 1px solid #0ff;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-        }
-        .avatar-preview {
-            width: 120px;
-            height: 120px;
-            border: 2px solid #0ff;
-            margin: 0 auto 20px;
-            display: block;
-            border-radius: 5px;
-            object-fit: cover;
-            background: #000;
-        }
-        .input-field {
-            width: 100%;
-            background: rgba(0, 255, 255, 0.05);
-            border: 1px solid #066;
-            color: #0ff;
-            padding: 12px;
-            margin: 10px 0 20px;
-            font-family: 'Share Tech Mono', monospace;
-            outline: none;
-        }
-        .input-field:focus { border-color: #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.3); }
-        
-        .save-btn {
-            width: 100%;
-            padding: 15px;
-            background: #0ff;
-            color: #000;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: 'Share Tech Mono', monospace;
-            transition: 0.3s;
-        }
-        .save-btn:hover { background: #fff; box-shadow: 0 0 15px #fff; }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #066;
-            text-decoration: none;
-            font-size: 12px;
-        }
-        .back-link:hover { color: #0ff; }
-    </style>
 </head>
-<body>
+<body class="profile-page">
     <canvas id="starfield"></canvas>
 
-    <div class="profile-container">
-        <div class="profile-card panel">
-    <h2 style="color: #0ff; margin-top: 0;">>> EDIT_PROFILE</h2>
-    
-    <label>AVATAR_UPLOAD:</label>
-    <img id="avatar-img" src="default-avatar.png" style="width:100px; height:100px; border-radius:50%;">
+    <div class="os-container">
+        <div class="panel profile-card">
+            <h2 class="panel-header">>> EDIT_PILOT_DATA</h2>
+            
+            <div class="profile-content">
+                <label>CURRENT_AVATAR:</label>
+                <div class="avatar-wrapper">
+                    <img id="avatar-img" src="https://via.placeholder.com/150" alt="Avatar">
+                    <input type="file" id="avatar-file" accept="image/*" style="display: none;" onchange="previewFile()">
+                    <button class="nav-btn" onclick="document.getElementById('avatar-file').click()">
+                        [ UPLOAD_NEW_IMAGE ]
+                    </button>
+                </div>
 
-<input type="file" id="avatar-file" accept="image/*" onchange="previewFile()">
+                <label>PILOT_CALLSIGN:</label>
+                <input type="text" id="nick-input" class="input-field" placeholder="Enter callsign...">
 
-<input type="text" id="nick-input" placeholder="Your Nickname">
-
-<button id="save-btn" onclick="updateProfile()">[ SYNC_DATA ]</button>
-
-    <label>PILOT_CALLSIGN (NICK):</label>
-    <input type="text" id="nick-input" class="input-field" placeholder="Enter your name...">
-
-    <button id="save-btn" class="save-btn" onclick="updateProfile()">[ SYNC_DATA ]</button>
-    
-    <a href="index.html" class="back-link"><< RETURN_TO_STATION</a>
-</div>
+                <div class="profile-actions">
+                    <button id="save-btn" class="save-btn" onclick="updateProfile()">
+                        [ SYNC_WITH_STATION ]
+                    </button>
+                    <a href="index.html" class="back-link"><< RETURN_TO_DECK</a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
-    <script>
-        // Инициализация при загрузке
-        window.onload = async () => {
-            // Запускаем звезды на фоне, если Canvas активен в твоем script.js
-            if(window.Canvas) window.Canvas.init(); 
-            
-            // Загружаем текущие данные пользователя из Supabase
-            const { data: { user } } = await Core.sb.auth.getUser();
-            if (user && user.user_metadata) {
-                const meta = user.user_metadata;
-                if(meta.nickname) document.getElementById('nick-input').value = meta.nickname;
-                if(meta.avatar_url) {
-                    document.getElementById('avatar-input').value = meta.avatar_url;
-                    document.getElementById('avatar-img').src = meta.avatar_url;
-                }
-            }
-        };
-
-        // Функция сохранения
-        async function updateProfile() {
-    const btn = document.getElementById('save-btn');
-    const fileInput = document.getElementById('avatar-file');
-    const newNick = document.getElementById('nick-input').value;
     
-    // Блокируем кнопку, чтобы юзер не тыкал сто раз
-    btn.innerText = "UPLOADING...";
-    btn.disabled = true;
-
-    let avatarUrl = document.getElementById('avatar-img').src;
-
-    // 1. ПРОВЕРЯЕМ: Выбрал ли пользователь новый файл?
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const fileExt = file.name.split('.').pop();
-        // Создаем уникальное имя файла (id_пользователя + рандом)
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
-
-        // ЗАГРУЗКА В STORAGE (Bucket должен называться 'avatars')
-        const { data: uploadData, error: uploadError } = await Core.sb.storage
-            .from('avatars')
-            .upload(filePath, file);
-
-        if (uploadError) {
-            console.error("Ошибка загрузки файла:", uploadError);
-            alert("UPLOAD_ERROR: " + uploadError.message);
-            btn.innerText = "[ SYNC_DATA ]";
-            btn.disabled = false;
-            return;
-        }
-
-        // ПОЛУЧАЕМ ПУБЛИЧНУЮ ССЫЛКУ
-        const { data: { publicUrl } } = Core.sb.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-            
-        avatarUrl = publicUrl;
-    }
-
-    // 2. ОБНОВЛЯЕМ ПРОФИЛЬ (Метаданные пользователя)
-    const { error: updateError } = await Core.sb.auth.updateUser({
-        data: { 
-            nickname: newNick, 
-            avatar_url: avatarUrl 
-        }
-    });
-
-    if (updateError) {
-        alert("SYNC_ERROR: " + updateError.message);
-    } else {
-        // Если всё ок
-        if(window.Core && Core.Msg) Core.Msg("SYSTEM: PROFILE_SYNCED");
-        alert("ПРОФИЛЬ ОБНОВЛЕН!");
-    }
-
-    // Возвращаем кнопку в строй
-    btn.innerText = "[ SYNC_DATA ]";
-    btn.disabled = false;
-}
-
-// Дополнительно: функция для моментального превью выбранной фотки
-function previewFile() {
-    const file = document.getElementById('avatar-file').files[0];
-    const preview = document.getElementById('avatar-img');
-    const reader = new FileReader();
-
-    reader.onloadend = function () {
-        preview.src = reader.result;
-    }
-
-    if (file) {
-        reader.readAsDataURL(file);
-    }
-}
-    </script>
+    <script src="script.js"></script>
+    
+    <script src="profile.js"></script>
 </body>
 </html>
