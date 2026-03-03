@@ -564,57 +564,43 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 #ambient-station {
     pointer-events: none !important; /* Это позволит кликать по кнопкам СКВОЗЬ картинку */
 }
+/* 1. Контейнер, который держит очередь уведомлений */
 #notify-container {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 10000; /* Самый высокий слой, чтобы быть над кораблем */
+    z-index: 10000; /* Очень важно: выше корабля и панелей */
     display: flex;
     flex-direction: column;
     gap: 10px;
-    pointer-events: none; /* Чтобы не мешал кликать по меню под ним */
+    pointer-events: none; /* Чтобы можно было кликать сквозь пустые места */
 }
 
-/* Сама плашка уведомления */
+/* 2. Стиль самой плашки (внутреннее уведомление) */
 .toast {
-    pointer-events: auto; /* А на само уведомление нажать можно */
-    background: rgba(0, 15, 25, 0.9);
+    background: rgba(0, 20, 30, 0.95);
     border: 1px solid #0ff;
-    border-left: 4px solid #0ff; /* Акцентная полоса слева */
+    border-left: 4px solid #0ff;
     color: #0ff;
     padding: 12px 20px;
     font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-    min-width: 250px;
-    
-    /* Анимация появления */
-    animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    transition: opacity 0.4s, transform 0.4s;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    min-width: 200px;
+    animation: slideIn 0.3s ease-out; /* Анимация вылета */
+    transition: 0.4s;
 }
 
-/* Красное уведомление для ошибок */
-.toast.error {
-    border-color: #f44;
-    color: #f44;
-    box-shadow: 0 0 15px rgba(255, 68, 68, 0.2);
+/* 3. Анимация появления справа */
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
-/* Класс для плавного исчезновения (используется в JS) */
+/* 4. Класс для плавного исчезновения */
 .toast.hide {
     opacity: 0;
     transform: translateX(50px);
 }
 
-/* Анимация вылета справа */
-@keyframes slideIn {
-    from { 
-        transform: translateX(100%); 
-        opacity: 0; 
-    }
-    to { 
-        transform: translateX(0); 
-        opacity: 1; 
-    }
-}

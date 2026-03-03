@@ -1,7 +1,8 @@
-const Core = { // Исправлено: const с маленькой буквы
+const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
+    // Твоя первая функция (внутренние уведомления)
     Msg(text, type = 'info') {
         const container = document.getElementById('notify-container');
         if (!container) return;
@@ -15,6 +16,16 @@ const Core = { // Исправлено: const с маленькой буквы
         }, 4000);
     },
 
+    // ВТОРАЯ ФУНКЦИЯ: Системные уведомления (вне сайта)
+    SystemNotify(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body: body,
+                icon: 'space.png' // Убедись, что путь к иконке верный
+            });
+        }
+    },
+
     TogglePass() {
         const passInput = document.getElementById('pass');
         const toggleBtn = document.getElementById('toggle-pass');
@@ -24,29 +35,39 @@ const Core = { // Исправлено: const с маленькой буквы
         this.Msg(passInput.type === 'text' ? "DECRYPTING_OVERSIGHT: VISIBLE" : "ENCRYPTING_OVERSIGHT: HIDDEN");
     },
 
-    init() {
-        // Инициализация графики и звука
-        if (this.Canvas) this.Canvas.init(); 
-        if (this.Audio) this.Audio.setup(); 
-        
-       // Слушатель авторизации
-this.sb.auth.onAuthStateChange((event, session) => {
-    const path = window.location.pathname.toLowerCase();
-    const isLoginPage = path.includes('station.html');
-    const isMainPage = path.endsWith('/') || path.includes('index.html');
-
-    if (session) {
-        this.user = session.user;
-        if (isLoginPage) { window.location.href = 'index.html'; return; }
-        
-        // ВОТ ТА САМАЯ СТРОКА:
-        if (document.getElementById('chat-stream')) { this.Chat.load(); this.Chat.subscribe(); }
-        
-        if (document.getElementById('todo-list')) this.Todo.load();
-    } else {
-        if (isMainPage) { window.location.href = 'station.html'; return; }
+init() {
+    // 1. ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ (ВНЕ САЙТА)
+    if ("Notification" in window) {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
     }
-});
+
+    // Инициализация графики и звука
+    if (this.Canvas) this.Canvas.init(); 
+    if (this.Audio) this.Audio.setup(); 
+    
+    // Слушатель авторизации
+    this.sb.auth.onAuthStateChange((event, session) => {
+        const path = window.location.pathname.toLowerCase();
+        const isLoginPage = path.includes('station.html');
+        const isMainPage = path.endsWith('/') || path.includes('index.html');
+
+        if (session) {
+            this.user = session.user;
+            if (isLoginPage) { window.location.href = 'index.html'; return; }
+            
+            // Если мы на главной странице (где есть чат)
+            if (document.getElementById('chat-stream')) { 
+                this.Chat.load(); 
+                this.Chat.subscribe(); 
+            }
+            
+            if (document.getElementById('todo-list')) this.Todo.load();
+        } else {
+            if (isMainPage) { window.location.href = 'station.html'; return; }
+        }
+    });
 
         // Глобальные клики (закрытие меню)
         window.addEventListener('click', () => {
@@ -162,20 +183,25 @@ this.sb.auth.onAuthStateChange((event, session) => {
 
    Chat: {
         // 1. Метод подписки на новые сообщения (Realtime)
-        subscribe() {
-            Core.sb
-                .channel('public:comments')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
-                    const m = payload.new;
-                    // Проверяем, что сообщение не от нас
-                    const myNick = Core.user ? Core.user.email.split('@')[0] : null;
-                    if (m.nickname !== myNick) {
-                        this.render(m); // Отрисовываем сообщение в чате
-                        Core.Msg("NEW_SIGNAL: From " + m.nickname.toUpperCase()); // Показываем уведомление
-                    }
-                })
-                .subscribe();
-        },
+       subscribe() {
+    Core.sb
+        .channel('public:comments')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
+            const m = payload.new;
+            const myNick = Core.user ? Core.user.email.split('@')[0] : null;
+
+            if (m.nickname !== myNick) {
+                this.render(m);
+                
+                // ЭТО ВЫЗОВЕТ УВЕДОМЛЕНИЕ НА РАБОЧЕМ СТОЛЕ
+                Core.SystemNotify(`НОВОЕ СООБЩЕНИЕ: ${m.nickname.toUpperCase()}`, m.message);
+                
+                // Оставляем внутреннее для красоты
+                Core.Msg(`NEW_SIGNAL: From ${m.nickname.toUpperCase()}`);
+            }
+        })
+        .subscribe();
+},
 
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(50); 
