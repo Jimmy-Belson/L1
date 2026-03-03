@@ -528,24 +528,35 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 }
  #ambient-station {
     position: fixed;
-    /* Позиционируем по центру или сбоку (настрой под себя) */
-    bottom: 50px; 
-    right: 50px;
+    /* УПРАВЛЕНИЕ ПОЗИЦИЕЙ: */
+    bottom: 5%;      /* Расстояние от нижнего края (можно в px или %) */
+    right: 5%;       /* Расстояние от правого края */
     
-    /* Ограничиваем размер (например, 600px или 50% экрана) */
-    width: 600px; 
-    height: auto;
+    /* УПРАВЛЕНИЕ РАЗМЕРОМ: */
+    width: 45vw;     /* 45% от ширины экрана (подбери под себя) */
+    max-width: 800px; /* Чтобы на огромных мониторах не была гигантской */
     
-    z-index: 5; /* Выше космоса, но ниже панелей интерфейса */
-    pointer-events: none !important; /* ПРОПУСКАЕТ КЛИКИ СКВОЗЬ СЕБЯ */
-    opacity: 0.9; /* Легкая прозрачность для атмосферности */
-    filter: drop-shadow(0 0 20px rgba(0, 150, 255, 0.2)); /* Космическое свечение */
+    z-index: 2;      /* Выше звезд (1), но ниже интерфейса (10) */
+    pointer-events: none !important; /* Чтобы кликать СКВОЗЬ неё по космонавтам */
+    
+    /* ВКЛЮЧАЕМ ДРЕЙФ: */
+    animation: spaceDrift 8s ease-in-out infinite;
 }
 
 #ambient-station img {
-    width: 50%;
+    width: 100%;
     height: auto;
-    display: block;
+    filter: drop-shadow(0 0 30px rgba(0, 100, 250, 0.2)); /* Легкое свечение */
+}
+
+/* 2. АНИМАЦИЯ ПОКАЧИВАНИЯ (ДРЕЙФА) */
+@keyframes spaceDrift {
+    0%, 100% { 
+        transform: translateY(0) rotate(0deg); 
+    }
+    50% { 
+        transform: translateY(-20px) rotate(1deg); /* Плывет чуть вверх и наклоняется */
+    }
 }
 .os-container {
     position: relative;
