@@ -641,5 +641,27 @@ header, .panel, .audio-link, button, input, #chat-stream, #todo-list {
 .panel, header, .audio-link, .input-box, button {
     pointer-events: auto; /* ...но кнопки и панели внутри него РАБОТАЮТ */
 }
+@media (max-width: 768px) {
+    /* 1. Станция на телефоне должна быть меньше и в другом месте */
+    #ambient-station {
+        width: 60vw;      /* Делаем чуть шире относительно экрана */
+        bottom: 15%;      /* Поднимаем выше, чтобы не мешала клавиатуре */
+        right: 50%;       /* Ставим почти по центру */
+        transform: translateX(50%); /* Центрируем точно */
+    }
+
+    /* 2. Панели интерфейса ставим друг под друга */
+    .os-container {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+    }
+
+    .panel {
+        width: 95% !important; /* Панели на всю ширину */
+        margin-bottom: 10px;
+        position: static !important; /* Отключаем фиксированное позиционирование */
+    }
+}
 
 
