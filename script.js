@@ -202,36 +202,33 @@ init() {
             } 
         },
 
-        render(m) {
-            const s = document.getElementById('chat-stream'); 
-            if(!s) return;
+       render(m) {
+    const s = document.getElementById('chat-stream'); 
+    if(!s) return;
 
-            const d = document.createElement('div'); 
-            d.className = 'msg-container';
+    const d = document.createElement('div'); 
+    d.className = 'msg-container';
+    
+    const myNick = Core.user?.user_metadata?.nickname || Core.user?.email.split('@')[0];
+    const isMy = m.nickname === myNick;
+    const date = m.created_at ? new Date(m.created_at) : new Date();
+    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    // Увеличиваем размер до 65px и добавляем отступ справа gap: 20px
+    d.innerHTML = `
+        <div class="chat-row-layout" style="display:flex; gap:20px; align-items:flex-start; margin-bottom:15px;">
+            <img src="${m.avatar_url || 'https://via.placeholder.com/65'}" 
+                 style="width:65px; height:65px; border-radius:8px; border:2px solid #0ff; object-fit:cover; flex-shrink:0; box-shadow: 0 0 10px rgba(0,255,255,0.2);">
             
-            // Проверка "своё/чужое" по нику (самый простой вариант для твоей базы)
-            const myNick = Core.user?.user_metadata?.nickname || Core.user?.email.split('@')[0];
-            const isMy = m.nickname === myNick;
-
-            const date = m.created_at ? new Date(m.created_at) : new Date();
-            const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-            // Верстка с аватаркой (добавил проверку на наличие аватарки)
-            const avatar = m.avatar_url || 'https://via.placeholder.com/30';
-
-            d.innerHTML = `
-                <div style="display:flex; gap:10px;">
-                    <img src="${avatar}" style="width:30px; height:30px; border-radius:4px; border:1px solid #0ff; object-fit:cover; flex-shrink:0;">
-                    <div style="flex:1">
-                        <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="msg-nick" style="${isMy ? 'color:var(--n)' : 'color:#0ff'}">${(m.nickname || 'PILOT').toUpperCase()}</span>
-                            <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
-                        </div>
-                        <div class="msg-text" style="word-break: break-word;">${m.message}</div>
-                    </div>
+            <div class="chat-content-block" style="flex:1; padding-top: 5px;">
+                <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <span class="msg-nick" style="font-size:1.1rem; ${isMy ? 'color:var(--n)' : 'color:#0ff'}">${(m.nickname || 'PILOT').toUpperCase()}</span>
+                    <span style="opacity:0.3; font-size:10px;">${timeStr}</span>
                 </div>
-            `;
-
+                <div class="msg-text" style="color:#eee; line-height:1.4; font-size:1rem; word-break: break-word;">${m.message}</div>
+            </div>
+        </div>
+    `;
             if (isMy) {
                 d.oncontextmenu = (e) => {
                     e.preventDefault(); e.stopPropagation();
