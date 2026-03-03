@@ -517,35 +517,39 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     min-height: 50px; 
 }
 #starfield {
-    position: fixed; /* Зафиксировать на экране */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: -1; /* ПОЗАДИ всего интерфейса */
-    background: #01050a; /* Фоновый цвет на случай сбоя JS */
-    pointer-events: none; /* Чтобы клики проходили сквозь холст */
+    z-index: 1; /* Самый низ */
+    display: block;
+    pointer-events: auto; /* Разрешаем клики по космонавтам */
 }
  #ambient-station {
     position: fixed;
-    /* Центрируем относительно экрана */
-    top: 75%;
-    left: 35%;
-    transform: translate(-50%, -50%);
-    
-    /* Уменьшаем размер: 250px-300px — это примерно в 2 раза меньше, чем сейчас */
-    width: 280px; 
-    z-index: 0; /* Чтобы была за текстом */
-    pointer-events: none; /* Чтобы можно было нажимать на кнопки сквозь неё */
-    opacity: 0.5; /* Делаем её "фоновой" */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2; /* Выше космоса, но ниже интерфейса */
+    pointer-events: none !important; /* КРИТИЧНО: чтобы кликать СКВОЗЬ неё */
+    display: block;
 }
 
 #ambient-station img {
     width: 100%;
-    height: auto;
-    /* Эффект голограммы */
-    filter: brightness(1.2) contrast(1.1) drop-shadow(0 0 15px rgba(0, 255, 255, 0.4));
-    animation: slowFloat 15s ease-in-out infinite;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+.os-container {
+    position: relative;
+    z-index: 10; /* Поверх всего */
+    pointer-events: none; /* Пропускает клики в пустых местах */
+}
+header, .panel, .audio-link, button, input, #chat-stream, #todo-list {
+    pointer-events: auto !important;
 }
 
 @keyframes slowFloat {
