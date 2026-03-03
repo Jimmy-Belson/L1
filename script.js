@@ -508,28 +508,34 @@ this.cvs.onclick = (e) => {
         },
 
         // Отрисовка детализированного астронавта
-        drawAstro(a) {
-    const ctx = this.ctx; // ОБЪЯВЛЯЕМ ТОЛЬКО ТУТ ОДИН РАЗ
+       drawAstro(a) {
+            const ctx = this.ctx; 
+            const time = Date.now(); // ДОБАВЬ ЭТУ СТРОКУ (её не было)
 
-    // Логика движения (вставляй это СРАЗУ после ctx)
-    a.x += a.vx; 
-    a.y += a.vy; 
-    a.rot += a.vr;
-    
-    if (a.isFalling) {
-        if (a.y > this.cvs.height + 100) {
-            a.y = -100;
-            a.x = Math.random() * this.cvs.width;
-            a.isFalling = false;
-            a.vy = (Math.random() - 0.5) * 0.4;
-            a.vr = (Math.random() - 0.5) * 0.04;
-        }
-    } else {
-        if(a.x > this.cvs.width + 100) a.x = -100;
-        if(a.x < -100) a.x = this.cvs.width + 100;
-        if(a.y > this.cvs.height + 100) a.y = -100;
-        if(a.y < -100) a.y = this.cvs.height + 100;
-    }
+            // Логика движения
+            a.x += a.vx; 
+            a.y += a.vy; 
+            a.rot += a.vr;
+            
+            if (a.isFalling) {
+                if (a.y > this.cvs.height + 100) {
+                    a.y = -100;
+                    a.x = Math.random() * this.cvs.width;
+                    a.isFalling = false;
+                    a.vy = (Math.random() - 0.5) * 0.4;
+                    a.vr = (Math.random() - 0.5) * 0.04;
+                }
+            } else {
+                if(a.x > this.cvs.width + 100) a.x = -100;
+                if(a.x < -100) a.x = this.cvs.width + 100;
+                if(a.y > this.cvs.height + 100) a.y = -100;
+                if(a.y < -100) a.y = this.cvs.height + 100;
+            }
+
+            // РИСОВАНИЕ
+            ctx.save(); // ЭТО ОЧЕНЬ ВАЖНО
+            ctx.translate(a.x, a.y); // ПЕРЕМЕЩАЕМ К КООРДИНАТАМ АСТРОНАВТА
+            ctx.rotate(a.rot); // ПОВОРАЧИВАЕМ
 
             // 1. Рюкзак (Life Support System)
             ctx.fillStyle = '#bcbcbc';
@@ -577,10 +583,9 @@ this.cvs.onclick = (e) => {
             ctx.arc(-2, -15, 1.5, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.restore();
+            ctx.restore(); // ЗАКРЫВАЕМ ОСНОВНОЙ SAVE
         },
-
-        // Главный цикл отрисовки кадра
+       
         draw() {
             if(!this.ctx) return;
             const ctx = this.ctx;
