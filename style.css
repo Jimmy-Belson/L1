@@ -564,3 +564,57 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 #ambient-station {
     pointer-events: none !important; /* Это позволит кликать по кнопкам СКВОЗЬ картинку */
 }
+#notify-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000; /* Самый высокий слой, чтобы быть над кораблем */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none; /* Чтобы не мешал кликать по меню под ним */
+}
+
+/* Сама плашка уведомления */
+.toast {
+    pointer-events: auto; /* А на само уведомление нажать можно */
+    background: rgba(0, 15, 25, 0.9);
+    border: 1px solid #0ff;
+    border-left: 4px solid #0ff; /* Акцентная полоса слева */
+    color: #0ff;
+    padding: 12px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    min-width: 250px;
+    
+    /* Анимация появления */
+    animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transition: opacity 0.4s, transform 0.4s;
+}
+
+/* Красное уведомление для ошибок */
+.toast.error {
+    border-color: #f44;
+    color: #f44;
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.2);
+}
+
+/* Класс для плавного исчезновения (используется в JS) */
+.toast.hide {
+    opacity: 0;
+    transform: translateX(50px);
+}
+
+/* Анимация вылета справа */
+@keyframes slideIn {
+    from { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+}

@@ -29,21 +29,24 @@ const Core = { // Исправлено: const с маленькой буквы
         if (this.Canvas) this.Canvas.init(); 
         if (this.Audio) this.Audio.setup(); 
         
-        // Слушатель авторизации
-        this.sb.auth.onAuthStateChange((event, session) => {
-            const path = window.location.pathname.toLowerCase();
-            const isLoginPage = path.includes('station.html');
-            const isMainPage = path.endsWith('/') || path.includes('index.html');
+       // Слушатель авторизации
+this.sb.auth.onAuthStateChange((event, session) => {
+    const path = window.location.pathname.toLowerCase();
+    const isLoginPage = path.includes('station.html');
+    const isMainPage = path.endsWith('/') || path.includes('index.html');
 
-            if (session) {
-                this.user = session.user;
-                if (isLoginPage) { window.location.href = 'index.html'; return; }
-                if (document.getElementById('chat-stream')) this.Chat.load();
-                if (document.getElementById('todo-list')) this.Todo.load();
-            } else {
-                if (isMainPage) { window.location.href = 'station.html'; return; }
-            }
-        });
+    if (session) {
+        this.user = session.user;
+        if (isLoginPage) { window.location.href = 'index.html'; return; }
+        
+        // ВОТ ТА САМАЯ СТРОКА:
+        if (document.getElementById('chat-stream')) { this.Chat.load(); this.Chat.subscribe(); }
+        
+        if (document.getElementById('todo-list')) this.Todo.load();
+    } else {
+        if (isMainPage) { window.location.href = 'station.html'; return; }
+    }
+});
 
         // Глобальные клики (закрытие меню)
         window.addEventListener('click', () => {
@@ -157,7 +160,23 @@ const Core = { // Исправлено: const с маленькой буквы
         }
     },
 
-    Chat: {
+   Chat: {
+        // 1. Метод подписки на новые сообщения (Realtime)
+        subscribe() {
+            Core.sb
+                .channel('public:comments')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
+                    const m = payload.new;
+                    // Проверяем, что сообщение не от нас
+                    const myNick = Core.user ? Core.user.email.split('@')[0] : null;
+                    if (m.nickname !== myNick) {
+                        this.render(m); // Отрисовываем сообщение в чате
+                        Core.Msg("NEW_SIGNAL: From " + m.nickname.toUpperCase()); // Показываем уведомление
+                    }
+                })
+                .subscribe();
+        },
+
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(50); 
             if(data) { 
@@ -165,52 +184,53 @@ const Core = { // Исправлено: const с маленькой буквы
                 if(stream) { stream.innerHTML = ''; data.reverse().forEach(m => this.render(m)); }
             } 
         },
+
         render(m) {
-    const s = document.getElementById('chat-stream'); 
-    if(!s) return;
+            const s = document.getElementById('chat-stream'); 
+            if(!s) return;
 
-    const d = document.createElement('div'); 
-    d.className = 'msg-container';
-    const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
-    const date = m.created_at ? new Date(m.created_at) : new Date();
-    const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const d = document.createElement('div'); 
+            d.className = 'msg-container';
+            const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+            const date = m.created_at ? new Date(m.created_at) : new Date();
+            const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-    d.innerHTML = `
-        <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">${(m.nickname || 'PILOT').toUpperCase()}</span>
-            <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
-        </div>
-        <div class="msg-text">${m.message}</div>
-    `;
+            d.innerHTML = `
+                <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">${(m.nickname || 'PILOT').toUpperCase()}</span>
+                    <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
+                </div>
+                <div class="msg-text">${m.message}</div>
+            `;
 
-    // --- ВОЗВРАЩАЕМ УДАЛЕНИЕ ---
-    if (isMy) {
-        d.oncontextmenu = (e) => {
-            e.preventDefault(); e.stopPropagation();
-            const menu = document.getElementById('custom-menu');
-            if(!menu) return;
-            menu.style.display = 'block';
-            menu.style.position = 'fixed';
-            menu.style.left = e.clientX + 'px';
-            menu.style.top = e.clientY + 'px';
-            menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
-            menu.onclick = async (me) => {
-                me.stopPropagation();
-                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                if (!error) d.remove();
-                menu.style.display = 'none';
-                
-            };
-        };
-    }
+            if (isMy) {
+                d.oncontextmenu = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    const menu = document.getElementById('custom-menu');
+                    if(!menu) return;
+                    menu.style.display = 'block';
+                    menu.style.position = 'fixed';
+                    menu.style.left = e.clientX + 'px';
+                    menu.style.top = e.clientY + 'px';
+                    menu.innerHTML = '<div class="menu-item">TERMINATE SIGNAL</div>';
+                    menu.onclick = async (me) => {
+                        me.stopPropagation();
+                        const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                        if (!error) d.remove();
+                        menu.style.display = 'none';
+                    };
+                };
+            }
 
-    s.appendChild(d);
-    s.scrollTop = s.scrollHeight;
-},
+            s.appendChild(d);
+            s.scrollTop = s.scrollHeight;
+        },
+
         async send() { 
             const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
             const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
             const { data, error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]).select();
+            // render(data[0]) здесь можно оставить, так как subscribe отфильтрует наши сообщения
             if(!error && data) this.render(data[0]);
         }
     },
