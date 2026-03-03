@@ -373,31 +373,34 @@ init() {
     p: Math.random() * Math.PI,
     isFalling: false // Состояние падения
 }));
-this.cvs.onclick = (e) => {
-        const rect = this.cvs.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+window.addEventListener('mousedown', (e) => {
+    // Если мы кликнули по кнопке или инпуту — ничего не делаем
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.panel')) return;
 
-        // Клик по космонавтам
-        this.crew.forEach(a => {
-            const dist = Math.hypot(a.x - mx, a.y - my);
-            if (dist < 35) { // Если попали в радиус 35px
-                a.isFalling = true;
-                a.vy = 7;     // Скорость падения вниз
-                a.vr = 0.15;  // Бешеное вращение при падении
-                Core.Msg("PILOT_LOST: EMERGENCY_DESCENT");
-            }
-        });
+    console.log("Клик дошел до системы!", e.clientX, e.clientY);
 
-        // Клик по НЛО (ускорение)
-        const u = this.ufo;
-        const ufoY = u.y + Math.sin(Date.now() / 600) * 35;
-        if (Math.hypot(u.x - mx, ufoY - my) < 50) {
-            u.v = 15; // Рывок вперед
-            Core.Msg("UFO_BOOST: HYPERDRIVE_ACTIVE");
-            setTimeout(() => u.v = 2.1, 600); // Возвращаем скорость через 0.6 сек
+    const rect = this.cvs.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    this.crew.forEach(a => {
+        const dist = Math.hypot(a.x - mx, a.y - my);
+        if (dist < 60) { // Увеличил радиус до 60 для легкости попадания
+            a.isFalling = true;
+            a.vy = 10;
+            a.vr = 0.2;
+            Core.Msg("PILOT_LOST: EMERGENCY_EXIT");
         }
-    };
+    });
+
+    const u = this.ufo;
+    const ufoY = u.y + Math.sin(Date.now() / 600) * 35;
+    if (Math.hypot(u.x - mx, ufoY - my) < 70) {
+        u.v = 15;
+        Core.Msg("UFO_BOOST: WARP_DRIVE");
+        setTimeout(() => u.v = 2.1, 600);
+    }
+});
             
             // Комета (изначально неактивна)
             this.comet = { x: -100, y: 0, active: false };

@@ -603,4 +603,23 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
     opacity: 0;
     transform: translateX(50px);
 }
+#starfield {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Поднимаем до уровня фона */
+}
+
+.os-container {
+    position: relative;
+    z-index: 10; /* Интерфейс выше космоса */
+    pointer-events: none; /* Контейнер прозрачен для кликов... */
+}
+
+.panel, header, .audio-link, .input-box, button {
+    pointer-events: auto; /* ...но кнопки и панели внутри него РАБОТАЮТ */
+}
+
 
