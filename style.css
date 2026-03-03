@@ -823,3 +823,33 @@ header button:hover {
     color: #0ff;
     text-shadow: 0 0 5px #0ff;
 }
+.msg-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.user-ava {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #0ff;
+    border-radius: 4px; /* Квадратная аватарка */
+    object-fit: cover;
+}
+
+.user-nick {
+    display: block;
+    font-family: 'Orbitron', sans-serif;
+    color: #0ff;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.user-text {
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    background: rgba(0, 255, 255, 0.05);
+    padding: 8px;
+    border-radius: 0 10px 10px 10px;
+}

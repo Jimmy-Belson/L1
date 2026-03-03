@@ -275,14 +275,41 @@ init() {
             s.scrollTop = s.scrollHeight;
         },
 
-        async send() { 
-            const i = document.getElementById('chat-in'); if(!i || !i.value || !Core.user) return; 
-            const n = Core.user.email.split('@')[0], v = i.value; i.value = ''; 
-            const { data, error } = await Core.sb.from('comments').insert([{message: v, nickname: n}]).select();
-            // render(data[0]) здесь можно оставить, так как subscribe отфильтрует наши сообщения
-            if(!error && data) this.render(data[0]);
-        }
-    },
+       async send() { 
+    const i = document.getElementById('chat-in'); 
+    // Проверка на поле, текст и наличие юзера
+    if(!i || !i.value.trim() || !Core.user) return; 
+
+    // 1. Берем данные из метаданных (то, что мы сохранили в профиле)
+    const meta = Core.user.user_metadata || {};
+    
+    // ПРИОРИТЕТ: Ник из профиля -> если пусто, то почта до @
+    const n = meta.nickname || Core.user.email.split('@')[0];
+    
+    // ПРИОРИТЕТ: Аватарка из профиля -> если пусто, стандартная заглушка
+    const a = meta.avatar_url || 'https://via.placeholder.com/50';
+    
+    const v = i.value; 
+    i.value = ''; 
+
+    // 2. Отправляем в базу ВСЕ ЧЕТЫРЕ колонки
+    const { data, error } = await Core.sb
+        .from('comments')
+        .insert([{
+            message: v, 
+            nickname: n, 
+            avatar_url: a 
+        }])
+        .select();
+
+    // 3. Отрисовка сообщения (если нет ошибок)
+    if(!error && data && data[0]) {
+        this.render(data[0]);
+    } else if(error) {
+        console.error("Ошибка Supabase:", error.message);
+    }
+},
+    
 
     UI() {
         const todoIn = document.getElementById('todo-in');
@@ -652,7 +679,8 @@ window.addEventListener('mousedown', (e) => {
         }
         requestAnimationFrame(() => this.loop());
     }
-};
+},
+}
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => Core.init());
