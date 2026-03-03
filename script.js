@@ -119,8 +119,31 @@ init() {
             const list = document.getElementById('todo-list'); 
             if (!list) return;
 
+
             const d = document.createElement('div');
-            // Устанавливаем класс: если задача выполнена в базе, сразу вешаем .completed
+
+           li.addEventListener('pointerdown', async (e) => {
+    // 1. Визуальный отклик для телефона (сразу зачеркиваем)
+    li.style.textDecoration = 'line-through';
+    li.style.opacity = '0.5';
+    li.style.transition = '0.3s';
+
+    // 2. Удаление из Supabase
+    const { error } = await Core.sb
+        .from('todo') // Проверь, что таблица называется 'todos'
+        .delete()
+        .eq('id', item.id);
+
+    if (error) {
+        console.error("Ошибка удаления:", error.message);
+        li.style.textDecoration = 'none';
+        li.style.opacity = '1';
+    } else {
+        if (Core.Msg) Core.Msg("OBJECTIVE_REMOVED");
+        // Плавное исчезновение перед удалением из DOM
+        setTimeout(() => li.remove(), 300);
+    }
+});
             d.className = `task ${t.is_completed ? 'completed' : ''}`;
             
             // Включаем возможность перетаскивания

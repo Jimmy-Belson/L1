@@ -73,19 +73,24 @@
 
     <div class="profile-container">
         <div class="profile-card panel">
-            <h2 style="color: #0ff; margin-top: 0;">>> EDIT_PROFILE</h2>
-            
-            <label>AVATAR_IMAGE_URL:</label>
-            <img id="avatar-img" src="https://via.placeholder.com/150" class="avatar-preview">
-            <input type="text" id="avatar-input" class="input-field" placeholder="https://link-to-image.jpg">
+    <h2 style="color: #0ff; margin-top: 0;">>> EDIT_PROFILE</h2>
+    
+    <label>AVATAR_UPLOAD:</label>
+    <img id="avatar-img" src="default-avatar.png" style="width:100px; height:100px; border-radius:50%;">
 
-            <label>PILOT_CALLSIGN (NICK):</label>
-            <input type="text" id="nick-input" class="input-field" placeholder="Enter your name...">
+<input type="file" id="avatar-file" accept="image/*" onchange="previewFile()">
 
-            <button class="save-btn" onclick="updateProfile()">[ SYNC_DATA ]</button>
-            
-            <a href="index.html" class="back-link"><< RETURN_TO_STATION</a>
-        </div>
+<input type="text" id="nick-input" placeholder="Your Nickname">
+
+<button id="save-btn" onclick="updateProfile()">[ SYNC_DATA ]</button>
+
+    <label>PILOT_CALLSIGN (NICK):</label>
+    <input type="text" id="nick-input" class="input-field" placeholder="Enter your name...">
+
+    <button id="save-btn" class="save-btn" onclick="updateProfile()">[ SYNC_DATA ]</button>
+    
+    <a href="index.html" class="back-link"><< RETURN_TO_STATION</a>
+</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -110,33 +115,80 @@
 
         // Функция сохранения
         async function updateProfile() {
-            const newNick = document.getElementById('nick-input').value;
-            const newAvatar = document.getElementById('avatar-input').value;
+    const btn = document.getElementById('save-btn');
+    const fileInput = document.getElementById('avatar-file');
+    const newNick = document.getElementById('nick-input').value;
+    
+    // Блокируем кнопку, чтобы юзер не тыкал сто раз
+    btn.innerText = "UPLOADING...";
+    btn.disabled = true;
 
-            const { data, error } = await Core.sb.auth.updateUser({
-                data: { 
-                    nickname: newNick, 
-                    avatar_url: newAvatar 
-                }
-            });
+    let avatarUrl = document.getElementById('avatar-img').src;
 
-            if (error) {
-                alert("ERROR: " + error.message);
-            } else {
-                // Если у тебя есть Core.Msg, используем его
-                if(window.Core && Core.Msg) {
-                    Core.Msg("PROFILE_UPDATED: SUCCESS");
-                } else {
-                    alert("PROFILE UPDATED!");
-                }
-                document.getElementById('avatar-img').src = newAvatar;
-            }
+    // 1. ПРОВЕРЯЕМ: Выбрал ли пользователь новый файл?
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const fileExt = file.name.split('.').pop();
+        // Создаем уникальное имя файла (id_пользователя + рандом)
+        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        // ЗАГРУЗКА В STORAGE (Bucket должен называться 'avatars')
+        const { data: uploadData, error: uploadError } = await Core.sb.storage
+            .from('avatars')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error("Ошибка загрузки файла:", uploadError);
+            alert("UPLOAD_ERROR: " + uploadError.message);
+            btn.innerText = "[ SYNC_DATA ]";
+            btn.disabled = false;
+            return;
         }
 
-        // Обновление превью аватарки на лету
-        document.getElementById('avatar-input').oninput = (e) => {
-            document.getElementById('avatar-img').src = e.target.value;
-        };
+        // ПОЛУЧАЕМ ПУБЛИЧНУЮ ССЫЛКУ
+        const { data: { publicUrl } } = Core.sb.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+            
+        avatarUrl = publicUrl;
+    }
+
+    // 2. ОБНОВЛЯЕМ ПРОФИЛЬ (Метаданные пользователя)
+    const { error: updateError } = await Core.sb.auth.updateUser({
+        data: { 
+            nickname: newNick, 
+            avatar_url: avatarUrl 
+        }
+    });
+
+    if (updateError) {
+        alert("SYNC_ERROR: " + updateError.message);
+    } else {
+        // Если всё ок
+        if(window.Core && Core.Msg) Core.Msg("SYSTEM: PROFILE_SYNCED");
+        alert("ПРОФИЛЬ ОБНОВЛЕН!");
+    }
+
+    // Возвращаем кнопку в строй
+    btn.innerText = "[ SYNC_DATA ]";
+    btn.disabled = false;
+}
+
+// Дополнительно: функция для моментального превью выбранной фотки
+function previewFile() {
+    const file = document.getElementById('avatar-file').files[0];
+    const preview = document.getElementById('avatar-img');
+    const reader = new FileReader();
+
+    reader.onloadend = function () {
+        preview.src = reader.result;
+    }
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+}
     </script>
 </body>
 </html>
