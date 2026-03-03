@@ -115,36 +115,12 @@ init() {
             const list = document.getElementById('todo-list');
             if (list) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
         },
-       render(t) {
-            const list = document.getElementById('todo-list'); 
-            if (!list) return;
+   render(t) {
+        const list = document.getElementById('todo-list'); 
+        if (!list) return;
 
-
-            const d = document.createElement('div');
-
-           li.addEventListener('pointerdown', async (e) => {
-    // 1. Визуальный отклик для телефона (сразу зачеркиваем)
-    li.style.textDecoration = 'line-through';
-    li.style.opacity = '0.5';
-    li.style.transition = '0.3s';
-
-    // 2. Удаление из Supabase
-    const { error } = await Core.sb
-        .from('todo') // Проверь, что таблица называется 'todos'
-        .delete()
-        .eq('id', item.id);
-
-    if (error) {
-        console.error("Ошибка удаления:", error.message);
-        li.style.textDecoration = 'none';
-        li.style.opacity = '1';
-    } else {
-        if (Core.Msg) Core.Msg("OBJECTIVE_REMOVED");
-        // Плавное исчезновение перед удалением из DOM
-        setTimeout(() => li.remove(), 300);
-    }
-});
-            d.className = `task ${t.is_completed ? 'completed' : ''}`;
+        const d = document.createElement('div');
+        d.className = `task ${t.is_completed ? 'completed' : ''}`;
             
             // Включаем возможность перетаскивания
             d.draggable = true; 
@@ -172,13 +148,11 @@ init() {
             // 2. ПКМ: Удаление задачи
             d.oncontextmenu = async (ev) => {
                 ev.preventDefault();
-                // Добавляем класс анимации удаления (если прописан в CSS)
                 d.classList.add('removing');
                 
                 const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
                 
                 if (!error) {
-                    // Ждем завершения анимации и убираем из DOM
                     setTimeout(() => d.remove(), 400);
                 } else {
                     d.classList.remove('removing');
@@ -186,9 +160,7 @@ init() {
                 }
             };
 
-            // 3. Drag-and-Drop события
             d.addEventListener('dragstart', () => {
-                // Используем setTimeout, чтобы класс добавился после того, как "призрак" элемента подцепился мышкой
                 setTimeout(() => d.classList.add('dragging'), 0);
             });
 
@@ -198,6 +170,7 @@ init() {
 
             list.appendChild(d);
         },
+
         async add(val) {
             const { data, error } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
             if (!error && data) this.render(data[0]);
@@ -205,26 +178,21 @@ init() {
     },
 
    Chat: {
-        // 1. Метод подписки на новые сообщения (Realtime)
-       subscribe() {
-    Core.sb
-        .channel('public:comments')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
-            const m = payload.new;
-            const myNick = Core.user ? Core.user.email.split('@')[0] : null;
-
-            if (m.nickname !== myNick) {
-                this.render(m);
-                
-                // ЭТО ВЫЗОВЕТ УВЕДОМЛЕНИЕ НА РАБОЧЕМ СТОЛЕ
-                Core.SystemNotify(`НОВОЕ СООБЩЕНИЕ: ${m.nickname.toUpperCase()}`, m.message);
-                
-                // Оставляем внутреннее для красоты
-                Core.Msg(`NEW_SIGNAL: From ${m.nickname.toUpperCase()}`);
-            }
-        })
-        .subscribe();
-},
+        subscribe() {
+            Core.sb
+                .channel('public:comments')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
+                    const m = payload.new;
+                    // Исправлено: берем ник из метаданных или почту для сравнения
+                    const myNick = Core.user?.user_metadata?.nickname || Core.user?.email.split('@')[0];
+                    
+                    if (m.nickname !== myNick) {
+                        this.render(m);
+                        Core.SystemNotify(`СИГНАЛ: ${m.nickname.toUpperCase()}`, m.message);
+                    }
+                })
+                .subscribe();
+        },
 
         async load() { 
             const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending:false}).limit(50); 
@@ -240,16 +208,28 @@ init() {
 
             const d = document.createElement('div'); 
             d.className = 'msg-container';
-            const isMy = Core.user && m.nickname === Core.user.email.split('@')[0];
+            
+            // Проверка "своё/чужое" по нику (самый простой вариант для твоей базы)
+            const myNick = Core.user?.user_metadata?.nickname || Core.user?.email.split('@')[0];
+            const isMy = m.nickname === myNick;
+
             const date = m.created_at ? new Date(m.created_at) : new Date();
             const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
+            // Верстка с аватаркой (добавил проверку на наличие аватарки)
+            const avatar = m.avatar_url || 'https://via.placeholder.com/30';
+
             d.innerHTML = `
-                <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="msg-nick" style="${isMy ? 'color:var(--n)' : ''}">${(m.nickname || 'PILOT').toUpperCase()}</span>
-                    <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
+                <div style="display:flex; gap:10px;">
+                    <img src="${avatar}" style="width:30px; height:30px; border-radius:4px; border:1px solid #0ff; object-fit:cover; flex-shrink:0;">
+                    <div style="flex:1">
+                        <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="msg-nick" style="${isMy ? 'color:var(--n)' : 'color:#0ff'}">${(m.nickname || 'PILOT').toUpperCase()}</span>
+                            <span style="opacity:0.3; font-size:9px;">${timeStr}</span>
+                        </div>
+                        <div class="msg-text" style="word-break: break-word;">${m.message}</div>
+                    </div>
                 </div>
-                <div class="msg-text">${m.message}</div>
             `;
 
             if (isMy) {
@@ -275,41 +255,33 @@ init() {
             s.scrollTop = s.scrollHeight;
         },
 
-       async send() { 
-    const i = document.getElementById('chat-in'); 
-    // Проверка на поле, текст и наличие юзера
-    if(!i || !i.value.trim() || !Core.user) return; 
+        async send() { 
+            const i = document.getElementById('chat-in'); 
+            if(!i || !i.value.trim() || !Core.user) return; 
 
-    // 1. Берем данные из метаданных (то, что мы сохранили в профиле)
-    const meta = Core.user.user_metadata || {};
-    
-    // ПРИОРИТЕТ: Ник из профиля -> если пусто, то почта до @
-    const n = meta.nickname || Core.user.email.split('@')[0];
-    
-    // ПРИОРИТЕТ: Аватарка из профиля -> если пусто, стандартная заглушка
-    const a = meta.avatar_url || 'https://via.placeholder.com/50';
-    
-    const v = i.value; 
-    i.value = ''; 
+            // Сначала берем актуальные данные профиля
+            const meta = Core.user.user_metadata || {};
+            const n = meta.nickname || Core.user.email.split('@')[0];
+            const a = meta.avatar_url || 'https://via.placeholder.com/50';
+            
+            const v = i.value; 
+            i.value = ''; 
 
-    // 2. Отправляем в базу ВСЕ ЧЕТЫРЕ колонки
-    const { data, error } = await Core.sb
-        .from('comments')
-        .insert([{
-            message: v, 
-            nickname: n, 
-            avatar_url: a 
-        }])
-        .select();
+            // ВАЖНО: Если у тебя НЕТ колонки user_id в базе, удали строку ниже!
+            const { data, error } = await Core.sb.from('comments').insert([{
+                message: v, 
+                nickname: n, 
+                avatar_url: a
+            }]).select();
 
-    // 3. Отрисовка сообщения (если нет ошибок)
-    if(!error && data && data[0]) {
-        this.render(data[0]);
-    } else if(error) {
-        console.error("Ошибка Supabase:", error.message);
-    }
-},
-    
+            if(!error && data) {
+                // Если мы сами отправили, рендерим сразу (для скорости)
+                this.render(data[0]);
+            } else if (error) {
+                console.error("Ошибка чата:", error.message);
+            }
+        }
+    },
 
     UI() {
         const todoIn = document.getElementById('todo-in');
@@ -679,8 +651,7 @@ window.addEventListener('mousedown', (e) => {
         }
         requestAnimationFrame(() => this.loop());
     }
-},
-}
+};
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => Core.init());
