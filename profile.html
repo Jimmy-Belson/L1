@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBITRON - USER_PROFILE</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Специфичные стили для страницы профиля */
+        .profile-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .profile-card {
+            width: 100%;
+            max-width: 450px;
+            background: rgba(0, 15, 25, 0.9);
+            border: 1px solid #0ff;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+            border: 2px solid #0ff;
+            margin: 0 auto 20px;
+            display: block;
+            border-radius: 5px;
+            object-fit: cover;
+            background: #000;
+        }
+        .input-field {
+            width: 100%;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid #066;
+            color: #0ff;
+            padding: 12px;
+            margin: 10px 0 20px;
+            font-family: 'Share Tech Mono', monospace;
+            outline: none;
+        }
+        .input-field:focus { border-color: #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            background: #0ff;
+            color: #000;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            transition: 0.3s;
+        }
+        .save-btn:hover { background: #fff; box-shadow: 0 0 15px #fff; }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #066;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        .back-link:hover { color: #0ff; }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+
+    <div class="profile-container">
+        <div class="profile-card panel">
+            <h2 style="color: #0ff; margin-top: 0;">>> EDIT_PROFILE</h2>
+            
+            <label>AVATAR_IMAGE_URL:</label>
+            <img id="avatar-img" src="https://via.placeholder.com/150" class="avatar-preview">
+            <input type="text" id="avatar-input" class="input-field" placeholder="https://link-to-image.jpg">
+
+            <label>PILOT_CALLSIGN (NICK):</label>
+            <input type="text" id="nick-input" class="input-field" placeholder="Enter your name...">
+
+            <button class="save-btn" onclick="updateProfile()">[ SYNC_DATA ]</button>
+            
+            <a href="index.html" class="back-link"><< RETURN_TO_STATION</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+    <script>
+        // Инициализация при загрузке
+        window.onload = async () => {
+            // Запускаем звезды на фоне, если Canvas активен в твоем script.js
+            if(window.Canvas) window.Canvas.init(); 
+            
+            // Загружаем текущие данные пользователя из Supabase
+            const { data: { user } } = await Core.sb.auth.getUser();
+            if (user && user.user_metadata) {
+                const meta = user.user_metadata;
+                if(meta.nickname) document.getElementById('nick-input').value = meta.nickname;
+                if(meta.avatar_url) {
+                    document.getElementById('avatar-input').value = meta.avatar_url;
+                    document.getElementById('avatar-img').src = meta.avatar_url;
+                }
+            }
+        };
+
+        // Функция сохранения
+        async function updateProfile() {
+            const newNick = document.getElementById('nick-input').value;
+            const newAvatar = document.getElementById('avatar-input').value;
+
+            const { data, error } = await Core.sb.auth.updateUser({
+                data: { 
+                    nickname: newNick, 
+                    avatar_url: newAvatar 
+                }
+            });
+
+            if (error) {
+                alert("ERROR: " + error.message);
+            } else {
+                // Если у тебя есть Core.Msg, используем его
+                if(window.Core && Core.Msg) {
+                    Core.Msg("PROFILE_UPDATED: SUCCESS");
+                } else {
+                    alert("PROFILE UPDATED!");
+                }
+                document.getElementById('avatar-img').src = newAvatar;
+            }
+        }
+
+        // Обновление превью аватарки на лету
+        document.getElementById('avatar-input').oninput = (e) => {
+            document.getElementById('avatar-img').src = e.target.value;
+        };
+    </script>
+</body>
+</html>

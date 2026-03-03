@@ -40,6 +40,29 @@ header {
 
 .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
 
+@media (max-width: 768px) {
+    html, body {
+        /* 1. Сначала специфичные свойства для старых браузеров */
+        zoom: 0.75; 
+        -webkit-transform: scale(0.75);
+        -moz-transform: scale(0.75);
+        -ms-transform: scale(0.75);
+
+        /* 2. ЗАТЕМ СТАНДАРТНОЕ СВОЙСТВО (оно убирает ошибку в VS Code) */
+        transform: scale(0.75);
+
+        /* 3. И точка отсчета (тоже со стандартом в конце) */
+        -webkit-transform-origin: 0 0;
+        -moz-transform-origin: 0 0;
+        transform-origin: 0 0;
+
+        /* 4. Корректировка размеров под масштаб */
+        width: 133.33%; 
+        height: 133.33%;
+        overflow-x: hidden;
+    }
+}
+
 /* ПАНЕЛИ */
 .panel { 
     background: var(--glass); 
@@ -676,5 +699,47 @@ header, .panel, .audio-link, button, input, #chat-stream, #todo-list {
         font-size: 12px;
         flex-direction: column;
         gap: 5px;
+    }
+}
+header button {
+    background: transparent;
+    border: 1px solid #0ff;
+    color: #0ff;
+    padding: 4px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+header button:hover {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px #0ff;
+}
+
+/* Специальный стиль для кнопки логаута (красноватый при наведении) */
+.btn-logout:hover {
+    border-color: #ff4d4d;
+    color: #ff4d4d;
+    box-shadow: 0 0 10px #ff4d4d;
+}
+
+/* Адаптация для телефона */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column; /* Статус сверху, кнопки снизу */
+        height: auto;
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .nav-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    header button {
+        font-size: 10px; /* Уменьшаем текст на маленьких экранах */
+        padding: 6px 8px;
     }
 }

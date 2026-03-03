@@ -28,12 +28,20 @@
     <div class="os-container">
         
         <header>
-            <div id="system-status"><span class="blink">●</span> SYSTEM_READY</div>
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <div id="clock">00:00:00</div>
-                <button onclick="Core.Logout()">[ ABANDON_SHIP ]</button>
-            </div>
-        </header>
+    <div id="system-status"><span class="blink">●</span> SYSTEM_READY</div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="clock">00:00:00</div>
+        
+        <div class="nav-controls" style="display: flex; gap: 10px;">
+            <button class="btn-profile" onclick="window.location.href='profile.html'">
+                [ PROFILE ]
+            </button>
+            <button class="btn-logout" onclick="Core.Logout()">
+                [ ABANDON_SHIP ]
+            </button>
+        </div>
+    </div>
+</header>
 
         <div class="main-area">
             
