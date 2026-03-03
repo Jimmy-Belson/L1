@@ -363,15 +363,41 @@ init() {
             this.ufo = { x: -250, y: 350, v: 2.1, parts: [] };
             
             // Астронавты: массив из 3-х детализированных пилотов
-            this.crew = Array.from({length: 3}, () => ({
-                x: Math.random() * this.cvs.width, 
-                y: Math.random() * this.cvs.height, 
-                vx: (Math.random() - 0.5) * 0.3, // Случайная скорость X
-                vy: (Math.random() - 0.5) * 0.3, // Случайная скорость Y
-                rot: Math.random() * Math.PI * 2, // Начальный поворот
-                vr: 0.005, // Скорость вращения
-                p: Math.random() * Math.PI // Фаза мерцания визора
-            }));
+           this.crew = Array.from({length: 3}, () => ({
+    x: Math.random() * this.cvs.width, 
+    y: Math.random() * this.cvs.height, 
+    vx: (Math.random() - 0.5) * 0.4, 
+    vy: (Math.random() - 0.5) * 0.4, 
+    rot: Math.random() * Math.PI * 2, 
+    vr: (Math.random() - 0.5) * 0.02, // РАЗНЫЙ ДРИФТ: теперь крутятся в разные стороны
+    p: Math.random() * Math.PI,
+    isFalling: false // Состояние падения
+}));
+this.cvs.onclick = (e) => {
+        const rect = this.cvs.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        // Клик по космонавтам
+        this.crew.forEach(a => {
+            const dist = Math.hypot(a.x - mx, a.y - my);
+            if (dist < 35) { // Если попали в радиус 35px
+                a.isFalling = true;
+                a.vy = 7;     // Скорость падения вниз
+                a.vr = 0.15;  // Бешеное вращение при падении
+                Core.Msg("PILOT_LOST: EMERGENCY_DESCENT");
+            }
+        });
+
+        // Клик по НЛО (ускорение)
+        const u = this.ufo;
+        const ufoY = u.y + Math.sin(Date.now() / 600) * 35;
+        if (Math.hypot(u.x - mx, ufoY - my) < 50) {
+            u.v = 15; // Рывок вперед
+            Core.Msg("UFO_BOOST: HYPERDRIVE_ACTIVE");
+            setTimeout(() => u.v = 2.1, 600); // Возвращаем скорость через 0.6 сек
+        }
+    };
             
             // Комета (изначально неактивна)
             this.comet = { x: -100, y: 0, active: false };
@@ -483,18 +509,27 @@ init() {
 
         // Отрисовка детализированного астронавта
         drawAstro(a) {
-            const ctx = this.ctx, time = Date.now();
-            a.x += a.vx; a.y += a.vy; a.rot += a.vr;
-            
-            // Границы экрана
-            if(a.x > this.cvs.width + 100) a.x = -100;
-            if(a.x < -100) a.x = this.cvs.width + 100;
-            if(a.y > this.cvs.height + 100) a.y = -100;
-            if(a.y < -100) a.y = this.cvs.height + 100;
+    const ctx = this.ctx; // ОБЪЯВЛЯЕМ ТОЛЬКО ТУТ ОДИН РАЗ
 
-            ctx.save();
-            ctx.translate(a.x, a.y);
-            ctx.rotate(a.rot);
+    // Логика движения (вставляй это СРАЗУ после ctx)
+    a.x += a.vx; 
+    a.y += a.vy; 
+    a.rot += a.vr;
+    
+    if (a.isFalling) {
+        if (a.y > this.cvs.height + 100) {
+            a.y = -100;
+            a.x = Math.random() * this.cvs.width;
+            a.isFalling = false;
+            a.vy = (Math.random() - 0.5) * 0.4;
+            a.vr = (Math.random() - 0.5) * 0.04;
+        }
+    } else {
+        if(a.x > this.cvs.width + 100) a.x = -100;
+        if(a.x < -100) a.x = this.cvs.width + 100;
+        if(a.y > this.cvs.height + 100) a.y = -100;
+        if(a.y < -100) a.y = this.cvs.height + 100;
+    }
 
             // 1. Рюкзак (Life Support System)
             ctx.fillStyle = '#bcbcbc';
