@@ -891,3 +891,74 @@ header button:hover {
         gap: 0 !important;
     }
 }
+/* Контейнер для уведомлений (если его еще нет) */
+#notify-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Сама плашка */
+.toast {
+    background: rgba(1, 5, 10, 0.9);
+    border: 1px solid var(--n);
+    color: #fff;
+    padding: 15px 20px;
+    font-family: 'Share Tech Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+    backdrop-filter: blur(10px);
+    animation: toastSlideIn 0.4s ease forwards;
+    min-width: 280px;
+}
+/* Стиль иконки внутри уведомления */
+/* Общие стили для иконки внутри уведомления */
+.toast-icon {
+    font-size: 1.6rem; /* Делаем иконку чуть крупнее текста */
+    color: var(--n);   /* Твой основной бирюзовый цвет */
+    text-shadow: 0 0 10px var(--n), 0 0 20px rgba(0, 242, 255, 0.5); /* Эффект свечения */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+}
+
+/* Если уведомление об ошибке (красное/розовое) */
+.toast.error .toast-icon {
+    color: var(--p); /* Твой цвет ошибки (розовый) */
+    text-shadow: 0 0 10px var(--p), 0 0 20px rgba(255, 0, 255, 0.5);
+}
+
+/* Контейнер текста внутри плашки */
+.toast-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Анимация пульсации для иконки (по желанию, для живости) */
+.toast-icon {
+    animation: iconPulse 2s infinite ease-in-out;
+}
+
+@keyframes iconPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+.save-btn.loading {
+    opacity: 0.7;
+    cursor: wait;
+    border-style: dashed; /* Рамка станет пунктирной, пока идет синхронизация */
+    animation: borderRotation 2s linear infinite;
+}
+
+@keyframes borderRotation {
+    from { filter: hue-rotate(0deg); }
+    to { filter: hue-rotate(360deg); }
+}

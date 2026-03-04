@@ -1,8 +1,8 @@
 /**
- * ЛОГИКА ПРОФИЛЯ ORBITRON
+ * ЛОГИКА ПРОФИЛЯ ORBITRON (v2.0 - Neon Icons)
  */
 
-// 1. Предпросмотр фото сразу после выбора в галерее/папке
+// 1. Предпросмотр фото с уведомлением
 function previewFile() {
     const file = document.getElementById('avatar-file').files[0];
     const preview = document.getElementById('avatar-img');
@@ -10,6 +10,10 @@ function previewFile() {
 
     reader.onloadend = () => {
         preview.src = reader.result;
+        // КРАСИВОЕ УВЕДОМЛЕНИЕ: Файл готов
+        if (window.Core && Core.Msg) {
+            Core.Msg("IMAGE_STAGED: READY_FOR_SYNC", "info", "fa-image");
+        }
     }
 
     if (file) {
@@ -23,36 +27,31 @@ async function updateProfile() {
     const fileInput = document.getElementById('avatar-file');
     const nickInput = document.getElementById('nick-input');
     
-    // Визуальный отклик: меняем текст на кнопке
     const originalBtnText = btn.innerText;
     btn.innerText = ">> SYNCING...";
+    btn.classList.add('loading'); // Можно добавить анимацию в CSS
     btn.disabled = true;
 
     try {
         let avatarUrl = document.getElementById('avatar-img').src;
 
-        // А) Если выбран новый файл — загружаем его в Storage Supabase
+        // А) Загрузка аватара
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            const filePath = `${Math.random()}.${fileExt}`;
 
             const { data: uploadData, error: uploadError } = await Core.sb.storage
-                .from('avatars') // Убедись, что бакет в Supabase называется именно так
+                .from('avatars')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
-            // Получаем постоянную публичную ссылку на файл
-            const { data: { publicUrl } } = Core.sb.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-            
-            avatarUrl = publicUrl;
+            const { data } = Core.sb.storage.from('avatars').getPublicUrl(filePath);
+            avatarUrl = data.publicUrl;
         }
 
-        // Б) Обновляем ник и ссылку на фото в профиле пользователя (auth)
+        // Б) Обновление метаданных пользователя
         const { error: updateError } = await Core.sb.auth.updateUser({
             data: { 
                 nickname: nickInput.value, 
@@ -62,37 +61,37 @@ async function updateProfile() {
 
         if (updateError) throw updateError;
 
-        // В) Сообщение об успехе
+        // В) УСПЕХ: Космическая иконка щита или галочки
         if (window.Core && Core.Msg) {
-            Core.Msg("SYSTEM: DATA_SYNC_COMPLETE");
-        } else {
-            alert("ПРОФИЛЬ ОБНОВЛЕН!");
+            Core.Msg("IDENTITY_STABILIZED: DATA_SYNCED", "info", "fa-user-shield");
         }
 
     } catch (err) {
         console.error("Ошибка профиля:", err);
-        alert("CRITICAL_ERROR: " + err.message);
+        // ОШИБКА: Иконка предупреждения
+        if (window.Core && Core.Msg) {
+            Core.Msg("SYNC_FAILED: " + err.message, "error", "fa-radiation");
+        }
     } finally {
-        // Возвращаем кнопку в исходное состояние
         btn.innerText = originalBtnText;
         btn.disabled = false;
+        btn.classList.remove('loading');
     }
 }
 
-// 3. Авто-загрузка данных при входе на страницу
+// 3. Авто-загрузка данных
 window.addEventListener('DOMContentLoaded', async () => {
-    // Ждем секунду, чтобы Core.sb успел инициализироваться из script.js
     setTimeout(async () => {
+        if (!Core.sb) return;
         const { data: { user } } = await Core.sb.auth.getUser();
         
         if (user && user.user_metadata) {
             const meta = user.user_metadata;
-            if (meta.nickname) {
-                document.getElementById('nick-input').value = meta.nickname;
-            }
-            if (meta.avatar_url) {
-                document.getElementById('avatar-img').src = meta.avatar_url;
-            }
+            if (meta.nickname) document.getElementById('nick-input').value = meta.nickname;
+            if (meta.avatar_url) document.getElementById('avatar-img').src = meta.avatar_url;
+            
+            // Уведомление о входе в систему
+            Core.Msg("BIOMETRICS_RECOGNIZED: WELCOME", "info", "fa-id-badge");
         }
     }, 500);
 });
