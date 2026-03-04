@@ -848,8 +848,8 @@ header button:hover {
 }
 
 
-@media screen and (max-width: 600px) {
-    /* На телефонах (меньше 600px) применяем эти правила */
+@media screen and (max-width: 650px) {
+    /* На телефонах (меньше 650px) применяем эти правила */
     #todo-list {
         width: 30vw !important; 
         min-width: 130px !important;
