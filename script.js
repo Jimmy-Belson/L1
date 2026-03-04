@@ -175,51 +175,56 @@ Todo: {
 },
 
 Chat: {
-    // 1. ПОДПИСКА: Слушаем базу в реальном времени
-    subscribe() {
-        // Удаляем старые каналы, чтобы не копились "слушатели" и не лагало
-        Core.sb.removeAllChannels(); 
+    channel: null,
 
-        const channel = Core.sb.channel('global-chat')
+    async subscribe() {
+        // Очищаем конкретно этот канал, а не всё подряд
+        if (this.channel) {
+            await Core.sb.removeChannel(this.channel);
+        }
+
+        this.channel = Core.sb.channel('global-chat')
             .on('postgres_changes', { 
                 event: 'INSERT', 
                 schema: 'public', 
                 table: 'comments' 
             }, payload => {
+                console.log("SIGNAL_RECEIVED", payload.new);
                 const m = payload.new;
-                const myNick = Core.user?.user_metadata?.nickname || Core.user?.email.split('@')[0];
-                
-                // Рендерим, только если сообщение ЧУЖОЕ (своё мы уже отрендерили в send)
-                if (m.nickname !== myNick) {
+                // Проверка по ID пользователя, а не по нику (так надежнее)
+                if (m.user_id !== Core.user?.id) {
                     this.render(m);
-                    Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
+                    Core.SystemNotify(`SIGNAL: ${m.nickname}`, m.message);
                 }
             })
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') console.log("CONNECTED_TO_COMM_LINK");
+            .subscribe(async (status) => {
+                console.log("REALTIME_STATUS:", status);
+                if (status === 'SUBSCRIBED') {
+                    Core.Msg("COMM_LINK: ONLINE");
+                }
+                if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                    // Авто-переподключение при обрыве
+                    setTimeout(() => this.subscribe(), 3000);
+                }
             });
     },
 
-    // 2. ЗАГРУЗКА: История сообщений
     async load() { 
         const { data, error } = await Core.sb.from('comments')
             .select('*')
             .order('created_at', {ascending: false})
             .limit(40); 
             
-        if (error) {
-            console.error("CHAT_LOAD_ERROR:", error.message);
-            return;
-        }
-
-        const stream = document.getElementById('chat-stream');
-        if (stream && data) { 
-            stream.innerHTML = ''; 
-            data.reverse().forEach(m => this.render(m)); 
+        if (data) { 
+            const stream = document.getElementById('chat-stream');
+            if (stream) { 
+                stream.innerHTML = ''; 
+                data.reverse().forEach(m => this.render(m)); 
+                stream.scrollTop = stream.scrollHeight;
+            } 
         } 
     },
 
-    // 3. ОТПРАВКА: Твое сообщение
     async send() { 
         const i = document.getElementById('chat-in'); 
         if (!i || !i.value.trim() || !Core.user) return; 
@@ -227,37 +232,33 @@ Chat: {
         const n = Core.user.user_metadata?.nickname || Core.user.email.split('@')[0];
         const a = Core.user.user_metadata?.avatar_url || 'https://via.placeholder.com/65';
         const msgVal = i.value;
-        i.value = ''; // Очищаем сразу для отзывчивости
+        i.value = ''; 
 
+        // Ждем сохранения
         const { data, error } = await Core.sb.from('comments').insert([{
             message: msgVal, 
             nickname: n, 
             avatar_url: a,
-            user_id: Core.user.id // Убедись, что колонка создана в Supabase!
+            user_id: Core.user.id
         }]).select();
 
-        if (!error && data) {
-            this.render(data[0]); // Рендерим своё мгновенно
-        } else {
+        if (error) {
             console.error("SEND_ERROR:", error);
-            Core.Msg("SIGNAL_LOST: RE-ESTABLISHING...", "error");
+            Core.Msg("SIGNAL_LOST", "error");
+        } else if (data) {
+            this.render(data[0]); // Рендерим своё
         }
     },
 
-    // 4. ОТОБРАЖЕНИЕ: Создание элемента в DOM
     render(m) {
         const s = document.getElementById('chat-stream'); 
-        if (!s) return;
-
-        // Защита от дублей: если сообщение с таким ID уже есть на экране - игнорируем
-        if (document.getElementById(`msg-${m.id}`)) return;
+        if (!s || document.getElementById(`msg-${m.id}`)) return;
 
         const d = document.createElement('div'); 
-        d.id = `msg-${m.id}`; // Важно для проверки дублей
+        d.id = `msg-${m.id}`;
         d.className = 'msg-container';
         
-        const myNick = Core.user?.user_metadata?.nickname || Core.user?.email.split('@')[0];
-        const isMy = m.nickname === myNick;
+        const isMy = m.user_id === Core.user?.id;
         const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
         d.innerHTML = `
@@ -273,7 +274,7 @@ Chat: {
             </div>`;
 
         s.appendChild(d);
-        s.scrollTop = s.scrollHeight; // Автопрокрутка вниз
+        s.scrollTop = s.scrollHeight;
     }
 },
 
