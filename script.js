@@ -444,7 +444,7 @@ DrawPlanet() {
             const r = Math.min(Math.max(this.cvs.width * 0.1, 40), 120); 
             const padding = r * 0.6; 
             const x = this.cvs.width - r - padding; 
-            const y = r + padding + 20; 
+            const y = r + padding + 30; 
 
             // 1. СВЕЧЕНИЕ (Адаптивный блюр)
             ctx.save();
