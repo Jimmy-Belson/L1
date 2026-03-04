@@ -1002,3 +1002,28 @@ header button:hover {
     from { filter: hue-rotate(0deg); }
     to { filter: hue-rotate(360deg); }
 }
+/* Кнопка отправки в чате */
+#chat-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px; /* Под высоту инпута */
+    box-shadow: 0 0 5px rgba(0, 242, 255, 0.1);
+}
+
+#chat-send-btn:hover {
+    background: rgba(0, 242, 255, 0.1) !important;
+    box-shadow: 0 0 15px var(--n);
+    color: #fff !important;
+}
+
+#chat-send-btn:active {
+    transform: scale(0.95);
+}
+
+/* Фикс для мобилок: чтобы инпут не прыгал */
+.input-box {
+    background: rgba(0, 5, 10, 0.8);
+    padding: 10px;
+    border-top: 1px solid var(--border);
+}
