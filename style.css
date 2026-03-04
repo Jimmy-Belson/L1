@@ -848,7 +848,7 @@ header button:hover {
 }
 
 /* Сработает, если ширина меньше 600px ИЛИ если телефон стоит вертикально */
-@media screen and (max-width: 600px), screen and (orientation: portrait) {
+@media screen and (max-width: 600px) {
     
     /* 1. Туду-лист сжимаем в 4 раза (примерно 25-30% экрана) */
     #todo-list {
