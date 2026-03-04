@@ -109,12 +109,21 @@ init() {
     },
 
     Todo: {
-        async load() {
-            const { data, error } = await Core.sb.from('todo').select('*').order('id', {ascending: false});
-            if (error) return;
-            const list = document.getElementById('todo-list');
-            if (list) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
-        },
+       async load() {
+    if (!Core.user) return; // Если юзер не загружен, выходим
+
+    const { data, error } = await Core.sb.from('todo')
+        .select('*')
+        .eq('user_id', Core.user.id) // ФИЛЬТР: только мои задачи
+        .order('id', {ascending: false});
+
+    if (error) {
+        console.error("Ошибка загрузки задач:", error.message);
+        return;
+    }
+    const list = document.getElementById('todo-list');
+    if (list) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
+},
    render(t) {
         const list = document.getElementById('todo-list'); 
         if (!list) return;
