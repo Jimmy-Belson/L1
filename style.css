@@ -1002,23 +1002,30 @@ header button:hover {
     from { filter: hue-rotate(0deg); }
     to { filter: hue-rotate(360deg); }
 }
-/* Кнопка отправки в чате */
+
 #chat-send-btn {
+    background: rgba(0, 242, 255, 0.05);
+    border: 1px solid var(--n);
+    color: var(--n);
+    cursor: pointer;
+    padding: 8px 15px;
+    font-family: 'Share Tech Mono';
+    transition: 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 38px; /* Под высоту инпута */
-    box-shadow: 0 0 5px rgba(0, 242, 255, 0.1);
+
 }
 
 #chat-send-btn:hover {
-    background: rgba(0, 242, 255, 0.1) !important;
+    background: var(--n);
+    color: #000;
     box-shadow: 0 0 15px var(--n);
-    color: #fff !important;
+
 }
 
-#chat-send-btn:active {
-    transform: scale(0.95);
+#chat-send-btn i {
+    font-size: 1rem;
 }
 
 /* Фикс для мобилок: чтобы инпут не прыгал */
