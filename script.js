@@ -111,7 +111,6 @@ init() {
 Todo: {
     async load() {
         if (!Core.user) return;
-        // Фильтр по user_id гарантирует, что ты видишь только СВОИ задачи
         const { data, error } = await Core.sb.from('todo')
             .select('*')
             .eq('user_id', Core.user.id) 
@@ -131,7 +130,12 @@ Todo: {
 
         const d = document.createElement('div');
         d.className = `task ${t.is_completed ? 'completed' : ''}`;
-        d.id = `task-${t.id}`; // Добавляем ID для поиска
+        d.id = `task-${t.id}`;
+        d.setAttribute('draggable', true); // Обязательно для DRAG-AND-DROP
+
+        // Логика визуального перетаскивания
+        d.addEventListener('dragstart', () => d.classList.add('dragging'));
+        d.addEventListener('dragend', () => d.classList.remove('dragging'));
         
         const dateStr = t.deadline ? 
             `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
@@ -143,7 +147,9 @@ Todo: {
             </div>
         `;
 
-        d.onclick = async () => {
+        d.onclick = async (e) => {
+            // Чтобы клик не срабатывал при перетаскивании
+            if (d.classList.contains('dragging')) return;
             const newState = !d.classList.contains('completed');
             d.classList.toggle('completed');
             await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
@@ -160,6 +166,7 @@ Todo: {
 
     async add(val, date) {
         if (!Core.user || !val.trim()) return;
+        // Отправляем и задачу, и дату дедлайна
         const { data, error } = await Core.sb.from('todo').insert([{ 
             task: val, 
             is_completed: false,
@@ -169,7 +176,10 @@ Todo: {
 
         if (!error && data) {
             this.render(data[0]);
-            Core.Msg("OBJECTIVE_SYNCED");
+            Core.Msg("MISSION_UPDATED");
+        } else {
+            console.error("TODO_ERROR:", error);
+            Core.Msg("SYNC_ERROR", "error");
         }
     }
 },
@@ -279,62 +289,63 @@ Chat: {
 },
 
     UI() {
-        const todoIn = document.getElementById('todo-in');
-        const todoList = document.getElementById('todo-list');
-        const chatIn = document.getElementById('chat-in');
+    const todoIn = document.getElementById('todo-in');
+    const todoDate = document.getElementById('todo-date'); // Инпут даты
+    const todoList = document.getElementById('todo-list');
+    const chatIn = document.getElementById('chat-in');
 
-        // 1. Ввод новых задач
-        if (todoIn) { 
-            todoIn.onkeypress = async (e) => { 
-                if (e.key === 'Enter' && e.target.value.trim()) { 
-                    await this.Todo.add(e.target.value); 
-                    e.target.value = ''; 
-                } 
-            }; 
-        }
+    // 1. Ввод новых задач + ДЕДЛАЙН
+    if (todoIn) { 
+        todoIn.onkeypress = async (e) => { 
+            if (e.key === 'Enter' && todoIn.value.trim()) { 
+                // Передаем и текст, и значение даты
+                const deadlineValue = todoDate ? todoDate.value : null;
+                await this.Todo.add(todoIn.value, deadlineValue); 
+                
+                todoIn.value = ''; 
+                if (todoDate) todoDate.value = ''; // Очищаем дату
+            } 
+        }; 
+    }
 
-        // 2. Логика Drag-and-Drop (Перетаскивание)
-        if (todoList) {
-            // Вспомогательная функция для определения позиции вставки
-            const getDragAfterElement = (container, y) => {
-                const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
-
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2;
-                    
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-            };
-
-            todoList.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Разрешаем сброс (Drop)
-                const draggingItem = document.querySelector('.dragging');
-                if (!draggingItem) return;
-
-                const nextSibling = getDragAfterElement(todoList, e.clientY);
-
-                if (nextSibling == null) {
-                    todoList.appendChild(draggingItem);
+    // 2. Логика Drag-and-Drop (Сортировка визуально)
+    if (todoList) {
+        const getDragAfterElement = (container, y) => {
+            const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
                 } else {
-                    todoList.insertBefore(draggingItem, nextSibling);
+                    return closest;
                 }
-            });
-        }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        };
 
-        // 3. Отправка сообщений в чат
-        if (chatIn) { 
-            chatIn.onkeypress = (e) => { 
-                if (e.key === 'Enter' && e.target.value.trim()) {
-                    this.Chat.send(); 
-                }
-            }; 
-        }
-    },
+        todoList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const draggingItem = document.querySelector('.dragging');
+            if (!draggingItem) return;
+
+            const nextSibling = getDragAfterElement(todoList, e.clientY);
+            if (nextSibling == null) {
+                todoList.appendChild(draggingItem);
+            } else {
+                todoList.insertBefore(draggingItem, nextSibling);
+            }
+        });
+    }
+
+    // 3. Отправка сообщений в чат
+    if (chatIn) { 
+        chatIn.onkeypress = (e) => { 
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                this.Chat.send(); 
+            }
+        }; 
+    }
+},
 
     Audio: {
         el: null,
