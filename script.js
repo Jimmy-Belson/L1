@@ -125,44 +125,48 @@ Todo: {
     },
 
     render(t) {
-        const list = document.getElementById('todo-list'); 
-        if (!list) return;
+    const list = document.getElementById('todo-list'); 
+    if (!list) return;
 
-        const d = document.createElement('div');
-        d.className = `task ${t.is_completed ? 'completed' : ''}`;
-        d.id = `task-${t.id}`;
-        d.setAttribute('draggable', true); // Обязательно для DRAG-AND-DROP
+    const d = document.createElement('div');
+    d.className = `task ${t.is_completed ? 'completed' : ''}`;
+    d.id = `task-${t.id}`;
+    d.setAttribute('draggable', true);
 
-        // Логика визуального перетаскивания
-        d.addEventListener('dragstart', () => d.classList.add('dragging'));
-        d.addEventListener('dragend', () => d.classList.remove('dragging'));
-        
-        const dateStr = t.deadline ? 
-            `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
+    d.addEventListener('dragstart', () => d.classList.add('dragging'));
+    d.addEventListener('dragend', () => d.classList.remove('dragging'));
+    
+    const dateStr = t.deadline ? 
+        <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span> : '';
 
-        d.innerHTML = `
-            <div class="task-content">
-                <span>> ${t.task.toUpperCase()}</span>
-                ${dateStr}
-            </div>
-        `;
+    d.innerHTML = `
+        <div class="task-content">
+            <span>> ${t.task.toUpperCase()}</span>
+            ${dateStr}
+        </div>
+    `;
 
-        d.onclick = async (e) => {
-            // Чтобы клик не срабатывал при перетаскивании
-            if (d.classList.contains('dragging')) return;
-            const newState = !d.classList.contains('completed');
-            d.classList.toggle('completed');
-            await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
-        };
+    d.onclick = async () => {
+        const newState = !d.classList.contains('completed');
+        d.classList.toggle('completed');
+        await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+    };
 
-        d.oncontextmenu = async (ev) => {
-            ev.preventDefault();
-            const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-            if (!error) d.remove();
-        };
+    // АНИМАЦИЯ УДАЛЕНИЯ ТУДУ
+    d.oncontextmenu = async (ev) => {
+        ev.preventDefault();
+        const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+        if (!error) {
+            d.style.transform = "translateX(100px)"; // Улетает вправо
+            d.style.opacity = "0";
+            d.style.transition = "all 0.4s ease";
+            setTimeout(() => d.remove(), 400); // Удаляем после анимации
+            Core.Msg("OBJECTIVE_TERMINATED");
+        }
+    };
 
-        list.appendChild(d);
-    },
+    list.appendChild(d);
+},
 
     async add(val, date) {
         if (!Core.user || !val.trim()) return;
