@@ -635,7 +635,7 @@ DrawPlanet() {
             }
 
             // 3. Отрисовка основных объектов (по слоям)
-            this.drawPlanet(); // Планета на фоне
+            this.DrawPlanet(); // Планета на фоне
             this.drawUFO();    // НЛО поверх планеты
             this.crew.forEach(a => this.drawAstro(a)); // Астронавты на переднем плане
         }
