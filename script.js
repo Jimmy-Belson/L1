@@ -432,63 +432,55 @@ window.addEventListener('mousedown', (e) => {
             } 
         },
         
-      DrawPlanet() {
-    const ctx = this.ctx;
-    const img = document.getElementById('planet-pic');
-    if (!img || !img.complete) return;
+DrawPlanet() {
+            const ctx = this.ctx;
+            const img = document.getElementById('planet-pic');
+            
+            // Проверка: если картинки нет или она не загрузилась, выходим из функции, чтобы не было ошибки
+            if (!img || !img.complete || img.naturalWidth === 0) return;
 
-    // --- АДАПТИВНЫЕ РАСЧЕТЫ ---
-    // Радиус будет составлять 10% от ширины экрана, но не больше 120px и не меньше 40px
-    const r = Math.min(Math.max(this.cvs.width * 0.1, 40), 120); 
-    
-    // Отступ пропорционален радиусу
-    const padding = r * 0.6; 
-    
-    // Координаты (привязаны к правому верхнему углу)
-    const x = this.cvs.width - r - padding; 
-    const y = r + padding + 20; 
+            // --- АДАПТИВНЫЕ РАСЧЕТЫ ---
+            // Радиус: 10% от ширины экрана (от 40px до 120px)
+            const r = Math.min(Math.max(this.cvs.width * 0.1, 40), 120); 
+            const padding = r * 0.6; 
+            const x = this.cvs.width - r - padding; 
+            const y = r + padding + 20; 
 
-    // 1. СВЕЧЕНИЕ (Адаптивный блюр)
-    ctx.save();
-    ctx.shadowBlur = r * 0.5; 
-    ctx.shadowColor = 'rgba(100, 200, 255, 0.3)';
-    ctx.fillStyle = 'rgba(0,0,0,0.01)';
-    ctx.beginPath(); 
-    ctx.arc(x, y, r, 0, Math.PI*2); 
-    ctx.fill();
-    ctx.restore();
+            // 1. СВЕЧЕНИЕ (Адаптивный блюр)
+            ctx.save();
+            ctx.shadowBlur = r * 0.5; 
+            ctx.shadowColor = 'rgba(100, 200, 255, 0.3)';
+            ctx.fillStyle = 'rgba(0,0,0,0.01)';
+            ctx.beginPath(); 
+            ctx.arc(x, y, r, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.restore();
 
-    // 2. ФОТОГРАФИЯ (Масштабируется под r)
-    ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+            // 2. ФОТОГРАФИЯ (Масштабируется под r)
+            ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
 
-    // 3. ОБЪЕМНАЯ ТЕНЬ
-    ctx.save();
-    const shadowGrad = ctx.createRadialGradient(
-        x - r/3, y - r/3, r/4, 
-        x, y, r               
-    );
-    shadowGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    shadowGrad.addColorStop(1, 'rgba(0,0,0,0.8)'); // Сделал чуть плотнее для объема
-    
-    ctx.fillStyle = shadowGrad;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+            // 3. ОБЪЕМНАЯ ТЕНЬ
+            ctx.save();
+            const shadowGrad = ctx.createRadialGradient(x - r/3, y - r/3, r/4, x, y, r);
+            shadowGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            shadowGrad.addColorStop(1, 'rgba(0,0,0,0.8)');
+            ctx.fillStyle = shadowGrad;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
 
-    // 4. ДЕЛИКАТНОЕ КОЛЬЦО (Тоже адаптивное)
-    ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)';
-    ctx.lineWidth = Math.max(r * 0.02, 1); // Толщина линии зависит от размера
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(Math.PI/6);
-    ctx.beginPath();
-    // Кольцо шире планеты на 40%, высота — 20% от радиуса
-    ctx.ellipse(0, 0, r * 1.4, r * 0.2, 0, 0, Math.PI*2); 
-    ctx.stroke();
-    ctx.restore();
-},
-
+            // 4. ДЕЛИКАТНОЕ КОЛЬЦО
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.15)';
+            ctx.lineWidth = Math.max(r * 0.02, 1);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(Math.PI/6);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.4, r * 0.2, 0, 0, Math.PI*2); 
+            ctx.stroke();
+            ctx.restore();
+        }, // Не забудь эту запятую, если после идет следующая функция!
         // Отрисовка детализированного НЛО с хвостом
         drawUFO() {
             const u = this.ufo, ctx = this.ctx;
