@@ -925,3 +925,40 @@ header button:hover {
         font-size: 8px;
     }
 }
+@media (max-width: 480px) {
+    /* 1. Сжимаем основной контейнер */
+    body {
+        padding: 5px;
+        overflow-x: hidden;
+    }
+
+    /* 2. Делаем панели узкими, чтобы по бокам был виден космос */
+    .panel, #mission-objectives, #chat-panel {
+        width: 92% !important; /* Оставляем узкие полоски фона по бокам */
+        margin: 0 auto 15px auto !important;
+        min-width: 0 !important;
+        background: rgba(0, 15, 25, 0.75) !important; /* Прозрачность для глубины */
+        backdrop-filter: blur(4px); /* Размытие фона под панелью */
+        border: 1px solid rgba(0, 255, 255, 0.3);
+    }
+
+    /* 3. Оптимизируем заголовки и текст */
+    h2, .panel-header {
+        font-size: 0.8rem !important;
+        letter-spacing: 1px;
+    }
+
+    /* 4. Позиционируем станцию так, чтобы она была ВИДНА */
+    #ambient-station {
+        left: 5% !important;
+        bottom: 12% !important;
+        width: 180px !important; /* Фиксированный размер для маленьких экранов */
+        opacity: 0.7;
+        z-index: -1; /* Станция уходит ПОД панели */
+    }
+
+    /* 5. Космонавты (если они в HTML) */
+    .astronaut {
+        transform: scale(0.7); /* Уменьшаем их на 30% */
+    }
+}
