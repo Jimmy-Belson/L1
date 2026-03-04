@@ -891,7 +891,11 @@ header button:hover {
         gap: 0 !important;
     }
 }
-/* Контейнер для уведомлений (если его еще нет) */
+/* ================================================= */
+/* СИСТЕМА УВЕДОМЛЕНИЙ ORBITRON (NOTIFICATIONS)     */
+/* ================================================= */
+
+/* Контейнер, где копятся уведомления */
 #notify-container {
     position: fixed;
     top: 20px;
@@ -899,13 +903,16 @@ header button:hover {
     z-index: 10000;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    pointer-events: none; /* Чтобы не мешали кликать, если пустые */
 }
 
-/* Сама плашка */
+/* Сама плашка уведомления */
 .toast {
+    pointer-events: auto; /* Возвращаем кликабельность плашке */
     background: rgba(1, 5, 10, 0.9);
     border: 1px solid var(--n);
+    border-left: 4px solid var(--n); /* Акцентная полоса слева */
     color: #fff;
     padding: 15px 20px;
     font-family: 'Share Tech Mono', monospace;
@@ -914,47 +921,80 @@ header button:hover {
     gap: 15px;
     box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
     backdrop-filter: blur(10px);
-    animation: toastSlideIn 0.4s ease forwards;
-    min-width: 280px;
+    min-width: 300px;
+    
+    /* Анимация появления */
+    animation: toastSlideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }
-/* Стиль иконки внутри уведомления */
-/* Общие стили для иконки внутри уведомления */
+
+/* Если тип уведомления - ошибка (красный/розовый) */
+.toast.error {
+    border-color: var(--p);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+}
+
+/* СТИЛЬ ИКОНКИ (Font Awesome) */
 .toast-icon {
-    font-size: 1.6rem; /* Делаем иконку чуть крупнее текста */
-    color: var(--n);   /* Твой основной бирюзовый цвет */
-    text-shadow: 0 0 10px var(--n), 0 0 20px rgba(0, 242, 255, 0.5); /* Эффект свечения */
+    font-size: 1.6rem;
+    color: var(--n);
+    text-shadow: 0 0 10px var(--n), 0 0 20px rgba(0, 242, 255, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     min-width: 40px;
+    animation: iconPulse 2s infinite ease-in-out;
 }
 
-/* Если уведомление об ошибке (красное/розовое) */
+
 .toast.error .toast-icon {
-    color: var(--p); /* Твой цвет ошибки (розовый) */
+    color: var(--p);
     text-shadow: 0 0 10px var(--p), 0 0 20px rgba(255, 0, 255, 0.5);
 }
 
-/* Контейнер текста внутри плашки */
+/* Текст внутри уведомления */
 .toast-text {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-/* Анимация пульсации для иконки (по желанию, для живости) */
-.toast-icon {
-    animation: iconPulse 2s infinite ease-in-out;
+/* ================================================= */
+/* АНИМАЦИИ (KEYFRAMES)                             */
+/* ================================================= */
+
+/* Появление справа */
+@keyframes toastSlideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
+/* Плавный уход вправо при скрытии */
+.toast.hide {
+    animation: toastExit 0.4s ease-in forwards;
+}
+
+@keyframes toastExit {
+    to { transform: translateX(120%); opacity: 0; }
+}
+
+/* Пульсация иконки */
 @keyframes iconPulse {
     0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 0.8; }
 }
+
+/* ================================================= */
+/* СПЕЦЭФФЕКТЫ ДЛЯ КНОПОК ПРОФИЛЯ                   */
+/* ================================================= */
+
+/* Кнопка в режиме синхронизации (loading) */
 .save-btn.loading {
     opacity: 0.7;
     cursor: wait;
-    border-style: dashed; /* Рамка станет пунктирной, пока идет синхронизация */
+    border-style: dashed !important;
     animation: borderRotation 2s linear infinite;
 }
 
