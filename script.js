@@ -137,7 +137,7 @@ Todo: {
     d.addEventListener('dragend', () => d.classList.remove('dragging'));
     
     const dateStr = t.deadline ? 
-        <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span> : '';
+        `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
 
     d.innerHTML = `
         <div class="task-content">
