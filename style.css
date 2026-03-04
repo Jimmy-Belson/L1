@@ -38,30 +38,26 @@ header {
     background: rgba(1,5,10,0.5); 
 }
 
-.main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
+.main-area { 
+    display: flex; 
+    flex: 1; 
+    gap: 40px; 
+    overflow: hidden; 
+}
 
+/* УДАЛИЛИ БЛОК html, body { transform: scale... } */
 
-    html, body {
-        /* 1. Сначала специфичные свойства для старых браузеров */
-        zoom: 0.75; 
-        -webkit-transform: scale(0.75);
-        -moz-transform: scale(0.75);
-        -ms-transform: scale(0.75);
-
-        /* 2. ЗАТЕМ СТАНДАРТНОЕ СВОЙСТВО (оно убирает ошибку в VS Code) */
-        transform: scale(0.75);
-
-        /* 3. И точка отсчета (тоже со стандартом в конце) */
-        -webkit-transform-origin: 0 0;
-        -moz-transform-origin: 0 0;
-        transform-origin: 0 0;
-
-        /* 4. Корректировка размеров под масштаб */
-        width: 133.33%; 
-        height: 133.33%;
-        overflow-x: hidden;
-    }
-
+body { 
+    background: var(--bg); 
+    color: var(--n); 
+    font-family: 'Share Tech Mono', monospace; 
+    margin: 0;
+    padding: 0;
+    /* Убедись, что высота 100vh, чтобы фон не обрезался */
+    height: 100vh;
+    width: 100%;
+    overflow: hidden; 
+}
 
 /* ПАНЕЛИ */
 .panel { 
@@ -848,32 +844,50 @@ header button:hover {
 }
 
 
-@media screen and (max-width: 650px) {
-    /* На телефонах (меньше 650px) применяем эти правила */
-    #todo-list {
+/* --- МОБИЛЬНАЯ ВЕРСИЯ (для экранов меньше 600px) --- */
+@media screen and (max-width: 600px) {
+    
+    /* Убираем глобальные отступы контейнера, чтобы не было тесно */
+    .os-container {
+        padding: 10px !important;
+    }
+
+    /* 1. Туду-лист: делаем узким (в 4 раза меньше стандартной ширины) */
+    #todo-list, .todo-panel {
         width: 30vw !important; 
-        min-width: 130px !important;
+        min-width: 125px !important;
         position: fixed !important;
         left: 5px !important;
         top: 80px !important;
+        bottom: 100px; /* Чтобы не перекрывал инпуты снизу */
         z-index: 10;
         background: rgba(0, 15, 25, 0.7) !important;
-        backdrop-filter: blur(5px);
+        backdrop-filter: blur(8px);
+        font-size: 11px !important;
     }
 
-    #chat-panel {
-        width: 60vw !important;
+    /* 2. Чат: сдвигаем вправо и делаем компактным */
+    #chat-panel, .chat-panel {
+        width: 65vw !important;
         position: fixed !important;
         right: 5px !important;
-        bottom: 20px !important;
+        bottom: 15px !important;
+        height: 50vh !important; /* Чат занимает половину высоты экрана */
         z-index: 10;
     }
-    
+
+    /* 3. Станция: теперь она "дышит" в свободном месте */
     #ambient-station {
         left: 35% !important; 
-        bottom: 15% !important;
-        width: 200px !important;
+        bottom: 20% !important;
+        width: 180px !important;
         display: block !important;
         z-index: 1 !important;
+        opacity: 0.6;
+    }
+
+    /* Скрываем громоздкие элементы, чтобы освободить место */
+    .main-area {
+        gap: 0 !important;
     }
 }
