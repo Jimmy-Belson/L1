@@ -216,19 +216,18 @@ init() {
 
     // Увеличиваем размер до 65px и добавляем отступ справа gap: 20px
     d.innerHTML = `
-        <div class="chat-row-layout" style="display:flex; gap:20px; align-items:flex-start; margin-bottom:15px;">
-            <img src="${m.avatar_url || 'https://via.placeholder.com/65'}" 
-                 style="width:65px; height:65px; border-radius:8px; border:2px solid #0ff; object-fit:cover; flex-shrink:0; box-shadow: 0 0 10px rgba(0,255,255,0.2);">
-            
-            <div class="chat-content-block" style="flex:1; padding-top: 5px;">
-                <div class="msg-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <span class="msg-nick" style="font-size:1.1rem; ${isMy ? 'color:var(--n)' : 'color:#0ff'}">${(m.nickname || 'PILOT').toUpperCase()}</span>
-                    <span style="opacity:0.3; font-size:10px;">${timeStr}</span>
-                </div>
-                <div class="msg-text" style="color:#eee; line-height:1.4; font-size:1rem; word-break: break-word;">${m.message}</div>
+    <div class="chat-row-layout">
+        <img src="${m.avatar_url || 'https://via.placeholder.com/65'}" class="chat-row-avatar">
+        
+        <div class="chat-content-block">
+            <div class="msg-header">
+                <span class="msg-nick" style="${isMy ? 'color:var(--n)' : 'color:#0ff'}">${(m.nickname || 'PILOT').toUpperCase()}</span>
+                <span class="msg-time">${timeStr}</span>
             </div>
+            <div class="msg-text">${m.message}</div>
         </div>
-    `;
+    </div>
+`;
             if (isMy) {
                 d.oncontextmenu = (e) => {
                     e.preventDefault(); e.stopPropagation();

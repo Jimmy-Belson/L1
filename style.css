@@ -866,3 +866,50 @@ header button:hover {
 .msg-text {
     letter-spacing: 0.5px; /* Сделает текст сообщения более читаемым */
 }
+/* Базовый стиль для больших экранов */
+.chat-row-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding: 0 10px;
+}
+
+.chat-row-avatar {
+    width: 65px;
+    height: 65px;
+    border: 2px solid #0ff;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.chat-content-block {
+    flex: 1;
+    min-width: 0; /* Важно, чтобы текст не вылезал за края */
+}
+
+/* ОПТИМИЗАЦИЯ ДЛЯ ТЕЛЕФОНОВ (ширина экрана меньше 600px) */
+@media (max-width: 600px) {
+    .chat-row-layout {
+        gap: 10px; /* Уменьшаем отступ между авой и текстом */
+    }
+
+    .chat-row-avatar {
+        width: 45px; /* Уменьшаем аватарку на мобилках */
+        height: 45px;
+    }
+
+    .msg-nick {
+        font-size: 0.9rem !important; /* Уменьшаем ник */
+    }
+
+    .msg-text {
+        font-size: 0.9rem; /* Уменьшаем текст сообщения */
+    }
+
+    /* Если совсем тесно, можно скрыть время или перенести его под ник */
+    .msg-time {
+        font-size: 8px;
+    }
+}
