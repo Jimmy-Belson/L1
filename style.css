@@ -884,4 +884,26 @@ header button:hover {
     .astronaut {
         transform: scale(0.7); /* Уменьшаем их на 30% */
     }
+    @media (max-width: 480px) {
+    #todo-list {
+        /* Уменьшаем ширину в 4 раза относительно экрана */
+        width: 25vw !important; 
+        min-width: 120px !important; /* Страховка, чтобы текст хоть как-то влез */
+        
+        /* Прижимаем к левому краю, чтобы освободить центр для станции */
+        margin-left: 5% !important;
+        margin-right: auto !important;
+        
+        /* Делаем панель прозрачнее, чтобы она не казалась тяжелой */
+        background: rgba(0, 20, 30, 0.6) !important;
+        padding: 8px !important;
+        font-size: 10px !important; /* Уменьшаем шрифт, чтобы влез в узкую колонку */
+    }
+
+    /* Скрываем лишние детали, которые не влезут в узкую колонку */
+    #todo-list h2 {
+        font-size: 9px !important;
+        white-space: nowrap;
+    }
+}
 }
