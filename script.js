@@ -109,80 +109,80 @@ init() {
     },
 
     Todo: {
-       async load() {
-    if (!Core.user) return; // Если юзер не загружен, выходим
+        async load() {
+            if (!Core.user) return;
 
-    const { data, error } = await Core.sb.from('todo')
-        .select('*')
-        .eq('user_id', Core.user.id) // ФИЛЬТР: только мои задачи
-        .order('id', {ascending: false});
+            // Загружаем задачи текущего пользователя
+            const { data, error } = await Core.sb.from('todo')
+                .select('*')
+                .eq('user_id', Core.user.id)
+                .order('id', { ascending: false });
 
-    if (error) {
-        console.error("Ошибка загрузки задач:", error.message);
-        return;
-    }
-    const list = document.getElementById('todo-list');
-    if (list) { list.innerHTML = ''; data.forEach(t => this.render(t)); }
-},
-   render(t) {
-        const list = document.getElementById('todo-list'); 
-        if (!list) return;
+            if (error) {
+                console.error("Ошибка загрузки задач:", error.message);
+                return;
+            }
 
-        const d = document.createElement('div');
-        d.className = `task ${t.is_completed ? 'completed' : ''}`;
-            
-            // Включаем возможность перетаскивания
+            const list = document.getElementById('todo-list');
+            if (list) { 
+                list.innerHTML = ''; 
+                data.forEach(t => this.render(t)); 
+            }
+        },
+
+        render(t) {
+            const list = document.getElementById('todo-list'); 
+            if (!list) return;
+
+            const d = document.createElement('div');
+            d.className = `task ${t.is_completed ? 'completed' : ''}`;
             d.draggable = true; 
             d.innerText = '> ' + t.task.toUpperCase();
 
-            // 1. ЛКМ: Переключение статуса выполнено/не выполнено
+            // Клик: переключить статус
             d.onclick = async () => {
-                const isDone = d.classList.contains('completed');
-                const newState = !isDone;
-                
-                // Сначала меняем визуально для скорости отклика
+                const newState = !d.classList.contains('completed');
                 d.classList.toggle('completed');
                 
-                // Обновляем в Supabase
-                const { error } = await Core.sb.from('todo')
+                await Core.sb.from('todo')
                     .update({ is_completed: newState })
                     .eq('id', t.id);
-                
-                if (error) {
-                    Core.Msg("SYNC_ERROR: STATUS_NOT_UPDATED", "error");
-                    d.classList.toggle('completed'); // Откатываем если ошибка
-                }
             };
 
-            // 2. ПКМ: Удаление задачи
+            // ПКМ: удалить задачу
             d.oncontextmenu = async (ev) => {
                 ev.preventDefault();
-                d.classList.add('removing');
-                
                 const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-                
                 if (!error) {
+                    d.classList.add('removing');
                     setTimeout(() => d.remove(), 400);
-                } else {
-                    d.classList.remove('removing');
-                    Core.Msg("TERMINATE_ERROR: SIGNAL_LOST", "error");
+                    Core.Msg("OBJECTIVE_TERMINATED", "info", "fa-trash-can");
                 }
             };
 
-            d.addEventListener('dragstart', () => {
-                setTimeout(() => d.classList.add('dragging'), 0);
-            });
-
-            d.addEventListener('dragend', () => {
-                d.classList.remove('dragging');
-            });
+            // Drag and Drop события
+            d.addEventListener('dragstart', () => d.classList.add('dragging'));
+            d.addEventListener('dragend', () => d.classList.remove('dragging'));
 
             list.appendChild(d);
         },
 
         async add(val) {
-            const { data, error } = await Core.sb.from('todo').insert([{ task: val, is_completed: false }]).select();
-            if (!error && data) this.render(data[0]);
+            if (!Core.user) return;
+
+            // ВАЖНО: добавляем user_id, чтобы задача привязалась к тебе
+            const { data, error } = await Core.sb.from('todo').insert([{ 
+                task: val, 
+                is_completed: false,
+                user_id: Core.user.id 
+            }]).select();
+
+            if (!error && data) {
+                this.render(data[0]);
+                Core.Msg("OBJECTIVE_LOGGED", "info", "fa-check-double");
+            } else {
+                Core.Msg("SYNC_ERROR: MISSION_FAILED", "error", "fa-triangle-exclamation");
+            }
         }
     },
 
