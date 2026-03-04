@@ -2,16 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=600, initial-scale=0.5, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>ORBITRON - USER_PROFILE</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-<div id="notify-container"></div>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="profile-page">
+    
+    <div id="notify-container"></div>
+
     <canvas id="starfield"></canvas>
 
     <div class="os-container">
@@ -22,7 +25,9 @@
                 <label>CURRENT_AVATAR:</label>
                 <div class="avatar-wrapper">
                     <img id="avatar-img" src="https://via.placeholder.com/150" alt="Avatar">
+                    
                     <input type="file" id="avatar-file" accept="image/*" style="display: none;" onchange="previewFile()">
+                    
                     <button class="nav-btn" onclick="document.getElementById('avatar-file').click()">
                         [ UPLOAD_NEW_IMAGE ]
                     </button>
@@ -35,6 +40,7 @@
                     <button id="save-btn" class="save-btn" onclick="updateProfile()">
                         [ SYNC_WITH_STATION ]
                     </button>
+                    
                     <a href="index.html" class="back-link"><< RETURN_TO_DECK</a>
                 </div>
             </div>
@@ -46,5 +52,6 @@
     <script src="script.js"></script>
     
     <script src="profile.js"></script>
+
 </body>
 </html>
