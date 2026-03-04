@@ -847,63 +847,37 @@ header button:hover {
     min-width: 0; /* Важно, чтобы текст не вылезал за края */
 }
 
-
-@media (max-width: 480px) {
-    /* 1. Сжимаем основной контейнер */
-    body {
-        padding: 5px;
-        overflow-x: hidden;
-    }
-
-    /* 2. Делаем панели узкими, чтобы по бокам был виден космос */
-    .panel, #mission-objectives, #chat-panel {
-        width: 92% !important; /* Оставляем узкие полоски фона по бокам */
-        margin: 0 auto 15px auto !important;
-        min-width: 0 !important;
-        background: rgba(0, 15, 25, 0.75) !important; /* Прозрачность для глубины */
-        backdrop-filter: blur(4px); /* Размытие фона под панелью */
-        border: 1px solid rgba(0, 255, 255, 0.3);
-    }
-
-    /* 3. Оптимизируем заголовки и текст */
-    h2, .panel-header {
-        font-size: 0.8rem !important;
-        letter-spacing: 1px;
-    }
-
-    /* 4. Позиционируем станцию так, чтобы она была ВИДНА */
-    #ambient-station {
-        left: 5% !important;
-        bottom: 12% !important;
-        width: 180px !important; /* Фиксированный размер для маленьких экранов */
-        opacity: 0.7;
-        z-index: -1; /* Станция уходит ПОД панели */
-    }
-
-    /* 5. Космонавты (если они в HTML) */
-    .astronaut {
-        transform: scale(0.7); /* Уменьшаем их на 30% */
-    }
-    @media (max-width: 480px) {
+/* Сработает, если ширина меньше 600px ИЛИ если телефон стоит вертикально */
+@media screen and (max-width: 600px), screen and (orientation: portrait) {
+    
+    /* 1. Туду-лист сжимаем в 4 раза (примерно 25-30% экрана) */
     #todo-list {
-        /* Уменьшаем ширину в 4 раза относительно экрана */
-        width: 25vw !important; 
-        min-width: 120px !important; /* Страховка, чтобы текст хоть как-то влез */
-        
-        /* Прижимаем к левому краю, чтобы освободить центр для станции */
-        margin-left: 5% !important;
-        margin-right: auto !important;
-        
-        /* Делаем панель прозрачнее, чтобы она не казалась тяжелой */
-        background: rgba(0, 20, 30, 0.6) !important;
-        padding: 8px !important;
-        font-size: 10px !important; /* Уменьшаем шрифт, чтобы влез в узкую колонку */
+        width: 30vw !important; 
+        min-width: 130px !important;
+        position: fixed !important;
+        left: 5px !important;
+        top: 80px !important;
+        z-index: 10;
+        background: rgba(0, 15, 25, 0.7) !important;
+        backdrop-filter: blur(5px);
     }
 
-    /* Скрываем лишние детали, которые не влезут в узкую колонку */
-    #todo-list h2 {
-        font-size: 9px !important;
-        white-space: nowrap;
+    /* 2. Чат тоже сжимаем, чтобы они не наезжали друг на друга */
+    #chat-panel {
+        width: 60vw !important;
+        position: fixed !important;
+        right: 5px !important;
+        bottom: 20px !important;
+        z-index: 10;
+    }
+
+    /* 3. Станция теперь будет видна в свободном центре */
+    #ambient-station {
+        left: 35% !important; /* Смещаем за туду-лист */
+        bottom: 15% !important;
+        width: 200px !important;
+        display: block !important;
+        z-index: 1 !important;
     }
 }
-}
+
