@@ -38,31 +38,6 @@ header {
     background: rgba(1,5,10,0.5); 
 }
 
-.main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
-
-
-    html, body {
-        /* 1. Сначала специфичные свойства для старых браузеров */
-        zoom: 0.75; 
-        -webkit-transform: scale(0.75);
-        -moz-transform: scale(0.75);
-        -ms-transform: scale(0.75);
-
-        /* 2. ЗАТЕМ СТАНДАРТНОЕ СВОЙСТВО (оно убирает ошибку в VS Code) */
-        transform: scale(0.75);
-
-        /* 3. И точка отсчета (тоже со стандартом в конце) */
-        -webkit-transform-origin: 0 0;
-        -moz-transform-origin: 0 0;
-        transform-origin: 0 0;
-
-        /* 4. Корректировка размеров под масштаб */
-        width: 133.33%; 
-        height: 133.33%;
-        overflow-x: hidden;
-    }
-
-
 /* ПАНЕЛИ */
 .panel { 
     background: var(--glass); 
