@@ -40,7 +40,7 @@ header {
 
 .main-area { display: flex; flex: 1; gap: 40px; overflow: hidden; }
 
-@media (max-width: 768px) {
+
     html, body {
         /* 1. Сначала специфичные свойства для старых браузеров */
         zoom: 0.75; 
@@ -61,7 +61,7 @@ header {
         height: 133.33%;
         overflow-x: hidden;
     }
-}
+
 
 /* ПАНЕЛИ */
 .panel { 
@@ -676,43 +676,7 @@ header, .panel, .audio-link, button, input, #chat-stream, #todo-list {
 .panel, header, .audio-link, .input-box, button {
     pointer-events: auto; /* ...но кнопки и панели внутри него РАБОТАЮТ */
 }
-@media (max-width: 768px) {
-    /* 1. Делаем контейнер гибким (панели встанут друг под друга) */
-    .os-container {
-        flex-direction: column;
 
-        padding: 10px;
-        gap: 15px;
-        overflow-y: auto; /* Разрешаем листать интерфейс вниз */
-    }
-
-    /* 2. Уменьшаем панели, чтобы они не перекрывали центр */
-    .panel {
-        width: 90% !important;
-        margin: 0 auto;
-        position: relative !important; /* Отключаем жесткую привязку к углам */
-        background: rgba(0, 20, 30, 0.7); /* Делаем чуть прозрачнее */
-    }
-
-    /* 3. Сдвигаем разрушенную станцию, чтобы она не мешала обзору */
-    #ambient-station {
-        width: 50vw;
-        bottom: 20%;
-        right: 0;
-        opacity: 0.5; /* На телефоне лучше сделать её фоновой */
-    }
-
-    /* 4. Уменьшаем размер текста, чтобы всё влезло */
-    body {
-        font-size: 10px;
-    }
-    
-    header {
-        font-size: 12px;
-        flex-direction: column;
-        gap: 5px;
-    }
-}
 header button {
     background: transparent;
     border: 1px solid #0ff;
@@ -736,25 +700,7 @@ header button:hover {
     box-shadow: 0 0 10px #ff4d4d;
 }
 
-/* Адаптация для телефона */
-@media (max-width: 768px) {
-    header {
-        flex-direction: column; /* Статус сверху, кнопки снизу */
-        height: auto;
-        padding: 10px;
-        gap: 10px;
-    }
-    
-    .nav-controls {
-        width: 100%;
-        justify-content: center;
-    }
 
-    header button {
-        font-size: 10px; /* Уменьшаем текст на маленьких экранах */
-        padding: 6px 8px;
-    }
-}
 /* --- СТИЛИ ДЛЯ СТРАНИЦЫ ПРОФИЛЯ --- */
 
 /* Центрируем карточку профиля на экране */
@@ -901,30 +847,7 @@ header button:hover {
     min-width: 0; /* Важно, чтобы текст не вылезал за края */
 }
 
-/* ОПТИМИЗАЦИЯ ДЛЯ ТЕЛЕФОНОВ (ширина экрана меньше 600px) */
-@media (max-width: 600px) {
-    .chat-row-layout {
-        gap: 10px; /* Уменьшаем отступ между авой и текстом */
-    }
 
-    .chat-row-avatar {
-        width: 45px; /* Уменьшаем аватарку на мобилках */
-        height: 45px;
-    }
-
-    .msg-nick {
-        font-size: 0.9rem !important; /* Уменьшаем ник */
-    }
-
-    .msg-text {
-        font-size: 0.9rem; /* Уменьшаем текст сообщения */
-    }
-
-    /* Если совсем тесно, можно скрыть время или перенести его под ник */
-    .msg-time {
-        font-size: 8px;
-    }
-}
 @media (max-width: 480px) {
     /* 1. Сжимаем основной контейнер */
     body {
