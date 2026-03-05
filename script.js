@@ -285,21 +285,19 @@ render(m) {
         </div>`;
 
     if (isMy) {
-        d.oncontextmenu = async (e) => {
-            e.preventDefault();
-            // ИСПРАВЛЕНО: Возвращаем подтверждение удаления
-            if (confirm("ERASE_DATA_STREAM?")) {
-                d.style.opacity = "0.3"; 
-                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                if (!error) {
-                    d.classList.add('removing'); // Добавляем анимацию
-                    setTimeout(() => d.remove(), 300);
-                } else {
-                    d.style.opacity = "1";
-                }
+    d.oncontextmenu = async (e) => {
+        e.preventDefault();
+        if (confirm("ERASE_DATA_STREAM?")) {
+            const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+            if (!error) {
+                d.classList.add('removing');
+                setTimeout(() => d.remove(), 300);
+                // ВОЗВРАЩАЕМ УВЕДОМЛЕНИЕ:
+                Core.Msg("DATA_STREAM_ERASED", "info");
             }
-        };
-    }
+        }
+    };
+}
     s.appendChild(d);
     s.scrollTop = s.scrollHeight;
 }
