@@ -124,7 +124,7 @@ Todo: {
         }
     },
 
-Render(t) {
+render(t) { // Обязательно с маленькой буквы, как в load()
     const list = document.getElementById('todo-list'); 
     if (!list) return;
 
@@ -133,9 +133,11 @@ Render(t) {
     d.id = `task-${t.id}`;
     d.setAttribute('draggable', true);
 
+    // События для Drag-and-Drop
     d.addEventListener('dragstart', () => d.classList.add('dragging'));
     d.addEventListener('dragend', () => d.classList.remove('dragging'));
     
+    // ИСПРАВЛЕНО: Теперь это строка в обратных кавычках
     const dateStr = t.deadline ? 
         <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span> : '';
 
@@ -146,6 +148,7 @@ Render(t) {
         </div>
     `;
 
+    // Клик для отметки выполнения
     d.onclick = async (e) => {
         if (d.classList.contains('dragging')) return;
         const newState = !d.classList.contains('completed');
@@ -153,29 +156,29 @@ Render(t) {
         await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
     };
 
-    // --- ИСПРАВЛЕННЫЙ БЛОК УДАЛЕНИЯ ---
+    // Удаление через контекстное меню с анимацией
     d.oncontextmenu = async (ev) => {
         ev.preventDefault();
         
-        // 1. Сразу запускаем визуальный эффект
+        // 1. Сначала анимация
         d.classList.add('removing');
 
-        // 2. Делаем небольшую паузу, чтобы глаз успел увидеть анимацию
+        // 2. Пауза 400мс (длительность анимации), затем удаление из базы
         setTimeout(async () => {
             const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
             if (!error) {
-                d.remove(); // Удаляем из DOM только после завершения анимации
+                d.remove();
                 Core.Msg("OBJECTIVE_TERMINATED");
             } else {
-                // Если в базе ошибка (например, нет интернета), возвращаем элемент на место
                 d.classList.remove('removing');
                 Core.Msg("TERMINATION_FAILED", "error");
             }
-        }, 400); // 400мс совпадает с длительностью анимации в CSS
+        }, 400);
     };
 
     list.appendChild(d);
 },
+
     async add(val, date) {
         if (!Core.user || !val.trim()) return;
         // Отправляем и задачу, и дату дедлайна
