@@ -125,48 +125,44 @@ Todo: {
     },
 
     render(t) {
-    const list = document.getElementById('todo-list'); 
-    if (!list) return;
+        const list = document.getElementById('todo-list'); 
+        if (!list) return;
 
-    const d = document.createElement('div');
-    d.className = `task ${t.is_completed ? 'completed' : ''}`;
-    d.id = `task-${t.id}`;
-    d.setAttribute('draggable', true);
+        const d = document.createElement('div');
+        d.className = `task ${t.is_completed ? 'completed' : ''}`;
+        d.id = `task-${t.id}`;
+        d.setAttribute('draggable', true); // Обязательно для DRAG-AND-DROP
 
-    d.addEventListener('dragstart', () => d.classList.add('dragging'));
-    d.addEventListener('dragend', () => d.classList.remove('dragging'));
-    
-    const dateStr = t.deadline ? 
-        `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
+        // Логика визуального перетаскивания
+        d.addEventListener('dragstart', () => d.classList.add('dragging'));
+        d.addEventListener('dragend', () => d.classList.remove('dragging'));
+        
+        const dateStr = t.deadline ? 
+            `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
 
-    d.innerHTML = `
-        <div class="task-content">
-            <span>> ${t.task.toUpperCase()}</span>
-            ${dateStr}
-        </div>
-    `;
+        d.innerHTML = `
+            <div class="task-content">
+                <span>> ${t.task.toUpperCase()}</span>
+                ${dateStr}
+            </div>
+        `;
 
-    d.onclick = async () => {
-        const newState = !d.classList.contains('completed');
-        d.classList.toggle('completed');
-        await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
-    };
+        d.onclick = async (e) => {
+            // Чтобы клик не срабатывал при перетаскивании
+            if (d.classList.contains('dragging')) return;
+            const newState = !d.classList.contains('completed');
+            d.classList.toggle('completed');
+            await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+        };
 
-    // АНИМАЦИЯ УДАЛЕНИЯ ТУДУ
-    d.oncontextmenu = async (ev) => {
-        ev.preventDefault();
-        const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-        if (!error) {
-            d.style.transform = "translateX(100px)"; // Улетает вправо
-            d.style.opacity = "0";
-            d.style.transition = "all 0.4s ease";
-            setTimeout(() => d.remove(), 400); // Удаляем после анимации
-            Core.Msg("OBJECTIVE_TERMINATED");
-        }
-    };
+        d.oncontextmenu = async (ev) => {
+            ev.preventDefault();
+            const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+            if (!error) d.remove();
+        };
 
-    list.appendChild(d);
-},
+        list.appendChild(d);
+    },
 
     async add(val, date) {
         if (!Core.user || !val.trim()) return;
@@ -190,12 +186,14 @@ Todo: {
 
 Chat: {
     channel: null,
+    isSubscribed: false, // Флаг, чтобы не спамить уведомлениями
 
     async subscribe() {
-        // Очищаем конкретно этот канал, а не всё подряд
-        if (this.channel) {
-            await Core.sb.removeChannel(this.channel);
-        }
+        // Если канал уже создан и он в рабочем статусе — не переподключаемся
+        if (this.channel && this.channel.state === 'joined') return;
+
+        // Удаляем старые подписки перед новой
+        if (this.channel) Core.sb.removeChannel(this.channel);
 
         this.channel = Core.sb.channel('global-chat')
             .on('postgres_changes', { 
@@ -203,38 +201,47 @@ Chat: {
                 schema: 'public', 
                 table: 'comments' 
             }, payload => {
-                console.log("SIGNAL_RECEIVED", payload.new);
                 const m = payload.new;
-                // Проверка по ID пользователя, а не по нику (так надежнее)
                 if (m.user_id !== Core.user?.id) {
                     this.render(m);
                     Core.SystemNotify(`SIGNAL: ${m.nickname}`, m.message);
                 }
             })
-            .subscribe(async (status) => {
+            // ДОБАВЛЯЕМ СЛУШАТЕЛЯ УДАЛЕНИЯ (чтобы чат чистился у всех сразу)
+            .on('postgres_changes', { 
+                event: 'DELETE', 
+                schema: 'public', 
+                table: 'comments' 
+            }, payload => {
+                const el = document.getElementById(`msg-${payload.old.id}`);
+                if (el) el.remove();
+            })
+            .subscribe((status) => {
                 console.log("REALTIME_STATUS:", status);
+                
                 if (status === 'SUBSCRIBED') {
-                    Core.Msg("COMM_LINK: ONLINE");
+                    if (!this.isSubscribed) { // Показываем только при первом успешном входе
+                        Core.Msg("COMM_LINK: ESTABLISHED");
+                        this.isSubscribed = true;
+                    }
                 }
-                if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                    // Авто-переподключение при обрыве
-                    setTimeout(() => this.subscribe(), 3000);
+
+                if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                    this.isSubscribed = false;
+                    // Вместо мгновенного перезапуска ждем 5 секунд
+                    setTimeout(() => this.subscribe(), 5000);
                 }
             });
     },
 
     async load() { 
-        const { data, error } = await Core.sb.from('comments')
-            .select('*')
-            .order('created_at', {ascending: false})
-            .limit(40); 
-            
+        const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(40); 
         if (data) { 
-            const stream = document.getElementById('chat-stream');
-            if (stream) { 
-                stream.innerHTML = ''; 
+            const s = document.getElementById('chat-stream');
+            if (s) { 
+                s.innerHTML = ''; 
                 data.reverse().forEach(m => this.render(m)); 
-                stream.scrollTop = stream.scrollHeight;
+                s.scrollTop = s.scrollHeight;
             } 
         } 
     },
@@ -248,20 +255,11 @@ Chat: {
         const msgVal = i.value;
         i.value = ''; 
 
-        // Ждем сохранения
         const { data, error } = await Core.sb.from('comments').insert([{
-            message: msgVal, 
-            nickname: n, 
-            avatar_url: a,
-            user_id: Core.user.id
+            message: msgVal, nickname: n, avatar_url: a, user_id: Core.user.id
         }]).select();
 
-        if (error) {
-            console.error("SEND_ERROR:", error);
-            Core.Msg("SIGNAL_LOST", "error");
-        } else if (data) {
-            this.render(data[0]); // Рендерим своё
-        }
+        if (!error && data) this.render(data[0]);
     },
 
     render(m) {
@@ -271,21 +269,38 @@ Chat: {
         const d = document.createElement('div'); 
         d.id = `msg-${m.id}`;
         d.className = 'msg-container';
-        
         const isMy = m.user_id === Core.user?.id;
         const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
         d.innerHTML = `
             <div class="chat-row-layout">
-                <img src="${m.avatar_url || 'https://via.placeholder.com/65'}" class="chat-row-avatar">
+                <img src="${m.avatar_url}" class="chat-row-avatar">
                 <div class="chat-content-block">
                     <div class="msg-header">
-                        <span class="msg-nick" style="color: ${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
+                        <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
                         <span class="msg-time">${time}</span>
                     </div>
                     <div class="msg-text">${m.message}</div>
                 </div>
             </div>`;
+
+        // Удаление своего сообщения (Правый клик)
+        if (isMy) {
+           d.oncontextmenu = async (ev) => {
+    ev.preventDefault();
+    const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
+    if (!error) {
+        d.classList.add('removing'); // Убедись, что этот класс есть в CSS
+        // Если класса в CSS нет, вот запасной вариант на JS:
+        d.style.transition = "all 0.4s cubic-bezier(0.4, 0, 1, 1)";
+        d.style.transform = "translateX(100%) skewX(-20deg)";
+        d.style.opacity = "0";
+        
+        setTimeout(() => d.remove(), 400);
+        Core.Msg("OBJECTIVE_TERMINATED");
+    }
+};
+        }
 
         s.appendChild(d);
         s.scrollTop = s.scrollHeight;
