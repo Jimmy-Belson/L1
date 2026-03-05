@@ -16,22 +16,21 @@ const Core = {
     }, // <--- ЭТА ЗАПЯТАЯ БЫЛА ПРОПУЩЕНА
 
     async CustomConfirm(text) {
-        const overlay = document.getElementById('custom-confirm');
-        // Добавим проверку на null, чтобы код не падал, если элемент не найден
-        if (!overlay) return confirm(text); 
+    const overlay = document.getElementById('custom-confirm');
+    const body = overlay.querySelector('.confirm-body');
+    const yesBtn = document.getElementById('confirm-yes');
+    const noBtn = document.getElementById('confirm-no');
+    
+    // Если мы здесь, значит элементы обязаны быть. 
+    // Если их нет — overlay будет null и код упадет, зато не покажет серое окно.
+    body.innerText = text;
+    overlay.style.display = 'flex';
 
-        const body = overlay.querySelector('.confirm-body');
-        const yesBtn = document.getElementById('confirm-yes');
-        const noBtn = document.getElementById('confirm-no');
-        
-        if (body) body.innerText = text;
-        overlay.style.display = 'flex';
-
-        return new Promise((resolve) => {
-            yesBtn.onclick = () => { overlay.style.display = 'none'; resolve(true); };
-            noBtn.onclick = () => { overlay.style.display = 'none'; resolve(false); };
-        });
-    }, // <--- И ЗДЕСЬ ЗАПЯТАЯ ТОЖЕ НУЖНА
+    return new Promise((resolve) => {
+        yesBtn.onclick = () => { overlay.style.display = 'none'; resolve(true); };
+        noBtn.onclick = () => { overlay.style.display = 'none'; resolve(false); };
+    });
+},
 
     // ВТОРАЯ ФУНКЦИЯ: Системные уведомления (вне сайта)
     SystemNotify(title, body) {
