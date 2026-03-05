@@ -2,18 +2,21 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-    Msg(text, type = 'info') {
-        const container = document.getElementById('notify-container');
-        if (!container) return;
-        const t = document.createElement('div');
-        t.className = `toast ${type === 'error' ? 'error' : ''}`;
-        t.innerHTML = `<span style="opacity:0.5">>></span> ${text}`;
-        container.appendChild(t);
-        setTimeout(() => {
-            t.classList.add('hide');
-            setTimeout(() => t.remove(), 400);
-        }, 4000);
-    }, // <--- ЭТА ЗАПЯТАЯ БЫЛА ПРОПУЩЕНА
+Msg(text, type = 'info') {
+    const container = document.getElementById('notify-container');
+    if (!container) return;
+    const t = document.createElement('div');
+    t.className = `toast ${type === 'error' ? 'error' : ''}`;
+    t.innerHTML = `<span style="opacity:0.5">>></span> ${text}`;
+    
+    // Добавляем в начало списка
+    container.prepend(t);
+    
+    setTimeout(() => {
+        t.classList.add('hide');
+        setTimeout(() => t.remove(), 400);
+    }, 4000);
+},
 
     async CustomConfirm(text) {
     let overlay = document.getElementById('custom-confirm');

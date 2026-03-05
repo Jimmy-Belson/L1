@@ -1058,22 +1058,36 @@ header button:hover {
 }
 #notify-container {
     position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 10000;
+    top: 20px;
+    right: 20px; /* Переносим вправо */
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Выравниваем плашки по правому краю */
+    pointer-events: none;
 }
 
 .toast {
-    background: rgba(0, 20, 40, 0.9);
-    border-left: 3px solid var(--n);
-    color: var(--n);
-    padding: 10px 20px;
-    margin-top: 10px;
-    font-family: 'Courier New', monospace;
+    width: 250px; /* Фиксированная ширина */
+    background: rgba(0, 10, 20, 0.9);
+    border-right: 3px solid #0ff; /* Полоска справа */
+    border-left: none;
+    color: #0ff;
+    padding: 12px;
+    margin-bottom: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-    animation: slideIn 0.3s ease-out;
+    box-shadow: -5px 0 15px rgba(0, 255, 255, 0.1);
+    animation: slideInRight 0.3s ease-out;
+    pointer-events: all;
+}
+
+.toast.error { border-right-color: #f00; color: #f00; }
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
 .toast.error {
