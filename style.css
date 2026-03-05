@@ -1168,3 +1168,13 @@ header button:hover {
 
 #confirm-yes:hover { background: #0ff !important; color: #000 !important; border-color: #0ff; }
 #confirm-no:hover { background: #f00 !important; color: #fff !important; border-color: #f00; }
+
+.chat-row-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 1px solid #0ff; /* Неоновая рамка */
+    padding: 2px;
+    background: rgba(0, 255, 255, 0.05);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
