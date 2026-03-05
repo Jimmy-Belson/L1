@@ -325,10 +325,13 @@ render(m) {
     const s = document.getElementById('chat-stream'); 
     if (!s || document.getElementById(`msg-${m.id}`)) return;
 
-    // 1. ПРОВЕРКА АВАТАРА: Если авы нет, ставим шаблон (космонавта)
-    // Ты можешь заменить эту ссылку на любую другую космическую иконку
-    const defaultAstro = 'https://img.icons8.com/cosmetic-surgery/64/00ffff/astronaut.png';
-    const avatar = (m.avatar_url && !m.avatar_url.includes('placeholder')) ? m.avatar_url : defaultAstro;
+    // ГЕНЕРАТОР ШАБЛОНА: 
+    // Если авы нет, берем коллекцию 'bottts' (роботы) и создаем аву на базе ID пользователя
+    // Это гарантирует, что ссылка ВСЕГДА рабочая.
+    let avatar = m.avatar_url;
+    if (!avatar || avatar.includes('placeholder') || avatar.length < 5) {
+        avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${m.user_id}&backgroundColor=001a2d`;
+    }
 
     const d = document.createElement('div'); 
     d.id = `msg-${m.id}`;
@@ -342,7 +345,6 @@ render(m) {
         hour12: false 
     });
 
-    // 2. ИСПОЛЬЗУЕМ ПЕРЕМЕННУЮ avatar ВМЕСТО m.avatar_url
     d.innerHTML = `
         <div class="chat-row-layout">
             <img src="${avatar}" class="chat-row-avatar">
@@ -355,21 +357,21 @@ render(m) {
             </div>
         </div>`;
 
-   if (isMy) {
-    d.oncontextmenu = async (e) => {
-        e.preventDefault();
-        const confirmed = await Core.CustomConfirm("ERASE_DATA_STREAM?");
-        
-        if (confirmed) {
-            const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-            if (!error) {
-                d.classList.add('removing');
-                setTimeout(() => d.remove(), 300);
-                Core.Msg("DATA_STREAM_ERASED", "info");
+    // Твоя логика удаления (оставляем как есть)
+    if (isMy) {
+        d.oncontextmenu = async (e) => {
+            e.preventDefault();
+            const confirmed = await Core.CustomConfirm("ERASE_DATA_STREAM?");
+            if (confirmed) {
+                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                if (!error) {
+                    d.classList.add('removing');
+                    setTimeout(() => d.remove(), 300);
+                    Core.Msg("DATA_STREAM_ERASED", "info");
+                }
             }
-        }
-    };
-}
+        };
+    }
     s.appendChild(d);
     s.scrollTop = s.scrollHeight;
 }

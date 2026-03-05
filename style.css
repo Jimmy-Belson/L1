@@ -1170,11 +1170,13 @@ header button:hover {
 #confirm-no:hover { background: #f00 !important; color: #fff !important; border-color: #f00; }
 
 .chat-row-avatar {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    border: 1px solid #0ff; /* Неоновая рамка */
+    width: 42px;
+    height: 42px;
+    border-radius: 0; /* Полностью квадратные */
+    border: 1px solid #0ff;
     padding: 2px;
-    background: rgba(0, 255, 255, 0.05);
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+    background: #000;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+    object-fit: cover;
+    image-rendering: pixelated; /* Придаст ретро-киберпанк вид */
 }
