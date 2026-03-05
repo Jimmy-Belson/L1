@@ -1133,5 +1133,5 @@ header button:hover {
     color: #000;
 }
 
-#confirm-no { border-color: #f00; color: #f00; }
-#confirm-no:hover { background: #f00; color: #fff; }
+#confirm-yes:hover { background: #0ff !important; color: #000 !important; }
+#confirm-no:hover { background: #f00 !important; color: #fff !important; }
