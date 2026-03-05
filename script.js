@@ -2,7 +2,6 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-    // Твоя первая функция (внутренние уведомления)
     Msg(text, type = 'info') {
         const container = document.getElementById('notify-container');
         if (!container) return;
@@ -14,22 +13,25 @@ const Core = {
             t.classList.add('hide');
             setTimeout(() => t.remove(), 400);
         }, 4000);
-    },
-    // Добавь это в Core
-async CustomConfirm(text) {
-    const overlay = document.getElementById('custom-confirm');
-    const body = overlay.querySelector('.confirm-body');
-    const yesBtn = document.getElementById('confirm-yes');
-    const noBtn = document.getElementById('confirm-no');
-    
-    body.innerText = text;
-    overlay.style.display = 'flex';
+    }, // <--- ЭТА ЗАПЯТАЯ БЫЛА ПРОПУЩЕНА
 
-    return new Promise((resolve) => {
-        yesBtn.onclick = () => { overlay.style.display = 'none'; resolve(true); };
-        noBtn.onclick = () => { overlay.style.display = 'none'; resolve(false); };
-    });
-},
+    async CustomConfirm(text) {
+        const overlay = document.getElementById('custom-confirm');
+        // Добавим проверку на null, чтобы код не падал, если элемент не найден
+        if (!overlay) return confirm(text); 
+
+        const body = overlay.querySelector('.confirm-body');
+        const yesBtn = document.getElementById('confirm-yes');
+        const noBtn = document.getElementById('confirm-no');
+        
+        if (body) body.innerText = text;
+        overlay.style.display = 'flex';
+
+        return new Promise((resolve) => {
+            yesBtn.onclick = () => { overlay.style.display = 'none'; resolve(true); };
+            noBtn.onclick = () => { overlay.style.display = 'none'; resolve(false); };
+        });
+    }, // <--- И ЗДЕСЬ ЗАПЯТАЯ ТОЖЕ НУЖНА
 
     // ВТОРАЯ ФУНКЦИЯ: Системные уведомления (вне сайта)
     SystemNotify(title, body) {
