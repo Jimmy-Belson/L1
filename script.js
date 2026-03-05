@@ -304,18 +304,21 @@ async send() {
 
     const n = Core.user.user_metadata?.nickname || Core.user.email.split('@')[0];
     
-    // ЛОГИКА ШАБЛОНА:
-    // Если в метаданных нет аватара, берем случайный из нашего списка
+    // ЛОГИКА ДЛЯ НОВЫХ СООБЩЕНИЙ:
     let a = Core.user.user_metadata?.avatar_url;
-    if (!a || a.includes('placeholder')) {
-        const randomIndex = Math.floor(Math.random() * this.defaultAvatars.length);
-        a = this.defaultAvatars[randomIndex];
+    
+    // Если авы нет, генерируем робота сразу перед отправкой
+    if (!a || a.includes('placeholder') || a.length < 5) {
+        a = `https://api.dicebear.com/7.x/bottts/svg?seed=${Core.user.id}&backgroundColor=001a2d`;
     }
 
     const val = i.value; i.value = ''; 
 
     const { data, error } = await Core.sb.from('comments').insert([{
-        message: val, nickname: n, avatar_url: a, user_id: Core.user.id
+        message: val, 
+        nickname: n, 
+        avatar_url: a, // Теперь сюда улетит ссылка на робота, а не пустота
+        user_id: Core.user.id
     }]).select();
 
     if (!error && data) this.render(data[0]);
@@ -338,7 +341,7 @@ render(m) {
     d.className = 'msg-container';
     const isMy = m.user_id === Core.user?.id;
     
-    
+
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {
         hour: '2-digit', 
         minute: '2-digit', 
