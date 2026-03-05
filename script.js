@@ -16,13 +16,32 @@ const Core = {
     }, // <--- ЭТА ЗАПЯТАЯ БЫЛА ПРОПУЩЕНА
 
     async CustomConfirm(text) {
-    const overlay = document.getElementById('custom-confirm');
+    let overlay = document.getElementById('custom-confirm');
+    
+    // Если в HTML блока нет, создаем его программно
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'custom-confirm';
+        overlay.className = 'confirm-overlay';
+        overlay.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,5,10,0.9); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        
+        overlay.innerHTML = `
+            <div class="confirm-box" style="background:#001a2d; border:1px solid #0ff; padding:25px; width:300px; text-align:center; box-shadow:0 0 20px rgba(0,255,255,0.3);">
+                <div style="color:#0ff; font-size:10px; margin-bottom:15px; opacity:0.7; font-family:'Orbitron';">TERMINAL_REQUEST</div>
+                <div class="confirm-body" style="color:#fff; margin-bottom:20px; font-family:'Share Tech Mono';"></div>
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button id="confirm-yes" style="background:transparent; border:1px solid #0ff; color:#0ff; padding:8px 15px; cursor:pointer; font-family:'Orbitron';">CONFIRM</button>
+                    <button id="confirm-no" style="background:transparent; border:1px solid #f00; color:#f00; padding:8px 15px; cursor:pointer; font-family:'Orbitron';">ABORT</button>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+    }
+
     const body = overlay.querySelector('.confirm-body');
     const yesBtn = document.getElementById('confirm-yes');
     const noBtn = document.getElementById('confirm-no');
     
-    // Если мы здесь, значит элементы обязаны быть. 
-    // Если их нет — overlay будет null и код упадет, зато не покажет серое окно.
+    
     body.innerText = text;
     overlay.style.display = 'flex';
 
