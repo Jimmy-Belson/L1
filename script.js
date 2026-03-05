@@ -198,49 +198,33 @@ Render(t) {
 
 Chat: {
     channel: null,
-    isSubscribed: false, // Флаг, чтобы не спамить уведомлениями
+    isSubscribed: false, 
 
     async subscribe() {
-        // Если канал уже создан и он в рабочем статусе — не переподключаемся
+        // Защита от спама: если уже подключены, ничего не делаем
         if (this.channel && this.channel.state === 'joined') return;
-
-        // Удаляем старые подписки перед новой
         if (this.channel) Core.sb.removeChannel(this.channel);
 
         this.channel = Core.sb.channel('global-chat')
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'comments' 
-            }, payload => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
                 const m = payload.new;
                 if (m.user_id !== Core.user?.id) {
                     this.render(m);
-                    Core.SystemNotify(`SIGNAL: ${m.nickname}`, m.message);
+                    Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
                 }
             })
-            // ДОБАВЛЯЕМ СЛУШАТЕЛЯ УДАЛЕНИЯ (чтобы чат чистился у всех сразу)
-            .on('postgres_changes', { 
-                event: 'DELETE', 
-                schema: 'public', 
-                table: 'comments' 
-            }, payload => {
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, payload => {
                 const el = document.getElementById(`msg-${payload.old.id}`);
                 if (el) el.remove();
             })
             .subscribe((status) => {
-                console.log("REALTIME_STATUS:", status);
-                
-                if (status === 'SUBSCRIBED') {
-                    if (!this.isSubscribed) { // Показываем только при первом успешном входе
-                        Core.Msg("COMM_LINK: ESTABLISHED");
-                        this.isSubscribed = true;
-                    }
+                if (status === 'SUBSCRIBED' && !this.isSubscribed) {
+                    console.log("COMM_LINK_READY");
+                    this.isSubscribed = true;
+                    // Уведомление теперь только в консоли, чтобы не бесило
                 }
-
-                if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                if (status === 'CHANNEL_ERROR') {
                     this.isSubscribed = false;
-                    // Вместо мгновенного перезапуска ждем 5 секунд
                     setTimeout(() => this.subscribe(), 5000);
                 }
             });
@@ -248,13 +232,11 @@ Chat: {
 
     async load() { 
         const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(40); 
-        if (data) { 
-            const s = document.getElementById('chat-stream');
-            if (s) { 
-                s.innerHTML = ''; 
-                data.reverse().forEach(m => this.render(m)); 
-                s.scrollTop = s.scrollHeight;
-            } 
+        const s = document.getElementById('chat-stream');
+        if (s && data) { 
+            s.innerHTML = ''; 
+            data.reverse().forEach(m => this.render(m)); 
+            s.scrollTop = s.scrollHeight;
         } 
     },
 
@@ -264,11 +246,10 @@ Chat: {
 
         const n = Core.user.user_metadata?.nickname || Core.user.email.split('@')[0];
         const a = Core.user.user_metadata?.avatar_url || 'https://via.placeholder.com/65';
-        const msgVal = i.value;
-        i.value = ''; 
+        const val = i.value; i.value = ''; 
 
         const { data, error } = await Core.sb.from('comments').insert([{
-            message: msgVal, nickname: n, avatar_url: a, user_id: Core.user.id
+            message: val, nickname: n, avatar_url: a, user_id: Core.user.id
         }]).select();
 
         if (!error && data) this.render(data[0]);
@@ -282,7 +263,7 @@ Chat: {
         d.id = `msg-${m.id}`;
         d.className = 'msg-container';
         const isMy = m.user_id === Core.user?.id;
-        const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
 
         d.innerHTML = `
             <div class="chat-row-layout">
@@ -290,91 +271,55 @@ Chat: {
                 <div class="chat-content-block">
                     <div class="msg-header">
                         <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
-                        <span class="msg-time">${time}</span>
+                        <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                     </div>
                     <div class="msg-text">${m.message}</div>
                 </div>
             </div>`;
 
-        // Удаление своего сообщения (Правый клик)
         if (isMy) {
-           d.oncontextmenu = async (ev) => {
-    ev.preventDefault();
-    const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-    if (!error) {
-        d.classList.add('removing'); // Убедись, что этот класс есть в CSS
-        // Если класса в CSS нет, вот запасной вариант на JS:
-        d.style.transition = "all 0.4s cubic-bezier(0.4, 0, 1, 1)";
-        d.style.transform = "translateX(100%) skewX(-20deg)";
-        d.style.opacity = "0";
-        
-        setTimeout(() => d.remove(), 400);
-        Core.Msg("OBJECTIVE_TERMINATED");
-    }
-};
+            d.oncontextmenu = async (e) => {
+                e.preventDefault();
+                d.style.opacity = "0.3"; // Визуальный отклик сразу
+                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                if (!error) d.remove();
+                else d.style.opacity = "1";
+            };
         }
-
         s.appendChild(d);
         s.scrollTop = s.scrollHeight;
     }
-},
+}, // Запятая здесь важна!
 
-    UI() {
+UI() {
     const todoIn = document.getElementById('todo-in');
-    const todoDate = document.getElementById('todo-date'); // Инпут даты
+    const todoDate = document.getElementById('todo-date');
     const todoList = document.getElementById('todo-list');
     const chatIn = document.getElementById('chat-in');
 
-    // 1. Ввод новых задач + ДЕДЛАЙН
-    if (todoIn) { 
-        todoIn.onkeypress = async (e) => { 
-            if (e.key === 'Enter' && todoIn.value.trim()) { 
-                // Передаем и текст, и значение даты
-                const deadlineValue = todoDate ? todoDate.value : null;
-                await this.Todo.add(todoIn.value, deadlineValue); 
-                
-                todoIn.value = ''; 
-                if (todoDate) todoDate.value = ''; // Очищаем дату
-            } 
-        }; 
+    if (todoIn) {
+        todoIn.onkeypress = async (e) => {
+            if (e.key === 'Enter' && todoIn.value.trim()) {
+                await this.Todo.add(todoIn.value, todoDate ? todoDate.value : null);
+                todoIn.value = '';
+                if (todoDate) todoDate.value = '';
+            }
+        };
     }
 
-    // 2. Логика Drag-and-Drop (Сортировка визуально)
     if (todoList) {
-        const getDragAfterElement = (container, y) => {
-            const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        };
-
         todoList.addEventListener('dragover', (e) => {
             e.preventDefault();
             const draggingItem = document.querySelector('.dragging');
             if (!draggingItem) return;
-
-            const nextSibling = getDragAfterElement(todoList, e.clientY);
-            if (nextSibling == null) {
-                todoList.appendChild(draggingItem);
-            } else {
-                todoList.insertBefore(draggingItem, nextSibling);
-            }
+            const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
+            const nextSibling = siblings.find(sibling => e.clientY <= sibling.getBoundingClientRect().top + sibling.getBoundingClientRect().height / 2);
+            todoList.insertBefore(draggingItem, nextSibling);
         });
     }
 
-    // 3. Отправка сообщений в чат
-    if (chatIn) { 
-        chatIn.onkeypress = (e) => { 
-            if (e.key === 'Enter' && e.target.value.trim()) {
-                this.Chat.send(); 
-            }
-        }; 
+    if (chatIn) {
+        chatIn.onkeypress = (e) => { if (e.key === 'Enter') this.Chat.send(); };
     }
 },
 
