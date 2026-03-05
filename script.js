@@ -2,6 +2,15 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
+    getAvatar(user_id, current_avatar) {
+    // Если аватарка уже есть и это не пустышка — возвращаем её
+    if (current_avatar && current_avatar.length > 10 && !current_avatar.includes('placeholder')) {
+        return current_avatar;
+    }
+    // Если авы нет — генерируем робота по ID (чтобы у каждого был свой уникальный)
+    return `https://api.dicebear.com/7.x/bottts/svg?seed=${user_id || 'guest'}&backgroundColor=001a2d`;
+},
+
 Msg(text, type = 'info') {
     const container = document.getElementById('notify-container');
     if (!container) return;

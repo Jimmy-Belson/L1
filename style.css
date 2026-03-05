@@ -1172,11 +1172,11 @@ header button:hover {
 .chat-row-avatar {
     width: 42px;
     height: 42px;
-    border-radius: 0; /* Полностью квадратные */
+    
     border: 1px solid #0ff;
-    padding: 2px;
-    background: #000;
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
-    object-fit: cover;
-    image-rendering: pixelated; /* Придаст ретро-киберпанк вид */
+    border-radius: 0; /* Строгий квадрат */
+    background: rgba(0, 255, 255, 0.05); /* Едва заметный фон */
+    display: block;
+    object-fit: contain;
+    /* Если картинка не грузится, браузер покажет пустую рамку, а не черный блок */
 }
