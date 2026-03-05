@@ -258,40 +258,53 @@ Chat: {
         if (!error && data) this.render(data[0]);
     },
 
-    render(m) {
-        const s = document.getElementById('chat-stream'); 
-        if (!s || document.getElementById(`msg-${m.id}`)) return;
+render(m) {
+    const s = document.getElementById('chat-stream'); 
+    if (!s || document.getElementById(`msg-${m.id}`)) return;
 
-        const d = document.createElement('div'); 
-        d.id = `msg-${m.id}`;
-        d.className = 'msg-container';
-        const isMy = m.user_id === Core.user?.id;
-        
+    const d = document.createElement('div'); 
+    d.id = `msg-${m.id}`;
+    d.className = 'msg-container';
+    const isMy = m.user_id === Core.user?.id;
+    
+    // ИСПРАВЛЕНО: Явный 24-часовой формат
+    const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false 
+    });
 
-        d.innerHTML = `
-            <div class="chat-row-layout">
-                <img src="${m.avatar_url}" class="chat-row-avatar">
-                <div class="chat-content-block">
-                    <div class="msg-header">
-                        <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
-                        <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    <div class="msg-text">${m.message}</div>
+    d.innerHTML = `
+        <div class="chat-row-layout">
+            <img src="${m.avatar_url}" class="chat-row-avatar">
+            <div class="chat-content-block">
+                <div class="msg-header">
+                    <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
+                    <span class="msg-time">${time}</span>
                 </div>
-            </div>`;
+                <div class="msg-text">${m.message}</div>
+            </div>
+        </div>`;
 
-        if (isMy) {
-            d.oncontextmenu = async (e) => {
-                e.preventDefault();
-                d.style.opacity = "0.3"; // Визуальный отклик сразу
+    if (isMy) {
+        d.oncontextmenu = async (e) => {
+            e.preventDefault();
+            // ИСПРАВЛЕНО: Возвращаем подтверждение удаления
+            if (confirm("ERASE_DATA_STREAM?")) {
+                d.style.opacity = "0.3"; 
                 const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                if (!error) d.remove();
-                else d.style.opacity = "1";
-            };
-        }
-        s.appendChild(d);
-        s.scrollTop = s.scrollHeight;
+                if (!error) {
+                    d.classList.add('removing'); // Добавляем анимацию
+                    setTimeout(() => d.remove(), 300);
+                } else {
+                    d.style.opacity = "1";
+                }
+            }
+        };
     }
+    s.appendChild(d);
+    s.scrollTop = s.scrollHeight;
+}
 }, // Запятая здесь важна!
 
 UI() {

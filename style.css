@@ -1051,3 +1051,8 @@ header button:hover {
     transform: scale(0.9);
     opacity: 0;
 }
+.msg-container.removing {
+    transform: translateX(-50px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
