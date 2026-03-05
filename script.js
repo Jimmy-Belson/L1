@@ -26,12 +26,14 @@ const Core = {
         overlay.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,5,10,0.9); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
         
         overlay.innerHTML = `
-            <div class="confirm-box" style="background:#001a2d; border:1px solid #0ff; padding:25px; width:300px; text-align:center; box-shadow:0 0 20px rgba(0,255,255,0.3);">
-                <div style="color:#0ff; font-size:10px; margin-bottom:15px; opacity:0.7; font-family:'Orbitron';">TERMINAL_REQUEST</div>
-                <div class="confirm-body" style="color:#fff; margin-bottom:20px; font-family:'Share Tech Mono';"></div>
-                <div style="display:flex; gap:10px; justify-content:center;">
-                    <button id="confirm-yes" style="background:transparent; border:1px solid #0ff; color:#0ff; padding:8px 15px; cursor:pointer; font-family:'Orbitron';">CONFIRM</button>
-                    <button id="confirm-no" style="background:transparent; border:1px solid #f00; color:#f00; padding:8px 15px; cursor:pointer; font-family:'Orbitron';">ABORT</button>
+            <div class="confirm-box" style="background: rgba(0, 10, 20, 0.95); border: 1px solid #0ff; padding: 20px; width: 320px; text-align: center; box-shadow: 0 0 30px rgba(0,255,255,0.2); position: relative; border-radius: 2px;">
+                <div style="color: #0ff; font-size: 11px; margin-bottom: 20px; letter-spacing: 2px; font-family: 'Orbitron'; border-bottom: 1px solid rgba(0,255,255,0.2); padding-bottom: 10px;">
+                    SYSTEM_CONFIRMATION
+                </div>
+                <div class="confirm-body" style="color: #fff; margin-bottom: 25px; font-family: 'Share Tech Mono'; font-size: 14px; line-height: 1.4;"></div>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="confirm-yes" style="background: rgba(0,255,255,0.1); border: 1px solid #0ff; color: #0ff; padding: 8px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 10px; transition: 0.3s;">[ CONFIRM ]</button>
+                    <button id="confirm-no" style="background: rgba(255,0,0,0.1); border: 1px solid #f00; color: #f00; padding: 8px 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 10px; transition: 0.3s;">[ ABORT ]</button>
                 </div>
             </div>`;
         document.body.appendChild(overlay);
