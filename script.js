@@ -14,7 +14,7 @@ Msg(text, type = 'info') {
     
     setTimeout(() => {
         t.classList.add('hide');
-        setTimeout(() => t.remove(), 400);
+        setTimeout(() => t.remove(), 500);
     }, 4000);
 },
 
