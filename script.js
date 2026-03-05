@@ -124,46 +124,58 @@ Todo: {
         }
     },
 
-    render(t) {
-        const list = document.getElementById('todo-list'); 
-        if (!list) return;
+Render(t) {
+    const list = document.getElementById('todo-list'); 
+    if (!list) return;
 
-        const d = document.createElement('div');
-        d.className = `task ${t.is_completed ? 'completed' : ''}`;
-        d.id = `task-${t.id}`;
-        d.setAttribute('draggable', true); // Обязательно для DRAG-AND-DROP
+    const d = document.createElement('div');
+    d.className = `task ${t.is_completed ? 'completed' : ''}`;
+    d.id = `task-${t.id}`;
+    d.setAttribute('draggable', true);
 
-        // Логика визуального перетаскивания
-        d.addEventListener('dragstart', () => d.classList.add('dragging'));
-        d.addEventListener('dragend', () => d.classList.remove('dragging'));
+    d.addEventListener('dragstart', () => d.classList.add('dragging'));
+    d.addEventListener('dragend', () => d.classList.remove('dragging'));
+    
+    const dateStr = t.deadline ? 
+        <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span> : '';
+
+    d.innerHTML = `
+        <div class="task-content">
+            <span>> ${t.task.toUpperCase()}</span>
+            ${dateStr}
+        </div>
+    `;
+
+    d.onclick = async (e) => {
+        if (d.classList.contains('dragging')) return;
+        const newState = !d.classList.contains('completed');
+        d.classList.toggle('completed');
+        await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+    };
+
+    // --- ИСПРАВЛЕННЫЙ БЛОК УДАЛЕНИЯ ---
+    d.oncontextmenu = async (ev) => {
+        ev.preventDefault();
         
-        const dateStr = t.deadline ? 
-            `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
+        // 1. Сразу запускаем визуальный эффект
+        d.classList.add('removing');
 
-        d.innerHTML = `
-            <div class="task-content">
-                <span>> ${t.task.toUpperCase()}</span>
-                ${dateStr}
-            </div>
-        `;
-
-        d.onclick = async (e) => {
-            // Чтобы клик не срабатывал при перетаскивании
-            if (d.classList.contains('dragging')) return;
-            const newState = !d.classList.contains('completed');
-            d.classList.toggle('completed');
-            await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
-        };
-
-        d.oncontextmenu = async (ev) => {
-            ev.preventDefault();
+        // 2. Делаем небольшую паузу, чтобы глаз успел увидеть анимацию
+        setTimeout(async () => {
             const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-            if (!error) d.remove();
-        };
+            if (!error) {
+                d.remove(); // Удаляем из DOM только после завершения анимации
+                Core.Msg("OBJECTIVE_TERMINATED");
+            } else {
+                // Если в базе ошибка (например, нет интернета), возвращаем элемент на место
+                d.classList.remove('removing');
+                Core.Msg("TERMINATION_FAILED", "error");
+            }
+        }, 400); // 400мс совпадает с длительностью анимации в CSS
+    };
 
-        list.appendChild(d);
-    },
-
+    list.appendChild(d);
+},
     async add(val, date) {
         if (!Core.user || !val.trim()) return;
         // Отправляем и задачу, и дату дедлайна

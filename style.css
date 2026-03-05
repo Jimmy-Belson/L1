@@ -1034,3 +1034,20 @@ header button:hover {
     padding: 10px;
     border-top: 1px solid var(--border);
 }
+/* Анимация исчезновения */
+@keyframes taskOut {
+    0% { transform: translateX(0) skewX(0); opacity: 1; }
+    100% { transform: translateX(150px) skewX(-20deg); opacity: 0; }
+}
+
+.task.removing {
+    animation: taskOut 0.4s forwards;
+    pointer-events: none; /* Чтобы нельзя было кликнуть во время удаления */
+}
+
+/* Анимация для сообщений чата */
+.msg-container.removing {
+    transition: all 0.3s ease;
+    transform: scale(0.9);
+    opacity: 0;
+}
