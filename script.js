@@ -15,6 +15,21 @@ const Core = {
             setTimeout(() => t.remove(), 400);
         }, 4000);
     },
+    // Добавь это в Core
+async CustomConfirm(text) {
+    const overlay = document.getElementById('custom-confirm');
+    const body = overlay.querySelector('.confirm-body');
+    const yesBtn = document.getElementById('confirm-yes');
+    const noBtn = document.getElementById('confirm-no');
+    
+    body.innerText = text;
+    overlay.style.display = 'flex';
+
+    return new Promise((resolve) => {
+        yesBtn.onclick = () => { overlay.style.display = 'none'; resolve(true); };
+        noBtn.onclick = () => { overlay.style.display = 'none'; resolve(false); };
+    });
+},
 
     // ВТОРАЯ ФУНКЦИЯ: Системные уведомления (вне сайта)
     SystemNotify(title, body) {
@@ -284,15 +299,19 @@ render(m) {
             </div>
         </div>`;
 
-    if (isMy) {
+   if (isMy) {
     d.oncontextmenu = async (e) => {
         e.preventDefault();
-        if (confirm("ERASE_DATA_STREAM?")) {
+        
+        // ИСПОЛЬЗУЕМ НАШУ МОДАЛКУ ВМЕСТО ГУГЛА
+        const confirmed = await Core.CustomConfirm("ERASE_DATA_STREAM?");
+        
+        if (confirmed) {
             const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
             if (!error) {
                 d.classList.add('removing');
                 setTimeout(() => d.remove(), 300);
-                // ВОЗВРАЩАЕМ УВЕДОМЛЕНИЕ:
+    
                 Core.Msg("DATA_STREAM_ERASED", "info");
             }
         }

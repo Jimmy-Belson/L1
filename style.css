@@ -1056,3 +1056,82 @@ header button:hover {
     opacity: 0;
     transition: all 0.3s ease;
 }
+#notify-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10000;
+}
+
+.toast {
+    background: rgba(0, 20, 40, 0.9);
+    border-left: 3px solid var(--n);
+    color: var(--n);
+    padding: 10px 20px;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    animation: slideIn 0.3s ease-out;
+}
+
+.toast.error {
+    border-left-color: #f00;
+    color: #f00;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+.confirm-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 5, 10, 0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 20000; backdrop-filter: blur(4px);
+}
+
+.confirm-box {
+    background: #001a2d;
+    border: 1px solid var(--n);
+    padding: 20px;
+    width: 300px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+    text-align: center;
+}
+
+.confirm-header {
+    color: var(--n);
+    font-size: 0.8rem;
+    margin-bottom: 15px;
+    opacity: 0.7;
+}
+
+.confirm-body {
+    color: #fff;
+    margin-bottom: 20px;
+    font-family: 'Courier New', monospace;
+}
+
+.confirm-actions {
+    display: flex; gap: 10px; justify-content: center;
+}
+
+.confirm-actions button {
+    background: transparent;
+    border: 1px solid var(--n);
+    color: var(--n);
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.confirm-actions button:hover {
+    background: var(--n);
+    color: #000;
+}
+
+#confirm-no { border-color: #f00; color: #f00; }
+#confirm-no:hover { background: #f00; color: #fff; }
