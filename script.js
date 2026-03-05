@@ -5,17 +5,24 @@ const Core = {
 Msg(text, type = 'info') {
     const container = document.getElementById('notify-container');
     if (!container) return;
+
     const t = document.createElement('div');
+    // Класс 'toast' запустит анимацию slideInRight из твоего CSS
     t.className = `toast ${type === 'error' ? 'error' : ''}`;
     t.innerHTML = `<span style="opacity:0.5">>></span> ${text}`;
     
-    // Добавляем в начало списка
     container.prepend(t);
     
     setTimeout(() => {
-        t.classList.add('hide');
-        setTimeout(() => t.remove(), 500);
-    }, 4000);
+        // 1. Добавляем класс 'hide'. 
+        // CSS увидит это и запустит анимацию slideOutRight (улет вправо)
+        t.classList.add('hide'); 
+        
+        // 2. ВАЖНО: Ждем 500мс (время анимации в CSS), пока плашка улетит
+        setTimeout(() => {
+            t.remove(); // Только теперь удаляем из кода страницы
+        }, 500); 
+    }, 4000); // Плашка висит 4 секунды перед уходом
 },
 
     async CustomConfirm(text) {
