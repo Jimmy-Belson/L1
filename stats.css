@@ -1,108 +1,192 @@
 :root {
-    --neon: #0ff;
-    --bg: #000b14;
-    --card-bg: rgba(0, 20, 30, 0.8);
+    --neon-fuchsia: #ff00ff;
+    --neon-aqua: #00ffff;
+    --bg-dark: #00050a;
+    --panel-bg: rgba(0, 15, 25, 0.75);
+    --font-main: 'Share Tech Mono', monospace;
+    --font-header: 'Orbitron', sans-serif;
 }
 
 body {
-    background: var(--bg);
-    color: var(--neon);
-    font-family: 'Share Tech Mono', monospace;
+    background: var(--bg-dark);
+    background-image: 
+        radial-gradient(circle at 10% 10%, rgba(0, 255, 255, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(255, 0, 255, 0.1) 0%, transparent 40%);
+    color: var(--neon-aqua);
+    font-family: var(--font-main);
     margin: 0;
-    overflow-x: hidden;
-    background-image: radial-gradient(circle at center, #001a2d 0%, #000 100%);
+    overflow: hidden; /* Запрещаем скролл всей страницы */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
 }
 
-/* Эффект сканирующей линии как на старом мониторе */
-.scanline {
-    position: fixed; top: 0; left: 0; width: 100%; height: 2px;
-    background: rgba(0, 255, 255, 0.1);
-    z-index: 10; pointer-events: none;
-    animation: scan 4s linear infinite;
+/* Эффект старого монитора (сканлинии) */
+body::before {
+    content: "";
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+    pointer-events: none; z-index: 100;
 }
-
-@keyframes scan { from { top: 0; } to { top: 100%; } }
 
 .stats-wrapper {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 20px; /* Уменьшили отступ сверху */
+    width: 95%;
+    max-width: 1300px;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Заставляем контент вписываться в экран */
+    padding: 20px 0;
     box-sizing: border-box;
 }
 
-header { 
-    margin-bottom: 20px; 
+header {
+    text-align: center;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+    padding-bottom: 15px;
 }
 
-.glitch {
-    font-size: 2.2rem; /* Уменьшили заголовок */
-    margin: 10px 0;
+.glitch-title {
+    font-family: var(--font-header);
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 15px var(--neon-aqua), 0 0 30px var(--neon-fuchsia);
+    margin: 0;
 }
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
-    flex-grow: 1; /* Таблицы заберут свободное место */
-    overflow: hidden; /* Чтобы сами карточки не растягивали страницу */
-}
-
-.stat-card {
-    background: rgba(0, 10, 20, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 255, 255, 0.3);
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Карточки одинаковой высоты */
-}
-
-.list-container { 
-    padding: 5px; 
-    overflow-y: auto; /* Если игроков много, скроллится только внутри таблицы */
-    flex-grow: 1;
-}
-
-/* Стилизация скроллбара внутри таблиц */
-.list-container::-webkit-scrollbar { width: 4px; }
-.list-container::-webkit-scrollbar-thumb { background: var(--neon); }
-
-.user-item {
-    padding: 8px 12px; /* Компактные строки */
-    font-size: 0.9rem;
-}
-
-.user-avatar {
-    width: 32px; height: 32px; /* Меньше аватарки */
-    border-radius: 2px;
-}
-
-.footer {
-    padding: 15px 0;
-}
-
-.user-name { flex-grow: 1; text-transform: uppercase; font-size: 1rem; }
-
-.user-score { font-family: 'Orbitron', sans-serif; color: #fff; text-shadow: 0 0 10px var(--neon); }
-
-/* Красивая кнопка назад */
-.back-btn {
-    background: transparent;
-    border: 1px solid var(--neon);
-    color: var(--neon);
-    padding: 15px 40px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: 50px;
-    transition: 0.3s;
+.subtitle {
+    font-size: 0.8rem;
+    color: rgba(0, 255, 255, 0.6);
     letter-spacing: 2px;
 }
 
+/* Сетка таблиц */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Ровно 3 колонки */
+    gap: 20px;
+    flex-grow: 1; /* Забирает все свободное место по высоте */
+    min-height: 0; /* ВАЖНО для внутреннего скролла */
+}
+
+/* Карточка таблицы */
+.stat-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--neon-aqua);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Чтобы скролл был только внутри list-container */
+    transition: 0.3s;
+}
+
+.stat-card:hover {
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+    border-color: var(--neon-fuchsia);
+}
+
+.card-header {
+    background: rgba(0, 255, 255, 0.1);
+    border-bottom: 1px solid var(--neon-aqua);
+    color: var(--neon-aqua);
+    padding: 12px;
+    font-family: var(--font-header);
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+/* Контейнер списка (со скроллом) */
+.list-container {
+    padding: 10px;
+    overflow-y: auto; /* Внутренний скролл */
+    flex-grow: 1;
+}
+
+/* Стилизация скроллбара */
+.list-container::-webkit-scrollbar { width: 5px; }
+.list-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+.list-container::-webkit-scrollbar-thumb { background: var(--neon-aqua); }
+
+/* Элемент пользователя */
+.user-item {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 255, 255, 0.03);
+    margin-bottom: 8px;
+    padding: 10px;
+    border: 1px solid rgba(0, 255, 255, 0.1);
+    transition: 0.2s;
+}
+
+.user-item:hover {
+    background: rgba(0, 255, 255, 0.08);
+    transform: translateX(3px);
+    border-color: rgba(0, 255, 255, 0.3);
+}
+
+/* Подсветка ТОП-3 */
+.user-item.top-1 { border-color: gold; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+.user-item.top-2 { border-color: silver; }
+.user-item.top-3 { border-color: #cd7f32; } /* Бронза */
+
+.user-rank {
+    font-weight: bold;
+    width: 25px;
+    text-align: center;
+    color: rgba(0, 255, 255, 0.5);
+}
+
+.user-avatar {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border: 1px solid var(--neon-aqua);
+    margin: 0 12px;
+}
+
+.user-name {
+    flex-grow: 1;
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    color: #fff;
+}
+
+.user-score {
+    font-family: var(--font-header);
+    font-weight: bold;
+    color: var(--neon-fuchsia);
+    text-shadow: 0 0 8px var(--neon-fuchsia);
+}
+
+/* Футер с кнопкой */
+.footer {
+    text-align: center;
+    padding: 20px 0 10px 0;
+}
+
+.back-btn {
+    background: transparent;
+    border: 1px solid var(--neon-aqua);
+    color: var(--neon-aqua);
+    padding: 12px 35px;
+    font-family: var(--font-header);
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    
+    transition: 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+}
+
 .back-btn:hover {
-    background: var(--neon);
+    background: var(--neon-aqua);
     color: #000;
-    box-shadow: 0 0 30px var(--neon);
+    box-shadow: 0 0 25px var(--neon-aqua);
 }
