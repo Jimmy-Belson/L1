@@ -448,6 +448,7 @@ render(m) {
                 document.getElementById('pop-nick').innerText = p.nickname.toUpperCase();
                 document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
                 document.getElementById('pop-msgs').innerText = p.message_count || 0;
+                document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
                 
                 pop.style.display = 'block';
                 // Позиционируем чуть правее и выше места клика
