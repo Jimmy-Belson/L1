@@ -176,20 +176,24 @@ async SyncProfile(user) {
         window.location.href = 'station.html'; 
     },
 
-    async UpdateStat(field, value = 1) {
+async UpdateStat(field, value = 1) {
     if (!this.user) return;
     
-    // Сначала получаем текущее значение из profiles
-    const { data } = await this.sb.from('profiles').select(field).eq('id', this.user.id).single();
+    // 1. Получаем текущее значение из базы данных
+    const { data, error } = await this.sb.from('profiles').select(field).eq('id', this.user.id).single();
     
+    if (error) {
+        console.error("UPDATE_STAT_ERROR:", error);
+        return;
+    }
+
     if (data) {
         const newValue = (data[field] || 0) + value;
+        
+        // 2. Обновляем базу данных (тихо, без уведомлений)
         await this.sb.from('profiles').update({ [field]: newValue }).eq('id', this.user.id);
         
-        // Если это сбитый космонавт, выведем уведомление
-        if (field === 'kills_astronauts') {
-             this.Msg(`RECORDS_UPDATED: ${newValue} KILLS`, "info");
-        }
+        // Уведомления удалены. Теперь всё пишется в базу "молча".
     }
 },
 
