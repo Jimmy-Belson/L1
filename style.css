@@ -832,35 +832,48 @@ header button:hover {
     letter-spacing: 0.5px; /* Сделает текст сообщения более читаемым */
 }
 /* Базовый стиль для больших экранов */
+/* Контейнер всей строки сообщения */
 .chat-row-layout {
     display: flex;
-    align-items: center; /* Центрирует текст по вертикали относительно большой авы */
-    gap: 15px;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(0, 255, 255, 0.05);
+    align-items: flex-start; /* Выравнивание по верхнему краю */
+    gap: 20px;               /* Большой отступ между авой и текстом */
+    padding: 15px;
+    width: 100%;             /* Рамка на всю ширину */
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
 }
 
+/* Сама аватарка */
 .chat-row-avatar {
-    width: 85px;             /* Размер как на твоем рисунке */
-    height: 85px;
-    object-fit: cover;       /* Твое фото заполняет ВЕСЬ квадрат */
-    object-position: center; /* Центрирует лицо/объект */
-    border: 1px solid #0ff;
-    border-radius: 0;        /* Строгий квадрат */
+    width: 90px !important;  /* Принудительный большой размер */
+    height: 90px !important;
+    min-width: 90px;         /* Запрещаем сжиматься */
+    min-height: 90px;
+    
+    object-fit: cover !important;    /* Твое фото заполняет ВЕСЬ квадрат */
+    object-position: center;
+    
+    border: 2px solid #0ff;  /* Более жирная рамка */
+    border-radius: 0;        /* Четкий квадрат */
     background: #000;
-    flex-shrink: 0;
     padding: 0;
     display: block;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+    flex-shrink: 0;          /* Критично: чтобы flex не сдавливал картинку */
 }
 
+/* Блок с текстом (Ник + Сообщение) */
 .chat-content-block {
+    flex-grow: 1;            /* Заставляет текстовый блок занимать всё оставшееся место */
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-width: 0;
+    min-width: 0;            /* Чтобы длинный текст не ломал верстку */
 }
 
+/* Чтобы само сообщение не "схлопывалось" */
+.msg-container {
+    width: 100%;
+    display: block;
+}
 
 /* --- МОБИЛЬНАЯ ВЕРСИЯ (для экранов меньше 600px) --- */
 @media screen and (max-width: 600px) {
@@ -1176,14 +1189,3 @@ header button:hover {
 #confirm-yes:hover { background: #0ff !important; color: #000 !important; border-color: #0ff; }
 #confirm-no:hover { background: #f00 !important; color: #fff !important; border-color: #f00; }
 
-.chat-row-avatar {
-    width: 42px;
-    height: 42px;
-    
-    border: 1px solid #0ff;
-    border-radius: 0; /* Строгий квадрат */
-    background: rgba(0, 255, 255, 0.05); /* Едва заметный фон */
-    display: block;
-    object-fit: contain;
-    /* Если картинка не грузится, браузер покажет пустую рамку, а не черный блок */
-}
