@@ -406,8 +406,6 @@ render(m) {
     if (!s || document.getElementById(`msg-${m.id}`)) return;
 
     // ГЕНЕРАТОР ШАБЛОНА: 
-    // Если авы нет, берем коллекцию 'bottts' (роботы) и создаем аву на базе ID пользователя
-    // Это гарантирует, что ссылка ВСЕГДА рабочая.
     let avatar = m.avatar_url;
     if (!avatar || avatar.includes('placeholder') || avatar.length < 5) {
         avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${m.user_id}&backgroundColor=001a2d`;
@@ -417,27 +415,49 @@ render(m) {
     d.id = `msg-${m.id}`;
     d.className = 'msg-container';
     const isMy = m.user_id === Core.user?.id;
-    
 
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
+        hour: '2-digit', minute: '2-digit', hour12: false 
     });
 
     d.innerHTML = `
         <div class="chat-row-layout">
-            <img src="${avatar}" class="chat-row-avatar" referrerpolicy="no-referrer">
+            <img src="${avatar}" class="chat-row-avatar" referrerpolicy="no-referrer" style="cursor:pointer">
             <div class="chat-content-block">
                 <div class="msg-header">
-                    <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
+                    <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}; cursor:pointer">${m.nickname.toUpperCase()}</span>
                     <span class="msg-time">${time}</span>
                 </div>
                 <div class="msg-text">${m.message}</div>
             </div>
         </div>`;
 
-    // Твоя логика удаления (оставляем как есть)
+    // --- ЛОГИКА ВСПЛЫВАЮЩЕЙ КАРТОЧКИ ---
+    const triggerElements = d.querySelectorAll('.chat-row-avatar, .msg-nick');
+    triggerElements.forEach(el => {
+        el.onclick = async (e) => {
+            e.stopPropagation(); // Чтобы не срабатывали другие клики
+            const pop = document.getElementById('user-popover');
+            if (!pop) return;
+
+            // Загружаем актуальные данные профиля из Supabase
+            const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+            
+            if (p) {
+                document.getElementById('pop-avatar').src = p.avatar_url || avatar;
+                document.getElementById('pop-nick').innerText = p.nickname.toUpperCase();
+                document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
+                document.getElementById('pop-msgs').innerText = p.message_count || 0;
+                
+                pop.style.display = 'block';
+                // Позиционируем чуть правее и выше места клика
+                pop.style.left = (e.clientX + 15) + 'px';
+                pop.style.top = (e.clientY - 60) + 'px';
+            }
+        };
+    });
+
+    // Твоя логика удаления (контекстное меню)
     if (isMy) {
         d.oncontextmenu = async (e) => {
             e.preventDefault();
@@ -452,6 +472,7 @@ render(m) {
             }
         };
     }
+
     s.appendChild(d);
     s.scrollTop = s.scrollHeight;
 }
@@ -808,6 +829,11 @@ DrawPlanet() {
         requestAnimationFrame(() => this.loop());
     }
 };
+
+window.addEventListener('click', () => {
+    const pop = document.getElementById('user-popover');
+    if (pop) pop.style.display = 'none';
+});
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => Core.init());
