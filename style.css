@@ -845,10 +845,10 @@ header button:hover {
 
 /* Сама аватарка */
 .chat-row-avatar {
-    width: 90px !important;  /* Принудительный большой размер */
-    height: 90px !important;
-    min-width: 90px;         /* Запрещаем сжиматься */
-    min-height: 90px;
+    width: 75px !important;  /* Принудительный большой размер */
+    height: 80px !important;
+    min-width: 75px;         /* Запрещаем сжиматься */
+    min-height: 80px;
     
     object-fit: cover !important;    /* Твое фото заполняет ВЕСЬ квадрат */
     object-position: center;
