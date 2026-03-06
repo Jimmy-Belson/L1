@@ -834,46 +834,31 @@ header button:hover {
 /* Базовый стиль для больших экранов */
 .chat-row-layout {
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    margin-bottom: 15px;
-    padding: 0 10px;
+    align-items: center; /* Центрирует текст по вертикали относительно большой авы */
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.05);
 }
 
 .chat-row-avatar {
-    /* Увеличиваем физический размер */
-    width: 70px; 
-    height: 70px;
-    
-    /* Убираем внутренние отступы, чтобы фото прилегало к рамке */
-    padding: 0; 
-    
-    /* Рамка и стиль */
+    width: 85px;             /* Размер как на твоем рисунке */
+    height: 85px;
+    object-fit: cover;       /* Твое фото заполняет ВЕСЬ квадрат */
+    object-position: center; /* Центрирует лицо/объект */
     border: 1px solid #0ff;
-    border-radius: 0; 
+    border-radius: 0;        /* Строгий квадрат */
     background: #000;
-    
-    /* Масштабирование: заполняет весь квадрат без искажений */
-    object-fit: cover;
-    object-position: center;
-    
-    /* Чтобы аватарка не сжималась, если текста много */
-    flex-shrink: 0; 
-    
-    /* Отступ справа от картинки до текста */
-    margin-right: 15px;
-}
-
-/* Контейнер для строки (чтобы аватарка и текст были в ряд) */
-.chat-row-layout {
-    display: flex;
-    align-items: flex-start; /* Выравнивание по верхнему краю */
-    margin-bottom: 5px;
+    flex-shrink: 0;
+    padding: 0;
+    display: block;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
 }
 
 .chat-content-block {
-    flex: 1;
-    min-width: 0; /* Важно, чтобы текст не вылезал за края */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
 }
 
 
