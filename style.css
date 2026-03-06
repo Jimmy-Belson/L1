@@ -1208,83 +1208,91 @@ body {
     border: 2px solid var(--neon-aqua);
     box-shadow: 0 0 10px var(--neon-aqua);
 }
-/* Контейнер всплывающего окна */
+/* Увеличиваем основной контейнер, делаем его массивным */
 #user-popover {
     position: fixed;
     z-index: 10000;
-    min-width: 220px;
-    background: rgba(0, 15, 25, 0.9); /* Темный глубокий фон */
-    border: 1px solid var(--neon-aqua); /* Твоя переменная аква-цвета */
-    padding: 15px;
-    backdrop-filter: blur(10px); /* Эффект матового стекла */
-    box-shadow: 0 0 25px rgba(0, 255, 255, 0.15), inset 0 0 10px rgba(0, 255, 255, 0.05);
-    display: none; 
-    pointer-events: auto; /* Чтобы можно было нажать кнопки внутри, если добавим */
-    border-radius: 2px;
+    min-width: 320px; /* Было 220px */
+    background: rgba(0, 10, 20, 0.98); /* Глубокий темный фон */
+    border: 2px solid var(--neon-aqua); /* Двойная толщина рамки */
+    padding: 25px; /* Больше отступов внутри */
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.25), inset 0 0 15px rgba(0, 255, 255, 0.1);
+    display: none;
+    border-radius: 0; /* Строго квадратные углы! */
     font-family: 'Share Tech Mono', monospace;
 }
 
-/* Внутренняя структура */
-.popover-content {
-    display: flex;
-    gap: 15px;
-    align-items: center;
+/* Декоративный уголок (Sci-Fi деталь) */
+#user-popover::before {
+    content: "SCAN_RESULT_ID";
+    position: absolute;
+    top: -12px;
+    left: 15px;
+    background: var(--neon-aqua);
+    color: #000;
+    font-size: 9px;
+    padding: 2px 8px;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
 }
 
-/* Мини-аватарка в карточке */
+/* Контентная часть */
+.popover-content {
+    display: flex;
+    flex-direction: column; /* Элементы друг под другом */
+    align-items: center;    /* Центрируем всё */
+    gap: 20px;
+}
+
+/* Крупная КВАДРАТНАЯ аватарка */
 #pop-avatar {
-    width: 60px;
-    height: 60px;
-    border: 1px solid rgba(0, 255, 255, 0.3);
+    width: 140px;  /* Было 60px */
+    height: 140px; /* Было 60px */
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    border-radius: 0; /* Гарантированно квадратная */
     object-fit: cover;
     background: #000;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
 }
 
 /* Текстовый блок */
 .pop-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    width: 100%;
+    text-align: center;
 }
 
-/* Никнейм */
 #pop-nick {
     color: var(--neon-aqua);
     font-family: 'Orbitron', sans-serif;
-    font-size: 13px;
-    letter-spacing: 1px;
+    font-size: 20px; /* Крупнее ник */
+    letter-spacing: 2px;
     text-transform: uppercase;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+    padding-bottom: 12px;
 }
 
-/* Статистика */
+/* Крупная статистика списком */
 .pop-stats {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    font-size: 10px;
-    color: #888;
+    gap: 6px; /* Отступы между строками */
+    font-size: 14px; /* Читабельнее текст */
+    color: #aaa;
+    width: 100%;
 }
 
 .pop-stats span {
     display: flex;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: space-between; /* Название слева, цифра справа */
+    background: rgba(0, 255, 255, 0.03);
+    padding: 6px 12px;
+    border: 1px solid rgba(0, 255, 255, 0.05);
 }
 
 .pop-stats b {
     color: #fff;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-}
-
-/* Маленький декоративный элемент "уголок" */
-#user-popover::before {
-    content: "DATA_SCAN";
-    position: absolute;
-    top: -10px;
-    left: 10px;
-    background: var(--neon-aqua);
-    color: #000;
-    font-size: 8px;
-    padding: 1px 5px;
-    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: normal;
 }
