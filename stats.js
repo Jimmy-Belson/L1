@@ -34,14 +34,23 @@ async function fetchTable(table, field, containerId) {
         return;
     }
 
-    container.innerHTML = data.map((user, index) => `
+// Внутри stats.js в функции fetchTable измени метод отрисовки:
+
+container.innerHTML = data.map((user, index) => {
+    // Если в базе есть нормальная ссылка - берем её, если нет - генерим робота
+    const avatar = (user.avatar_url && user.avatar_url.length > 10) 
+        ? user.avatar_url 
+        : `https://api.dicebear.com/7.x/bottts/svg?seed=${user.nickname || index}&backgroundColor=001a2d`;
+
+    return `
         <div class="user-item">
-            <div class="user-rank">#${index + 1}</div>
-            <img src="${user.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed='+index}" class="user-avatar">
-            <div class="user-name">${user.nickname || 'Unknown_Pilot'}</div>
+            <div class="user-rank">${index + 1}</div>
+            <img src="${avatar}" class="user-avatar" onerror="this.src='space.png'">
+            <div class="user-name">${(user.nickname || 'PILOT').split('@')[0]}</div>
             <div class="user-score">${user[field] || 0}</div>
         </div>
-    `).join('');
+    `;
+}).join('');
 }
 
 // Запуск при загрузке

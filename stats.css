@@ -24,63 +24,63 @@ body {
 @keyframes scan { from { top: 0; } to { top: 100%; } }
 
 .stats-wrapper {
-    max-width: 1200px;
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 50px 20px;
+    padding: 20px; /* Уменьшили отступ сверху */
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Заставляем контент вписываться в экран */
+    box-sizing: border-box;
 }
 
-header { text-align: center; margin-bottom: 60px; }
+header { 
+    margin-bottom: 20px; 
+}
 
 .glitch {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 3.5rem;
-    letter-spacing: 5px;
-    text-shadow: 0 0 20px var(--neon);
+    font-size: 2.2rem; /* Уменьшили заголовок */
+    margin: 10px 0;
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    flex-grow: 1; /* Таблицы заберут свободное место */
+    overflow: hidden; /* Чтобы сами карточки не растягивали страницу */
 }
 
 .stat-card {
-    background: var(--card-bg);
-    border: 1px solid var(--neon);
-    position: relative;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
-}
-
-.card-header {
-    background: var(--neon);
-    color: #000;
-    padding: 10px;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: bold;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-.list-container { padding: 15px; min-height: 400px; }
-
-/* Элемент игрока */
-.user-item {
+    background: rgba(0, 10, 20, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 255, 255, 0.3);
     display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-    transition: 0.3s;
+    flex-direction: column;
+    height: 100%; /* Карточки одинаковой высоты */
 }
 
-.user-item:hover { background: rgba(0, 255, 255, 0.05); transform: translateX(5px); }
+.list-container { 
+    padding: 5px; 
+    overflow-y: auto; /* Если игроков много, скроллится только внутри таблицы */
+    flex-grow: 1;
+}
 
-.user-rank { width: 30px; font-weight: bold; color: rgba(0,255,255,0.5); }
+/* Стилизация скроллбара внутри таблиц */
+.list-container::-webkit-scrollbar { width: 4px; }
+.list-container::-webkit-scrollbar-thumb { background: var(--neon); }
+
+.user-item {
+    padding: 8px 12px; /* Компактные строки */
+    font-size: 0.9rem;
+}
 
 .user-avatar {
-    width: 45px; height: 45px;
-    border: 1px solid var(--neon);
-    margin: 0 15px;
-    object-fit: cover;
+    width: 32px; height: 32px; /* Меньше аватарки */
+    border-radius: 2px;
+}
+
+.footer {
+    padding: 15px 0;
 }
 
 .user-name { flex-grow: 1; text-transform: uppercase; font-size: 1rem; }
