@@ -91,63 +91,70 @@ Msg(text, type = 'info') {
     },
 
 init() {
-    // 1. ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ (ВНЕ САЙТА)
     if ("Notification" in window) {
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
     }
 
-    // Инициализация графики и звука
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
     
-    // Слушатель авторизации
-this.sb.auth.onAuthStateChange(async (event, session) => {
-    const path = window.location.pathname.toLowerCase();
-    const isLoginPage = path.includes('station.html');
+    this.sb.auth.onAuthStateChange(async (event, session) => {
+        const path = window.location.pathname.toLowerCase();
+        const isLoginPage = path.includes('station.html');
 
-    if (session) {
-        this.user = session.user;
-        console.log("AUTH_OK // USER:", this.user.email);
+        if (session) {
+            Core.user = session.user; // Используем Core для надежности контекста
+            
+            // 1. ЧАТ - ГРУЗИМ СРАЗУ
+            if (document.getElementById('chat-stream')) { 
+                Core.Chat.load(); 
+                Core.Chat.subscribe(); 
+            }
 
-        // 1. ЗАГРУЗКА ЧАТА (Приоритет №1)
-        if (document.getElementById('chat-stream')) { 
-            this.Chat.load(); 
-            this.Chat.subscribe(); 
+            // 2. ПРОФИЛЬ - В ФОНЕ (без await)
+            Core.SyncProfile(session.user);
+
+            if (isLoginPage) { window.location.href = 'index.html'; return; }
+            if (document.getElementById('todo-list')) Core.Todo.load();
+            
+        } else {
+            if (path.includes('index.html') || path === '/') {
+                window.location.href = 'station.html';
+            }
         }
+    });
 
-        // 2. СИНХРОНИЗАЦИЯ ПРОФИЛЯ (Фоном)
-        this.SyncProfile(session.user);
-
-        if (isLoginPage) { window.location.href = 'index.html'; return; }
-        if (document.getElementById('todo-list')) this.Todo.load();
-        
-    } else {
-        if (path.includes('index.html') || path === '/') {
-            window.location.href = 'station.html';
-        }
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        setInterval(() => {
+            clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        }, 1000);
     }
-});
 
-        // Глобальные клики (закрытие меню)
-        window.addEventListener('click', () => {
-            const menu = document.getElementById('custom-menu');
-            if(menu) menu.style.display = 'none';
-        });
+    this.UI();
+    this.loop();
+},
 
-        // Часы
-        const clockEl = document.getElementById('clock');
-        if (clockEl) {
-            setInterval(() => {
-                clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-            }, 1000);
+async SyncProfile(user) {
+    try {
+        const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+
+        if (!profile) {
+            await this.sb.from('profiles').insert([{
+                id: user.id,
+                nickname: user.user_metadata?.nickname || user.email.split('@')[0],
+                avatar_url: metaAvatar || this.getAvatar(user.id),
+                kills_astronauts: 0, nlo_clicks: 0, message_count: 0
+            }]);
+        } else if (metaAvatar && profile.avatar_url !== metaAvatar) {
+            // Если в базе старый робот, а в Google есть фото — обновляем один раз
+            await this.sb.from('profiles').update({ avatar_url: metaAvatar }).eq('id', user.id);
         }
-
-        // ВАЖНО: Инициализация кнопок и ввода вынесена из блока часов!
-        this.UI();
-        this.loop();
-    },
+    } catch (e) { console.warn("Sync Profile error:", e); }
+},
 
     async Auth() {
         const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
@@ -420,7 +427,7 @@ render(m) {
 
     d.innerHTML = `
         <div class="chat-row-layout">
-            <img src="${avatar}" class="chat-row-avatar">
+            <img src="${avatar}" class="chat-row-avatar" referrerpolicy="no-referrer">
             <div class="chat-content-block">
                 <div class="msg-header">
                     <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
