@@ -109,44 +109,24 @@ this.sb.auth.onAuthStateChange(async (event, session) => {
 
     if (session) {
         this.user = session.user;
+        console.log("AUTH_OK // USER:", this.user.email);
 
-        console.log("MY_METADATA:", this.user.user_metadata);
-        
-        // Достаем актуальную аву из соцсети (Google/GitHub)
-        const metaAvatar = this.user.user_metadata?.avatar_url || this.user.user_metadata?.picture;
-
-        // Запускаем чат
+        // 1. ЗАГРУЗКА ЧАТА (Приоритет №1)
         if (document.getElementById('chat-stream')) { 
             this.Chat.load(); 
             this.Chat.subscribe(); 
         }
 
-        // ПРОВЕРКА И ОБНОВЛЕНИЕ ПРОФИЛЯ
-        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', this.user.id).maybeSingle();
-
-        if (!profile) {
-            // Если профиля НЕТ — создаем
-            console.log("PROFILE_CREATING...");
-            await this.sb.from('profiles').insert([{
-                id: this.user.id,
-                nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
-                avatar_url: metaAvatar || this.getAvatar(this.user.id),
-                kills_astronauts: 0, nlo_clicks: 0, message_count: 0
-            }]);
-        } else {
-            // Если профиль ЕСТЬ, но там робот, а в соцсети есть фото — ОБНОВЛЯЕМ
-            const isRobot = profile.avatar_url && profile.avatar_url.includes('dicebear.com');
-            if (isRobot && metaAvatar) {
-                console.log("SYNC_AVATAR: Обновляем робота на реальное фото...");
-                await this.sb.from('profiles').update({ avatar_url: metaAvatar }).eq('id', this.user.id);
-            }
-        }
+        // 2. СИНХРОНИЗАЦИЯ ПРОФИЛЯ (Фоном)
+        this.SyncProfile(session.user);
 
         if (isLoginPage) { window.location.href = 'index.html'; return; }
         if (document.getElementById('todo-list')) this.Todo.load();
         
     } else {
-        if (path.includes('index.html') || path === '/') window.location.href = 'station.html';
+        if (path.includes('index.html') || path === '/') {
+            window.location.href = 'station.html';
+        }
     }
 });
 
@@ -292,6 +272,29 @@ render(t) { // Обязательно с маленькой буквы, как �
             console.error("TODO_ERROR:", error);
             Core.Msg("SYNC_ERROR", "error");
         }
+    }
+},
+
+async SyncProfile(user) {
+    try {
+        const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+
+        if (!profile) {
+            console.log("DB: Creating new profile...");
+            await this.sb.from('profiles').insert([{
+                id: user.id,
+                nickname: user.user_metadata?.nickname || user.email.split('@')[0],
+                avatar_url: metaAvatar || this.getAvatar(user.id),
+                kills_astronauts: 0, nlo_clicks: 0, message_count: 0
+            }]);
+        } else if (metaAvatar && profile.avatar_url !== metaAvatar) {
+            // Если в базе старая ава, а в Google новая — обновляем
+            console.log("DB: Syncing avatar...");
+            await this.sb.from('profiles').update({ avatar_url: metaAvatar }).eq('id', user.id);
+        }
+    } catch (e) {
+        console.warn("Profile sync skipped:", e.message);
     }
 },
 

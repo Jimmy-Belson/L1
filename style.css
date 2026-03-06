@@ -1189,3 +1189,22 @@ header button:hover {
 #confirm-yes:hover { background: #0ff !important; color: #000 !important; border-color: #0ff; }
 #confirm-no:hover { background: #f00 !important; color: #fff !important; border-color: #f00; }
 
+/* Добавь это в stats.css */
+body {
+    background: #00050a;
+    background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px; /* Сетка как в Троне */
+}
+
+.stat-card {
+    border-top: 4px solid var(--neon-aqua) !important; /* Толстая верхняя линия */
+    background: rgba(0, 10, 20, 0.9) !important;
+}
+
+.user-avatar {
+    border-radius: 50%; /* Круглые аватарки выглядят дороже */
+    border: 2px solid var(--neon-aqua);
+    box-shadow: 0 0 10px var(--neon-aqua);
+}
