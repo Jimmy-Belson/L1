@@ -439,27 +439,46 @@ render(m) {
     // --- ЛОГИКА ВСПЛЫВАЮЩЕЙ КАРТОЧКИ ---
     const triggerElements = d.querySelectorAll('.chat-row-avatar, .msg-nick');
     triggerElements.forEach(el => {
-        el.onclick = async (e) => {
-            e.stopPropagation(); // Чтобы не срабатывали другие клики
-            const pop = document.getElementById('user-popover');
-            if (!pop) return;
+el.onclick = async (e) => {
+    e.stopPropagation();
+    const pop = document.getElementById('user-popover');
+    if (!pop) return;
 
-            // Загружаем актуальные данные профиля из Supabase
-            const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
-            
-            if (p) {
-                document.getElementById('pop-avatar').src = p.avatar_url || avatar;
-                document.getElementById('pop-nick').innerText = p.nickname.toUpperCase();
-                document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
-                document.getElementById('pop-msgs').innerText = p.message_count || 0;
-                document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
-                
-                pop.style.display = 'block';
-                // Позиционируем чуть правее и выше места клика
-                pop.style.left = (e.clientX + 15) + 'px';
-                pop.style.top = (e.clientY - 60) + 'px';
-            }
-        };
+    const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+    
+    if (p) {
+        document.getElementById('pop-avatar').src = p.avatar_url || avatar;
+        document.getElementById('pop-nick').innerText = p.nickname.toUpperCase();
+        document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
+        document.getElementById('pop-msgs').innerText = p.message_count || 0;
+        document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+        
+        pop.style.display = 'block';
+
+        // --- УМНОЕ ПОЗИЦИОНИРОВАНИЕ ---
+        const gap = 20; // Отступ от курсора
+        let posX = e.clientX + gap;
+        let posY = e.clientY - (pop.offsetHeight / 2); // Центрируем по высоте курсора
+
+        // Проверка правой границы
+        if (posX + pop.offsetWidth > window.innerWidth) {
+            posX = e.clientX - pop.offsetWidth - gap;
+        }
+
+        // Проверка нижней границы
+        if (posY + pop.offsetHeight > window.innerHeight) {
+            posY = window.innerHeight - pop.offsetHeight - gap;
+        }
+
+        // Проверка верхней границы (чтобы не улетало вверх)
+        if (posY < gap) {
+            posY = gap;
+        }
+
+        pop.style.left = posX + 'px';
+        pop.style.top = posY + 'px';
+    }
+};
     });
 
     // Твоя логика удаления (контекстное меню)

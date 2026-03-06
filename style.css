@@ -1227,8 +1227,7 @@ body {
 #user-popover::before {
     content: "SCAN_RESULT_ID";
     position: absolute;
-    top: -12px;
-    left: 15px;
+    
     background: var(--neon-aqua);
     color: #000;
     font-size: 9px;
