@@ -2,33 +2,43 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SPACE_RECORDS // LEADERBOARD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQUAD_LEADERBOARD // TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="stats.css">
 </head>
 <body>
-    <div class="stars-bg"></div> <div class="stats-container">
-        <h1 class="glitch-title">HALL_OF_FAME</h1>
+    <div class="scanline"></div>
+    <div class="stats-wrapper">
+        <header>
+            <h1 class="glitch" data-text="RANKING_SYSTEM">RANKING_SYSTEM</h1>
+            <p class="subtitle">DATABASE_ACCESS: GRANTED // SECTOR_7</p>
+        </header>
         
-        <div class="tables-grid">
-            <section class="leaderboard">
-                <h3>SLAUGHTERED_ASTRONAUTS</h3>
-                <div id="top-killers" class="list-body"></div>
+        <div class="stats-grid">
+            <section class="stat-card">
+                <div class="card-header">SLAUGHTERED_ASTRONAUTS</div>
+                <div id="list-kills" class="list-container">FETCHING_DATA...</div>
             </section>
 
-            <section class="leaderboard">
-                <h3>UFO_TRACKERS</h3>
-                <div id="top-clickers" class="list-body"></div>
+            <section class="stat-card">
+                <div class="card-header">UFO_TRACKERS</div>
+                <div id="list-clicks" class="list-container">FETCHING_DATA...</div>
             </section>
 
-            <section class="leaderboard">
-                <h3>DATA_STREAMERS</h3>
-                <div id="top-messengers" class="list-body"></div>
+            <section class="stat-card">
+                <div class="card-header">DATA_STREAMERS</div>
+                <div id="list-messages" class="list-container">FETCHING_DATA...</div>
             </section>
         </div>
 
-        <button onclick="window.location.href='index.html'" class="back-btn">RETURN_TO_BASE</button>
+        <div class="footer">
+            <button onclick="window.location.href='index.html'" class="back-btn">
+                <span class="btn-arrow">«</span> RETURN_TO_BASE
+            </button>
+        </div>
     </div>
-
+    
     <script src="stats.js" type="module"></script>
 </body>
 </html>
