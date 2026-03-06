@@ -216,3 +216,24 @@ header {
     padding: 15px;
     text-transform: uppercase;
 }
+.avatar-frame {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    margin: 0 12px;
+    border: 1px solid var(--neon-aqua);
+    padding: 2px;
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.user-id-tag {
+    font-size: 8px;
+    color: rgba(0, 255, 255, 0.4);
+    margin-top: -2px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
