@@ -841,12 +841,34 @@ header button:hover {
 }
 
 .chat-row-avatar {
-    width: 65px;
-    height: 65px;
-    border: 2px solid #0ff;
-    border-radius: 8px;
+    /* Увеличиваем физический размер */
+    width: 70px; 
+    height: 70px;
+    
+    /* Убираем внутренние отступы, чтобы фото прилегало к рамке */
+    padding: 0; 
+    
+    /* Рамка и стиль */
+    border: 1px solid #0ff;
+    border-radius: 0; 
+    background: #000;
+    
+    /* Масштабирование: заполняет весь квадрат без искажений */
     object-fit: cover;
-    flex-shrink: 0;
+    object-position: center;
+    
+    /* Чтобы аватарка не сжималась, если текста много */
+    flex-shrink: 0; 
+    
+    /* Отступ справа от картинки до текста */
+    margin-right: 15px;
+}
+
+/* Контейнер для строки (чтобы аватарка и текст были в ряд) */
+.chat-row-layout {
+    display: flex;
+    align-items: flex-start; /* Выравнивание по верхнему краю */
+    margin-bottom: 5px;
 }
 
 .chat-content-block {
