@@ -35,32 +35,32 @@ async function fetchTable(field, containerId) {
             return;
         }
 
-        container.innerHTML = data.map((user, index) => {
-            // ФИКС АВАТАРОК:
-            let finalAvatar = user.avatar_url;
-            
-            // Если в таблице profiles пусто, пробуем достать аву из метаданных (через пропсы или робота)
-            if (!finalAvatar || finalAvatar.length < 10) {
-                // Генерируем робота, но используем ID или Ник как уникальное зерно
-                finalAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id || user.nickname}&backgroundColor=001a2d`;
-            }
+container.innerHTML = data.map((user, index) => {
+    // 1. Пытаемся взять из базы
+    let imgUrl = user.avatar_url;
 
-            const topClass = index < 3 ? `top-${index + 1}` : '';
+    // 2. Если в базе пусто или там робот, но мы хотим проверить, 
+    // не появилось ли что-то новое, добавляем проверку
+    if (!imgUrl || imgUrl.length < 20) {
+        imgUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}&backgroundColor=001a2d`;
+    }
 
-            return `
-                <div class="user-item ${topClass}">
-                    <div class="user-rank">#${index + 1}</div>
-                    <div class="avatar-frame">
-                        <img src="${finalAvatar}" class="user-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=fallback'">
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">${(user.nickname || 'Unknown').split('@')[0]}</div>
-                        <div class="user-id-tag">ID: ${user.id ? user.id.slice(0,5) : '????'}</div>
-                    </div>
-                    <div class="user-score">${user[field] || 0}</div>
-                </div>
-            `;
-        }).join('');
+    return `
+        <div class="user-item">
+            <div class="user-rank">#${index + 1}</div>
+            <div class="avatar-frame">
+                <img src="${imgUrl}" 
+                     class="user-avatar" 
+                     referrerpolicy="no-referrer" 
+                     onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=error'">
+            </div>
+            <div class="user-info">
+                <div class="user-name">${(user.nickname || 'Unknown').split('@')[0]}</div>
+                <div class="user-score">${user[field] || 0}</div>
+            </div>
+        </div>
+    `;
+}).join('');
 
     } catch (err) {
         console.error("STAT_ERROR:", err);

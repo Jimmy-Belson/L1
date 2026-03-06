@@ -109,6 +109,8 @@ this.sb.auth.onAuthStateChange(async (event, session) => {
 
     if (session) {
         this.user = session.user;
+
+        console.log("MY_METADATA:", this.user.user_metadata);
         
         // Достаем актуальную аву из соцсети (Google/GitHub)
         const metaAvatar = this.user.user_metadata?.avatar_url || this.user.user_metadata?.picture;
