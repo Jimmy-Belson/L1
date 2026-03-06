@@ -103,49 +103,39 @@ init() {
     if (this.Audio) this.Audio.setup(); 
     
     // Слушатель авторизации
-    this.sb.auth.onAuthStateChange(async (event, session) => { // Добавили async перед (event, session)
+this.sb.auth.onAuthStateChange(async (event, session) => {
     const path = window.location.pathname.toLowerCase();
     const isLoginPage = path.includes('station.html');
-    const isMainPage = path.endsWith('/') || path.includes('index.html');
-
+    
     if (session) {
         this.user = session.user;
-
-        // --- НОВЫЙ БЛОК: ПРОВЕРКА И СОЗДАНИЕ ПРОФИЛЯ ---
-        try {
-            const { data: profile, error } = await this.sb
-                .from('profiles')
-                .select('id')
-                .eq('id', this.user.id)
-                .maybeSingle(); // Ищем профиль пользователя
-
-            if (!profile && !error) {
-                // Если профиля нет — создаем его
-                await this.sb.from('profiles').insert([{
-                    id: this.user.id,
-                    nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
-                    avatar_url: Core.getAvatar(this.user.id, this.user.user_metadata?.avatar_url),
-                    kills_astronauts: 0,
-                    nlo_clicks: 0,
-                    message_count: 0
-                }]);
-                this.Msg("NEW_PILOT_PROFILE_CREATED", "info");
-            }
-        } catch (err) {
-            console.error("PROFILE_INIT_ERROR:", err);
-        }
-        // --- КОНЕЦ НОВОГО БЛОКА ---
+        
+        // 1. Запускаем загрузку профиля в фоне (не ждем через await, чтобы не вешать чат)
+        this.sb.from('profiles').select('id').eq('id', this.user.id).maybeSingle()
+            .then(({data}) => {
+                if (!data) {
+                    this.sb.from('profiles').insert([{
+                        id: this.user.id,
+                        nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
+                        avatar_url: this.getAvatar(this.user.id),
+                        kills_astronauts: 0, nlo_clicks: 0, message_count: 0
+                    }]).then(() => console.log("PROFILE_CREATED"));
+                }
+            });
 
         if (isLoginPage) { window.location.href = 'index.html'; return; }
         
+        // 2. СРАЗУ ЗАПУСКАЕМ ЧАТ (не дожидаясь профиля)
         if (document.getElementById('chat-stream')) { 
             this.Chat.load(); 
             this.Chat.subscribe(); 
         }
-        
         if (document.getElementById('todo-list')) this.Todo.load();
+        
     } else {
-        if (isMainPage) { window.location.href = 'station.html'; return; }
+        if (path.includes('index.html') || path === '/') {
+            window.location.href = 'station.html';
+        }
     }
 });
 

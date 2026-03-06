@@ -83,6 +83,25 @@
 
     </div>
 
+    <div id="custom-confirm" class="confirm-overlay" style="display:none">
+    <div class="confirm-box">
+        <div class="confirm-header">TERMINAL_REQUEST</div>
+        <div class="confirm-body">ERASE_DATA_STREAM?</div>
+        <div class="confirm-actions">
+            <button id="confirm-yes">CONFIRM</button>
+            <button id="confirm-no">ABORT</button>
+        </div>
+    </div>
+</div>
+
     <script src="script.js"></script>
+
+ <div id="stats-link" onclick="window.location.href='stats.html'" 
+     style="position:fixed; right:0; top:50%; transform:translateY(-50%); 
+            background:rgba(0,255,255,0.1); border:1px solid #0ff; 
+            padding:15px 5px; cursor:pointer; z-index:9999; border-radius:10px 0 0 10px;">
+    <span style="color:#0ff; writing-mode: vertical-rl; text-orientation: upright; font-size:12px; letter-spacing:2px;">RANKING ▶</span>
+</div>
+
 </body>
 </html>
