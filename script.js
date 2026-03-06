@@ -106,33 +106,40 @@ init() {
 this.sb.auth.onAuthStateChange(async (event, session) => {
     const path = window.location.pathname.toLowerCase();
     const isLoginPage = path.includes('station.html');
-    
+
     if (session) {
+        console.log("AUTH_SUCCESS: Сессия активна");
         this.user = session.user;
-        
-        // 1. Запускаем загрузку профиля в фоне (не ждем через await, чтобы не вешать чат)
+
+        // 1. СРАЗУ ГРУЗИМ ЧАТ (не ждем профиль!)
+        if (document.getElementById('chat-stream')) { 
+            console.log("CHAT_INIT: Запуск загрузки сообщений...");
+            this.Chat.load(); 
+            this.Chat.subscribe(); 
+        }
+
+        // 2. ПРОФИЛЬ ПРОВЕРЯЕМ В ФОНЕ
         this.sb.from('profiles').select('id').eq('id', this.user.id).maybeSingle()
-            .then(({data}) => {
-                if (!data) {
+            .then(({data, error}) => {
+                if (!data && !error) {
+                    console.log("PROFILE_MISSING: Создаем новый профиль...");
                     this.sb.from('profiles').insert([{
                         id: this.user.id,
                         nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
                         avatar_url: this.getAvatar(this.user.id),
                         kills_astronauts: 0, nlo_clicks: 0, message_count: 0
-                    }]).then(() => console.log("PROFILE_CREATED"));
+                    }]).then(() => console.log("PROFILE_READY"));
+                } else {
+                    console.log("PROFILE_EXISTS: Профиль уже есть в базе");
                 }
             });
 
-        if (isLoginPage) { window.location.href = 'index.html'; return; }
-        
-        // 2. СРАЗУ ЗАПУСКАЕМ ЧАТ (не дожидаясь профиля)
-        if (document.getElementById('chat-stream')) { 
-            this.Chat.load(); 
-            this.Chat.subscribe(); 
-        }
+       
+            if (isLoginPage) { window.location.href = 'index.html'; return; }
         if (document.getElementById('todo-list')) this.Todo.load();
         
     } else {
+        console.log("AUTH_REQUIRED: Перенаправление на вход");
         if (path.includes('index.html') || path === '/') {
             window.location.href = 'station.html';
         }
@@ -330,14 +337,23 @@ Chat: {
     },
 
     async load() { 
-        const { data } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(40); 
-        const s = document.getElementById('chat-stream');
-        if (s && data) { 
-            s.innerHTML = ''; 
-            data.reverse().forEach(m => this.render(m)); 
-            s.scrollTop = s.scrollHeight;
-        } 
-    },
+    console.log("CHAT_LOADING_DATA...");
+    const { data, error } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(40); 
+    
+    if (error) {
+        console.error("CHAT_LOAD_ERROR:", error);
+        return;
+    }
+
+    const s = document.getElementById('chat-stream');
+    if (s && data) { 
+        s.innerHTML = ''; 
+        // Переворачиваем, чтобы старые были сверху, новые снизу
+        data.reverse().forEach(m => this.render(m)); 
+        s.scrollTop = s.scrollHeight;
+        console.log(`CHAT_LOADED: ${data.length} сообщений`);
+    } 
+},
 
 async send() { 
     const i = document.getElementById('chat-in'); 
