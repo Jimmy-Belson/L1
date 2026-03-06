@@ -2,13 +2,13 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-    getAvatar(user_id, current_avatar) {
-    // Если аватарка уже есть и это не пустышка — возвращаем её
-    if (current_avatar && current_avatar.length > 10 && !current_avatar.includes('placeholder')) {
+getAvatar(user_id, current_avatar) {
+    // 1. Если передана реальная ссылка (не робот и не заглушка) — возвращаем её
+    if (current_avatar && current_avatar.length > 15 && !current_avatar.includes('dicebear')) {
         return current_avatar;
     }
-    // Если авы нет — генерируем робота по ID (чтобы у каждого был свой уникальный)
-    return `https://api.dicebear.com/7.x/bottts/svg?seed=${user_id || 'guest'}&backgroundColor=001a2d`;
+    // 2. Иначе генерируем робота
+    return `https://api.dicebear.com/7.x/bottts/svg?seed=${user_id}&backgroundColor=001a2d`;
 },
 
 Msg(text, type = 'info') {
@@ -108,41 +108,43 @@ this.sb.auth.onAuthStateChange(async (event, session) => {
     const isLoginPage = path.includes('station.html');
 
     if (session) {
-        console.log("AUTH_SUCCESS: Сессия активна");
         this.user = session.user;
+        
+        // Достаем актуальную аву из соцсети (Google/GitHub)
+        const metaAvatar = this.user.user_metadata?.avatar_url || this.user.user_metadata?.picture;
 
-        // 1. СРАЗУ ГРУЗИМ ЧАТ (не ждем профиль!)
+        // Запускаем чат
         if (document.getElementById('chat-stream')) { 
-            console.log("CHAT_INIT: Запуск загрузки сообщений...");
             this.Chat.load(); 
             this.Chat.subscribe(); 
         }
 
-        // 2. ПРОФИЛЬ ПРОВЕРЯЕМ В ФОНЕ
-        this.sb.from('profiles').select('id').eq('id', this.user.id).maybeSingle()
-            .then(({data, error}) => {
-                if (!data && !error) {
-                    console.log("PROFILE_MISSING: Создаем новый профиль...");
-                    this.sb.from('profiles').insert([{
-                        id: this.user.id,
-                        nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
-                        avatar_url: this.getAvatar(this.user.id),
-                        kills_astronauts: 0, nlo_clicks: 0, message_count: 0
-                    }]).then(() => console.log("PROFILE_READY"));
-                } else {
-                    console.log("PROFILE_EXISTS: Профиль уже есть в базе");
-                }
-            });
+        // ПРОВЕРКА И ОБНОВЛЕНИЕ ПРОФИЛЯ
+        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', this.user.id).maybeSingle();
 
-       
-            if (isLoginPage) { window.location.href = 'index.html'; return; }
+        if (!profile) {
+            // Если профиля НЕТ — создаем
+            console.log("PROFILE_CREATING...");
+            await this.sb.from('profiles').insert([{
+                id: this.user.id,
+                nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
+                avatar_url: metaAvatar || this.getAvatar(this.user.id),
+                kills_astronauts: 0, nlo_clicks: 0, message_count: 0
+            }]);
+        } else {
+            // Если профиль ЕСТЬ, но там робот, а в соцсети есть фото — ОБНОВЛЯЕМ
+            const isRobot = profile.avatar_url && profile.avatar_url.includes('dicebear.com');
+            if (isRobot && metaAvatar) {
+                console.log("SYNC_AVATAR: Обновляем робота на реальное фото...");
+                await this.sb.from('profiles').update({ avatar_url: metaAvatar }).eq('id', this.user.id);
+            }
+        }
+
+        if (isLoginPage) { window.location.href = 'index.html'; return; }
         if (document.getElementById('todo-list')) this.Todo.load();
         
     } else {
-        console.log("AUTH_REQUIRED: Перенаправление на вход");
-        if (path.includes('index.html') || path === '/') {
-            window.location.href = 'station.html';
-        }
+        if (path.includes('index.html') || path === '/') window.location.href = 'station.html';
     }
 });
 
