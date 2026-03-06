@@ -103,26 +103,51 @@ init() {
     if (this.Audio) this.Audio.setup(); 
     
     // Слушатель авторизации
-    this.sb.auth.onAuthStateChange((event, session) => {
-        const path = window.location.pathname.toLowerCase();
-        const isLoginPage = path.includes('station.html');
-        const isMainPage = path.endsWith('/') || path.includes('index.html');
+    this.sb.auth.onAuthStateChange(async (event, session) => { // Добавили async перед (event, session)
+    const path = window.location.pathname.toLowerCase();
+    const isLoginPage = path.includes('station.html');
+    const isMainPage = path.endsWith('/') || path.includes('index.html');
 
-        if (session) {
-            this.user = session.user;
-            if (isLoginPage) { window.location.href = 'index.html'; return; }
-            
-            // Если мы на главной странице (где есть чат)
-            if (document.getElementById('chat-stream')) { 
-                this.Chat.load(); 
-                this.Chat.subscribe(); 
+    if (session) {
+        this.user = session.user;
+
+        // --- НОВЫЙ БЛОК: ПРОВЕРКА И СОЗДАНИЕ ПРОФИЛЯ ---
+        try {
+            const { data: profile, error } = await this.sb
+                .from('profiles')
+                .select('id')
+                .eq('id', this.user.id)
+                .maybeSingle(); // Ищем профиль пользователя
+
+            if (!profile && !error) {
+                // Если профиля нет — создаем его
+                await this.sb.from('profiles').insert([{
+                    id: this.user.id,
+                    nickname: this.user.user_metadata?.nickname || this.user.email.split('@')[0],
+                    avatar_url: Core.getAvatar(this.user.id, this.user.user_metadata?.avatar_url),
+                    kills_astronauts: 0,
+                    nlo_clicks: 0,
+                    message_count: 0
+                }]);
+                this.Msg("NEW_PILOT_PROFILE_CREATED", "info");
             }
-            
-            if (document.getElementById('todo-list')) this.Todo.load();
-        } else {
-            if (isMainPage) { window.location.href = 'station.html'; return; }
+        } catch (err) {
+            console.error("PROFILE_INIT_ERROR:", err);
         }
-    });
+        // --- КОНЕЦ НОВОГО БЛОКА ---
+
+        if (isLoginPage) { window.location.href = 'index.html'; return; }
+        
+        if (document.getElementById('chat-stream')) { 
+            this.Chat.load(); 
+            this.Chat.subscribe(); 
+        }
+        
+        if (document.getElementById('todo-list')) this.Todo.load();
+    } else {
+        if (isMainPage) { window.location.href = 'station.html'; return; }
+    }
+});
 
         // Глобальные клики (закрытие меню)
         window.addEventListener('click', () => {
@@ -162,6 +187,23 @@ init() {
         await this.sb.auth.signOut(); 
         window.location.href = 'station.html'; 
     },
+
+    async UpdateStat(field, value = 1) {
+    if (!this.user) return;
+    
+    // Сначала получаем текущее значение из profiles
+    const { data } = await this.sb.from('profiles').select(field).eq('id', this.user.id).single();
+    
+    if (data) {
+        const newValue = (data[field] || 0) + value;
+        await this.sb.from('profiles').update({ [field]: newValue }).eq('id', this.user.id);
+        
+        // Если это сбитый космонавт, выведем уведомление
+        if (field === 'kills_astronauts') {
+             this.Msg(`RECORDS_UPDATED: ${newValue} KILLS`, "info");
+        }
+    }
+},
 
 Todo: {
     async load() {
@@ -326,11 +368,17 @@ async send() {
     const { data, error } = await Core.sb.from('comments').insert([{
         message: val, 
         nickname: n, 
-        avatar_url: a, // Теперь сюда улетит ссылка на робота, а не пустота
+        avatar_url: a, 
         user_id: Core.user.id
     }]).select();
 
-    if (!error && data) this.render(data[0]);
+    if (!error && data) {
+        this.render(data[0]);
+        
+        // ИНТЕГРАЦИЯ СТАТИСТИКИ:
+        // После отрисовки сообщения обновляем счетчик в профиле
+        Core.UpdateStat('message_count', 1);
+    }
 },
 
 render(m) {
@@ -479,27 +527,35 @@ window.addEventListener('mousedown', (e) => {
     // Если мы кликнули по кнопке или инпуту — ничего не делаем
     if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.panel')) return;
 
-    console.log("Клик дошел до системы!", e.clientX, e.clientY);
-
     const rect = this.cvs.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
+    // Проверка попадания в астронавтов
     this.crew.forEach(a => {
         const dist = Math.hypot(a.x - mx, a.y - my);
-        if (dist < 60) { // Увеличил радиус до 60 для легкости попадания
+        // Добавили !a.isFalling, чтобы нельзя было "накликивать" на летящего вниз
+        if (dist < 60 && !a.isFalling) { 
             a.isFalling = true;
             a.vy = 10;
             a.vr = 0.2;
             Core.Msg("PILOT_LOST: EMERGENCY_EXIT");
+            
+            // ОБНОВЛЕНИЕ СТАТИСТИКИ: Сбитые космонавты
+            Core.UpdateStat('kills_astronauts', 1);
         }
     });
 
+    // Проверка попадания в НЛО
     const u = this.ufo;
     const ufoY = u.y + Math.sin(Date.now() / 600) * 35;
     if (Math.hypot(u.x - mx, ufoY - my) < 70) {
         u.v = 15;
         Core.Msg("UFO_BOOST: WARP_DRIVE");
+        
+        // ОБНОВЛЕНИЕ СТАТИСТИКИ: Клики по НЛО
+        Core.UpdateStat('nlo_clicks', 1);
+        
         setTimeout(() => u.v = 2.1, 600);
     }
 });
