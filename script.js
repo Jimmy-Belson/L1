@@ -105,31 +105,30 @@ this.sb.auth.onAuthStateChange(async (event, session) => {
     const isLoginPage = path.includes('station.html');
 
     if (session) {
-        // ПОЛЬЗОВАТЕЛЬ АВТОРИЗОВАН
         Core.user = session.user;
-        
-        // Синхронизируем профиль (создаем запись в базе, если новый)
         await Core.SyncProfile(session.user);
 
-        // Если он на странице логина — пускаем внутрь
         if (isLoginPage) {
             window.location.href = 'index.html';
             return;
         }
 
-        // Грузим данные только если мы на главной
-        if (document.getElementById('chat-stream')) { 
-            Core.Chat.load(); 
+        // Загружаем компоненты, если они есть на странице
+        const stream = document.getElementById('chat-stream');
+        if (stream) { 
+            // Очищаем старое перед загрузкой, чтобы не дублировалось
+            stream.innerHTML = '<div style="color:var(--neon-aqua); font-size:10px; padding:10px;">INITIALIZING_SECURE_CHANNEL...</div>';
+            await Core.Chat.load(); 
             Core.Chat.subscribe(); 
         }
+        
         if (document.getElementById('todo-list')) {
             Core.Todo.load();
         }
         
     } else {
-        // ПОЛЬЗОВАТЕЛЬ НЕ АВТОРИЗОВАН (Новый или разлогинился)
-        // Если он НЕ на странице логина — жестко редиректим на вход
-        if (!isLoginPage && !path.includes('station')) {
+        // Если сессии нет и мы на главной — только тогда редирект
+        if (!isLoginPage && (path.includes('index.html') || path === '/')) {
             window.location.href = 'station.html';
         }
     }
