@@ -95,30 +95,30 @@ init() {
     if (this.Audio) this.Audio.setup(); 
     
     // Прямая проверка авторизации
-    this.sb.auth.onAuthStateChange((event, session) => {
-        const path = window.location.pathname;
-        
-        if (session) {
-            Core.user = session.user;
-            
-            // Если мы на странице входа — переходим на главную
-            if (path.includes('station.html')) {
-                window.location.href = 'index.html';
-            } else {
-                // Мы на главной: грузим чат и туду
-                Core.Chat.load(); 
-                Core.Chat.subscribe();
-                if (document.getElementById('todo-list')) Core.Todo.load();
-                Core.SyncProfile(session.user);
-            }
-        } else {
-            // Если сессии нет и мы на главной — на страницу входа
-            if (path.includes('index.html') || path === '/') {
-                window.location.href = 'station.html';
-            }
+this.sb.auth.onAuthStateChange((event, session) => {
+    const path = window.location.pathname;
+    
+    if (event === 'SIGNED_OUT' || !session) {
+        // Если разлогинились или нет сессии — только на вход
+        if (!path.includes('station.html')) {
+            window.location.href = 'station.html';
         }
-    });
+        return;
+    }
 
+    if (session) {
+        Core.user = session.user;
+        if (path.includes('station.html')) {
+            window.location.href = 'index.html';
+        } else {
+            // Обычная загрузка чата и остального
+            Core.Chat.load(); 
+            Core.Chat.subscribe();
+            if (document.getElementById('todo-list')) Core.Todo.load();
+            Core.SyncProfile(session.user);
+        }
+    }
+});
 
     const clockEl = document.getElementById('clock');
     if (clockEl) {
