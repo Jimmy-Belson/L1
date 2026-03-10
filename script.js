@@ -100,31 +100,40 @@ init() {
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
     
-    this.sb.auth.onAuthStateChange(async (event, session) => {
-        const path = window.location.pathname.toLowerCase();
-        const isLoginPage = path.includes('station.html');
+this.sb.auth.onAuthStateChange(async (event, session) => {
+    const path = window.location.pathname.toLowerCase();
+    const isLoginPage = path.includes('station.html');
 
-        if (session) {
-            Core.user = session.user; // Используем Core для надежности контекста
-            
-            // 1. ЧАТ - ГРУЗИМ СРАЗУ
-            if (document.getElementById('chat-stream')) { 
-                Core.Chat.load(); 
-                Core.Chat.subscribe(); 
-            }
+    if (session) {
+        // ПОЛЬЗОВАТЕЛЬ АВТОРИЗОВАН
+        Core.user = session.user;
+        
+        // Синхронизируем профиль (создаем запись в базе, если новый)
+        await Core.SyncProfile(session.user);
 
-            // 2. ПРОФИЛЬ - В ФОНЕ (без await)
-            Core.SyncProfile(session.user);
-
-            if (isLoginPage) { window.location.href = 'index.html'; return; }
-            if (document.getElementById('todo-list')) Core.Todo.load();
-            
-        } else {
-            if (path.includes('index.html') || path === '/') {
-                window.location.href = 'station.html';
-            }
+        // Если он на странице логина — пускаем внутрь
+        if (isLoginPage) {
+            window.location.href = 'index.html';
+            return;
         }
-    });
+
+        // Грузим данные только если мы на главной
+        if (document.getElementById('chat-stream')) { 
+            Core.Chat.load(); 
+            Core.Chat.subscribe(); 
+        }
+        if (document.getElementById('todo-list')) {
+            Core.Todo.load();
+        }
+        
+    } else {
+        // ПОЛЬЗОВАТЕЛЬ НЕ АВТОРИЗОВАН (Новый или разлогинился)
+        // Если он НЕ на странице логина — жестко редиректим на вход
+        if (!isLoginPage && !path.includes('station')) {
+            window.location.href = 'station.html';
+        }
+    }
+});
 
     const clockEl = document.getElementById('clock');
     if (clockEl) {
