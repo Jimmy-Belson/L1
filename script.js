@@ -104,8 +104,11 @@ this.sb.auth.onAuthStateChange(async (event, session) => {
     const path = window.location.pathname.toLowerCase();
     const isLoginPage = path.includes('station.html');
 
-    if (session) {
+    if (session && session.user) {
+        // --- ПИЛОТ НА БОРТУ ---
         Core.user = session.user;
+        
+        // Сначала создаем профиль, потом всё остальное
         await Core.SyncProfile(session.user);
 
         if (isLoginPage) {
@@ -113,22 +116,26 @@ this.sb.auth.onAuthStateChange(async (event, session) => {
             return;
         }
 
-        // Загружаем компоненты, если они есть на странице
-        const stream = document.getElementById('chat-stream');
-        if (stream) { 
-            // Очищаем старое перед загрузкой, чтобы не дублировалось
-            stream.innerHTML = '<div style="color:var(--neon-aqua); font-size:10px; padding:10px;">INITIALIZING_SECURE_CHANNEL...</div>';
-            await Core.Chat.load(); 
-            Core.Chat.subscribe(); 
+        // Инициализация модулей только если мы на главной
+        const chatStream = document.getElementById('chat-stream');
+        if (chatStream) {
+            // Важно: загружаем только если чат еще не загружен
+            if (chatStream.children.length === 0) {
+                await Core.Chat.load();
+                Core.Chat.subscribe();
+            }
         }
         
         if (document.getElementById('todo-list')) {
             Core.Todo.load();
         }
-        
+
     } else {
-        // Если сессии нет и мы на главной — только тогда редирект
-        if (!isLoginPage && (path.includes('index.html') || path === '/')) {
+        // --- ПИЛОТ ПОКИНУЛ КОРАБЛЬ (или новый пользователь) ---
+        Core.user = null; // Обнуляем, чтобы функции не выдавали ошибки
+        
+        // Если мы не на странице логина — редирект
+        if (!isLoginPage) {
             window.location.href = 'station.html';
         }
     }
