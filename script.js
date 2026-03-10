@@ -91,61 +91,41 @@ Msg(text, type = 'info') {
     },
 
 init() {
-    // 1. Запрос уведомлений
-    if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission();
-    }
-
-    // 2. Запуск анимаций и звука
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
-
-    // 3. КОНТРОЛЬ СЕССИИ (Главный блок)
-    this.sb.auth.onAuthStateChange(async (event, session) => {
-        const path = window.location.pathname.toLowerCase();
-        const isIndex = path.includes('index.html') || path === '/';
-        const isLogin = path.includes('station.html');
-
+    
+    // Прямая проверка авторизации
+    this.sb.auth.onAuthStateChange((event, session) => {
+        const path = window.location.pathname;
+        
         if (session) {
-            // ПИЛОТ В СИСТЕМЕ
             Core.user = session.user;
             
-            // Если мы на странице входа — летим на базу
-            if (isLogin) {
+            // Если мы на странице входа — переходим на главную
+            if (path.includes('station.html')) {
                 window.location.href = 'index.html';
-                return;
-            }
-
-            // Загружаем данные только если мы на главной (index)
-            if (isIndex) {
-                await Core.SyncProfile(session.user);
-                
-                // Запуск чата (только один раз)
-                if (document.getElementById('chat-stream')) {
-                    await Core.Chat.load();
-                    Core.Chat.subscribe();
-                }
-                
-                // Запуск задач
-                if (document.getElementById('todo-list')) {
-                    Core.Todo.load();
-                }
+            } else {
+                // Мы на главной: грузим чат и туду
+                Core.Chat.load(); 
+                Core.Chat.subscribe();
+                if (document.getElementById('todo-list')) Core.Todo.load();
+                Core.SyncProfile(session.user);
             }
         } else {
-            // ПИЛОТ ВНЕ СИСТЕМЫ
-            Core.user = null;
-            // Если пытаемся зайти на главную без ключей — на выход
-            if (isIndex) {
+            // Если сессии нет и мы на главной — на страницу входа
+            if (path.includes('index.html') || path === '/') {
                 window.location.href = 'station.html';
             }
         }
     });
 
-    // Часы и UI
+
     const clockEl = document.getElementById('clock');
-    if (clockEl) setInterval(() => {
-        clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-    }, 1000);
+    if (clockEl) {
+        setInterval(() => {
+            clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        }, 1000);
+    }
 
     this.UI();
     this.loop();
@@ -185,10 +165,10 @@ async SyncProfile(user) {
         else this.Msg("PILOT_REGISTERED. INITIATE SESSION.");
     },
 
-    async Logout() { 
-        await this.sb.auth.signOut(); 
-        window.location.href = 'station.html'; 
-    },
+async Logout() { 
+    await this.sb.auth.signOut(); 
+    window.location.href = 'station.html'; 
+},
 
 async UpdateStat(field, value = 1) {
     if (!this.user) return;
@@ -468,29 +448,9 @@ el.onclick = async (e) => {
         document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
         
         pop.style.display = 'block';
-
-        // --- УМНОЕ ПОЗИЦИОНИРОВАНИЕ ---
-        const gap = 20; // Отступ от курсора
-        let posX = e.clientX + gap;
-        let posY = e.clientY - (pop.offsetHeight / 2); // Центрируем по высоте курсора
-
-        // Проверка правой границы
-        if (posX + pop.offsetWidth > window.innerWidth) {
-            posX = e.clientX - pop.offsetWidth - gap;
-        }
-
-        // Проверка нижней границы
-        if (posY + pop.offsetHeight > window.innerHeight) {
-            posY = window.innerHeight - pop.offsetHeight - gap;
-        }
-
-        // Проверка верхней границы (чтобы не улетало вверх)
-        if (posY < gap) {
-            posY = gap;
-        }
-
-        pop.style.left = posX + 'px';
-        pop.style.top = posY + 'px';
+        // Простейшее позиционирование
+        pop.style.left = (e.clientX + 10) + 'px';
+        pop.style.top = (e.clientY - 100) + 'px';
     }
 };
     });
