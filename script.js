@@ -91,62 +91,61 @@ Msg(text, type = 'info') {
     },
 
 init() {
-    if ("Notification" in window) {
-        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-            Notification.requestPermission();
-        }
+    // 1. Запрос уведомлений
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
     }
 
+    // 2. Запуск анимаций и звука
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
-    
-this.sb.auth.onAuthStateChange(async (event, session) => {
-    const path = window.location.pathname.toLowerCase();
-    const isLoginPage = path.includes('station.html');
 
-    if (session && session.user) {
-        // --- ПИЛОТ НА БОРТУ ---
-        Core.user = session.user;
-        
-        // Сначала создаем профиль, потом всё остальное
-        await Core.SyncProfile(session.user);
+    // 3. КОНТРОЛЬ СЕССИИ (Главный блок)
+    this.sb.auth.onAuthStateChange(async (event, session) => {
+        const path = window.location.pathname.toLowerCase();
+        const isIndex = path.includes('index.html') || path === '/';
+        const isLogin = path.includes('station.html');
 
-        if (isLoginPage) {
-            window.location.href = 'index.html';
-            return;
-        }
+        if (session) {
+            // ПИЛОТ В СИСТЕМЕ
+            Core.user = session.user;
+            
+            // Если мы на странице входа — летим на базу
+            if (isLogin) {
+                window.location.href = 'index.html';
+                return;
+            }
 
-        // Инициализация модулей только если мы на главной
-        const chatStream = document.getElementById('chat-stream');
-        if (chatStream) {
-            // Важно: загружаем только если чат еще не загружен
-            if (chatStream.children.length === 0) {
-                await Core.Chat.load();
-                Core.Chat.subscribe();
+            // Загружаем данные только если мы на главной (index)
+            if (isIndex) {
+                await Core.SyncProfile(session.user);
+                
+                // Запуск чата (только один раз)
+                if (document.getElementById('chat-stream')) {
+                    await Core.Chat.load();
+                    Core.Chat.subscribe();
+                }
+                
+                // Запуск задач
+                if (document.getElementById('todo-list')) {
+                    Core.Todo.load();
+                }
+            }
+        } else {
+            // ПИЛОТ ВНЕ СИСТЕМЫ
+            Core.user = null;
+            // Если пытаемся зайти на главную без ключей — на выход
+            if (isIndex) {
+                window.location.href = 'station.html';
             }
         }
-        
-        if (document.getElementById('todo-list')) {
-            Core.Todo.load();
-        }
+    });
 
-    } else {
-        // --- ПИЛОТ ПОКИНУЛ КОРАБЛЬ (или новый пользователь) ---
-        Core.user = null; // Обнуляем, чтобы функции не выдавали ошибки
-        
-        // Если мы не на странице логина — редирект
-        if (!isLoginPage) {
-            window.location.href = 'station.html';
-        }
-    }
-});
-
+    // Часы и UI
     const clockEl = document.getElementById('clock');
-    if (clockEl) {
-        setInterval(() => {
-            clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-        }, 1000);
-    }
+    if (clockEl) setInterval(() => {
+        clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+    }, 1000);
 
     this.UI();
     this.loop();
