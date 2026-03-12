@@ -94,31 +94,37 @@ init() {
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
     
-    // Прямая проверка авторизации
-this.sb.auth.onAuthStateChange((event, session) => {
-    const path = window.location.pathname;
-    
-    if (event === 'SIGNED_OUT' || !session) {
-        // Если разлогинились или нет сессии — только на вход
-        if (!path.includes('station.html')) {
-            window.location.href = 'station.html';
-        }
-        return;
-    }
+    this.sb.auth.onAuthStateChange((event, session) => {
+        const path = window.location.pathname;
+        const isAuthPage = path.includes('station.html');
 
-    if (session) {
-        Core.user = session.user;
-        if (path.includes('station.html')) {
-            window.location.href = 'index.html';
-        } else {
-            // Обычная загрузка чата и остального
-            Core.Chat.load(); 
-            Core.Chat.subscribe();
-            if (document.getElementById('todo-list')) Core.Todo.load();
-            Core.SyncProfile(session.user);
+        // 1. Если сессии нет и мы НЕ на странице входа — только тогда редирект
+        if (!session && !isAuthPage) {
+            window.location.href = 'station.html';
+            return;
         }
-    }
-});
+
+        // 2. Если сессия есть
+        if (session) {
+            this.user = session.user;
+
+            // РЕДИРЕКТ ТОЛЬКО ЕСЛИ МЫ ВСЕ ЕЩЕ НА СТРАНИЦЕ ВХОДА
+            if (isAuthPage) {
+                window.location.href = 'index.html';
+                return; 
+            }
+
+            // 3. Если мы уже на нужной странице (index или profile), просто грузим данные
+            // Добавляем проверку, чтобы не вызывать load() по сто раз
+            if (!this.dataLoaded) {
+                this.Chat.load(); 
+                this.Chat.subscribe();
+                if (document.getElementById('todo-list')) this.Todo.load();
+                this.SyncProfile(session.user);
+                this.dataLoaded = true; // Флаг, чтобы не дублировать запросы
+            }
+        }
+    });
 
     const clockEl = document.getElementById('clock');
     if (clockEl) {
