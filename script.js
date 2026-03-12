@@ -156,56 +156,50 @@ async SyncProfile(user) {
 async UpdateProfile() {
     if (!this.user) return;
 
-    const nickInput = document.getElementById('edit-nick');
-    // ВАЖНО: берем SRC из картинки-превью, если input пустой
-    const avatarPreview = document.getElementById('avatar-img');
-    const avatarInput = document.getElementById('edit-avatar');
+    // СВЕРКА ПО ТВОЕМУ HTML:
+    const btn = document.getElementById('save-btn');
+    const nickInput = document.getElementById('nick-input'); // Было edit-nick, стало nick-input
+    const previewImg = document.getElementById('avatar-img');
     
-    if (!nickInput) return;
+    if (!nickInput || !btn) return;
 
-    const newNick = nickInput.value.trim();
-    // Логика: приоритет инпуту, если пуст — берем то, что на экране (из previewFile)
-    const newAvatar = (avatarInput && avatarInput.value) ? avatarInput.value : (avatarPreview ? avatarPreview.src : '');
+    btn.innerText = ">> SYNCING...";
+    btn.disabled = true;
 
-    if (!newNick) {
-        this.Msg("ERROR: NICKNAME_REQUIRED", "error");
-        return;
-    }
+    try {
+        const currentAvatarData = previewImg.src;
 
-    // 1. Обновляем таблицу PROFILES
-    const { error: dbError } = await this.sb
-        .from('profiles')
-        .update({ 
-            nickname: newNick, 
-            avatar_url: newAvatar || this.getAvatar(this.user.id) 
-        })
-        .eq('id', this.user.id);
+        // 1. Обновляем базу
+        const { error: dbError } = await this.sb
+            .from('profiles')
+            .update({ 
+                nickname: nickInput.value.trim(), 
+                avatar_url: currentAvatarData 
+            })
+            .eq('id', this.user.id);
 
-    if (dbError) {
-        this.Msg("SAVE_ERROR: " + dbError.message, "error");
-        return;
-    }
+        if (dbError) throw dbError;
 
-    // 2. КРИТИЧЕСКИЙ ШАГ: Обновляем метаданные AUTH
-    // Без этого Core.user будет хранить старую ссылку до следующего логина!
-    const { data: { user }, error: authError } = await this.sb.auth.updateUser({
-        data: { 
-            nickname: newNick, 
-            avatar_url: newAvatar 
-        }
-    });
+        // 2. Обновляем сессию (Auth)
+        const { data: { user } } = await this.sb.auth.updateUser({
+            data: { 
+                nickname: nickInput.value.trim(), 
+                avatar_url: currentAvatarData 
+            }
+        });
 
-    if (authError) {
-        this.Msg("AUTH_SYNC_ERROR: " + authError.message, "error");
-    } else {
-        // Обновляем локальную переменную, чтобы чат сразу подхватил новую аву
-        this.user = user; 
-        this.Msg("SYSTEM: PROFILE_SYNCHRONIZED", "info");
-        
-        // Даем время прочитать уведомление и уходим на главную
-        setTimeout(() => window.location.href = 'index.html', 1500);
+        this.user = user;
+        this.Msg("SYSTEM: DATA_SYNCED");
+        setTimeout(() => window.location.href = 'index.html', 1000);
+
+    } catch (e) {
+        this.Msg("SYNC_ERROR: " + e.message, "error");
+    } finally {
+        btn.innerText = "[ SYNC_WITH_STATION ]";
+        btn.disabled = false;
     }
 },
+
 
     async Auth() {
         const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
