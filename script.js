@@ -91,58 +91,69 @@ Msg(text, type = 'info') {
     },
 
 async init() {
-    // 1. Скрываем интерфейс, пока идет проверка (чтобы не закидывало на долю секунды)
-    const container = document.querySelector('.os-container');
-    if (container) container.style.opacity = '0';
+    console.log("SYSTEM: INITIATING_BOOT_SEQUENCE...");
 
-    if (this.Canvas) this.Canvas.init(); 
-    if (this.Audio) this.Audio.setup(); 
-
-    // 2. Ждем официального ответа от Supabase
-    const { data: { session } } = await this.sb.auth.getSession();
+    // 1. Получаем сессию один раз
+    const { data: { session }, error: sessionError } = await this.sb.auth.getSession();
     const path = window.location.pathname;
     const isStation = path.includes('station.html');
 
+    if (sessionError) {
+        console.error("AUTH_ERROR:", sessionError);
+    }
+
+    // 2. Логика редиректов (без циклов)
     if (!session) {
-        // Если не залогинен — только на станцию
         if (!isStation) {
+            console.log("ACCESS_DENIED: REDIRECTING_TO_STATION");
             window.location.replace('station.html');
-            return;
+            return; 
         }
     } else {
-        // Если залогинен
         this.user = session.user;
+        console.log("ACCESS_GRANTED: USER_", this.user.id);
         
         if (isStation) {
             window.location.replace('index.html');
             return;
         }
 
-        // Если всё ок — показываем интерфейс
-        if (container) container.style.opacity = '1';
-
-        // Грузим данные
+        // Загружаем данные только если мы на нужной странице
         this.Chat.load(); 
         this.Chat.subscribe();
         if (document.getElementById('todo-list')) this.Todo.load();
-        this.SyncProfile(this.user);
+        
+        // Пытаемся синхронизировать профиль (если функция есть)
+        if (typeof this.SyncProfile === 'function') {
+            this.SyncProfile(this.user);
+        }
     }
 
-    // Слушаем только разлогин
+    // 3. Запуск систем (Часы, UI, Анимация) — теперь это сработает ВСЕГДА
+    this.startClock(); // Вынес в отдельную функцию для надежности
+    this.UI();
+    if (this.Canvas) this.Canvas.init(); 
+    if (this.Audio) this.Audio.setup(); 
+    this.loop();
+
+    // Слушатель только на выход
     this.sb.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') window.location.replace('station.html');
     });
+},
 
-    // Часы и петля отрисовки
+// Добавь эту вспомогательную функцию внутри Core
+startClock() {
     const clockEl = document.getElementById('clock');
     if (clockEl) {
-        setInterval(() => {
+        const update = () => {
             clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
-        }, 1000);
+        };
+        update();
+        setInterval(update, 1000);
     }
     
-    this.UI();
-    this.loop();
+    
 },
 
 async UpdateProfile() {
