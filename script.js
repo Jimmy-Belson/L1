@@ -181,45 +181,43 @@ async UpdateProfile() {
     const nickInput = document.getElementById('nick-input'); 
     const previewImg = document.getElementById('avatar-img');
     
-    if (!nickInput || !btn || !previewImg) return;
+    if (!nickInput || !btn) return;
 
     btn.innerText = ">> SYNCING...";
     btn.disabled = true;
 
     try {
-        const currentAvatarData = previewImg.src;
+        const nick = nickInput.value.trim();
+        const ava = previewImg ? previewImg.src : null;
 
-        // 1. Обновляем базу
-        const { error: dbError } = await this.sb
+        // .upsert — это "создай, если нет, или обнови, если есть"
+        const { error } = await this.sb
             .from('profiles')
-            .update({ 
-                nickname: nickInput.value.trim(), 
-                avatar_url: currentAvatarData 
-            })
-            .eq('id', this.user.id);
+            .upsert({ 
+                id: this.user.id, 
+                nickname: nick, 
+                avatar_url: ava,
+                updated_at: new Date()
+            });
 
-        if (dbError) throw dbError;
+        if (error) throw error;
 
-        // 2. Обновляем сессию
-        const { data: { user } } = await this.sb.auth.updateUser({
-            data: { 
-                nickname: nickInput.value.trim(), 
-                avatar_url: currentAvatarData 
-            }
-        });
-
-        this.user = user;
         this.Msg("SYSTEM: DATA_SYNCED");
-        setTimeout(() => window.location.href = 'index.html', 1000);
+        
+        // Уходим на главную через секунду
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
 
     } catch (e) {
+        console.error(e);
         this.Msg("SYNC_ERROR: " + e.message, "error");
     } finally {
         btn.innerText = "[ SYNC_WITH_STATION ]";
         btn.disabled = false;
     }
-},
+    
 
+
+},
 
     async Auth() {
         const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
