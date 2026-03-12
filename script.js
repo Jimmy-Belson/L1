@@ -91,55 +91,49 @@ Msg(text, type = 'info') {
     },
 
 async init() {
+    // 1. Скрываем интерфейс, пока идет проверка (чтобы не закидывало на долю секунды)
+    const container = document.querySelector('.os-container');
+    if (container) container.style.opacity = '0';
+
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
-    
-    // 1. ПРОВЕРКА СТАТУСА ПРИ ЗАГРУЗКЕ (Выполняется ровно 1 раз)
+
+    // 2. Ждем официального ответа от Supabase
     const { data: { session } } = await this.sb.auth.getSession();
     const path = window.location.pathname;
-    const isAuthPage = path.includes('station.html');
+    const isStation = path.includes('station.html');
 
     if (!session) {
-        // Нет сессии — только на вход
-        if (!isAuthPage) {
-            window.location.href = 'station.html';
-            return; // Остановка выполнения
+        // Если не залогинен — только на станцию
+        if (!isStation) {
+            window.location.replace('station.html');
+            return;
         }
     } else {
-        // Сессия есть
+        // Если залогинен
         this.user = session.user;
         
-        // Если залогинен и полез на страницу входа — на главную
-        if (isAuthPage) {
-            window.location.href = 'index.html';
-            return; // Остановка выполнения
+        if (isStation) {
+            window.location.replace('index.html');
+            return;
         }
 
-        // ЗАГРУЗКА ДАННЫХ (только здесь и только один раз)
+        // Если всё ок — показываем интерфейс
+        if (container) container.style.opacity = '1';
+
+        // Грузим данные
         this.Chat.load(); 
         this.Chat.subscribe();
         if (document.getElementById('todo-list')) this.Todo.load();
-        
-        // Загрузка ника и авы в профиль, если мы на странице профиля
-        if (path.includes('profile.html')) {
-            const { data: p } = await this.sb.from('profiles').select('*').eq('id', this.user.id).single();
-            if (p) {
-                const nEl = document.getElementById('nick-input');
-                const aEl = document.getElementById('avatar-img');
-                if (nEl) nEl.value = p.nickname || "";
-                if (aEl && p.avatar_url) aEl.src = p.avatar_url;
-            }
-        }
+        this.SyncProfile(this.user);
     }
 
-    // 2. СЛУШАТЕЛЬ ТОЛЬКО ДЛЯ ВЫХОДА (Чтобы редирект не зацикливался при входе)
+    // Слушаем только разлогин
     this.sb.auth.onAuthStateChange((event) => {
-        if (event === 'SIGNED_OUT') {
-            window.location.href = 'station.html';
-        }
+        if (event === 'SIGNED_OUT') window.location.replace('station.html');
     });
 
-    // Остальное (часы, UI)
+    // Часы и петля отрисовки
     const clockEl = document.getElementById('clock');
     if (clockEl) {
         setInterval(() => {
