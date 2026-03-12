@@ -131,71 +131,66 @@ this.sb.auth.onAuthStateChange((event, session) => {
     this.loop();
 },
 
-// ОСТАВЬ ОДИН SyncProfile (для автоматического входа)
-async SyncProfile(user) {
-    try {
-        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
-
-        if (!profile) {
-            // Если профиля нет — создаем из метаданных Google/Email
-            const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-            const metaNick = user.user_metadata?.nickname || user.email.split('@')[0];
-
-            await this.sb.from('profiles').insert([{
-                id: user.id,
-                nickname: metaNick,
-                avatar_url: metaAvatar || this.getAvatar(user.id),
-                kills_astronauts: 0, 
-                nlo_clicks: 0, 
-                message_count: 0
-            }]);
-        }
-    } catch (e) { console.warn("Profile sync error:", e); }
-},
-
 async UpdateProfile() {
     if (!this.user) return;
 
-    // СВЕРКА ПО ТВОЕМУ HTML:
     const btn = document.getElementById('save-btn');
-    const nickInput = document.getElementById('nick-input'); // Было edit-nick, стало nick-input
-    const previewImg = document.getElementById('avatar-img');
+    const nickInput = document.getElementById('nick-input'); // Исправлено под твой HTML
+    const fileInput = document.getElementById('avatar-file'); // Поле файла
+    const previewImg = document.getElementById('avatar-img'); // Превью
     
     if (!nickInput || !btn) return;
 
+    const originalBtnText = btn.innerText;
     btn.innerText = ">> SYNCING...";
     btn.disabled = true;
 
     try {
-        const currentAvatarData = previewImg.src;
+        let finalAvatarUrl = previewImg.src;
 
-        // 1. Обновляем базу
+        // А) Если выбран новый файл — грузим в Storage
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${this.user.id}/avatar_${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await this.sb.storage
+                .from('avatars')
+                .upload(filePath, file, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            const { data } = this.sb.storage.from('avatars').getPublicUrl(filePath);
+            finalAvatarUrl = data.publicUrl;
+        }
+
+        // Б) Обновление ТАБЛИЦЫ
         const { error: dbError } = await this.sb
             .from('profiles')
             .update({ 
                 nickname: nickInput.value.trim(), 
-                avatar_url: currentAvatarData 
+                avatar_url: finalAvatarUrl 
             })
             .eq('id', this.user.id);
 
         if (dbError) throw dbError;
 
-        // 2. Обновляем сессию (Auth)
-        const { data: { user } } = await this.sb.auth.updateUser({
+        // В) Обновление МЕТАДАННЫХ сессии
+        await this.sb.auth.updateUser({
             data: { 
                 nickname: nickInput.value.trim(), 
-                avatar_url: currentAvatarData 
+                avatar_url: finalAvatarUrl 
             }
         });
 
-        this.user = user;
-        this.Msg("SYSTEM: DATA_SYNCED");
-        setTimeout(() => window.location.href = 'index.html', 1000);
+        this.Msg("IDENTITY_STABILIZED: DATA_SYNCED");
+        setTimeout(() => window.location.href = 'index.html', 1500);
 
-    } catch (e) {
-        this.Msg("SYNC_ERROR: " + e.message, "error");
+    } catch (err) {
+        console.error("Ошибка:", err);
+        this.Msg("SYNC_FAILED: " + err.message, "error");
     } finally {
-        btn.innerText = "[ SYNC_WITH_STATION ]";
+        btn.innerText = originalBtnText;
         btn.disabled = false;
     }
 },
