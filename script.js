@@ -94,47 +94,59 @@ async init() {
     if (this.Canvas) this.Canvas.init(); 
     if (this.Audio) this.Audio.setup(); 
     
-    // 1. ПОЛУЧАЕМ СЕССИЮ ЕДИНОЖДЫ
+    // 1. ПРОВЕРКА СТАТУСА ПРИ ЗАГРУЗКЕ (Выполняется ровно 1 раз)
     const { data: { session } } = await this.sb.auth.getSession();
     const path = window.location.pathname;
     const isAuthPage = path.includes('station.html');
 
     if (!session) {
-        // Если пилота нет и мы не на странице входа — гоним на вход
+        // Нет сессии — только на вход
         if (!isAuthPage) {
             window.location.href = 'station.html';
-            return;
+            return; // Остановка выполнения
         }
     } else {
-        // Если пилот в системе
+        // Сессия есть
         this.user = session.user;
         
+        // Если залогинен и полез на страницу входа — на главную
         if (isAuthPage) {
-            // Если он залогинен, но зашел на страницу логина — в ангар (на индекс)
             window.location.href = 'index.html';
-            return;
+            return; // Остановка выполнения
         }
 
-        // Загружаем данные только если мы на рабочей странице (index или profile)
+        // ЗАГРУЗКА ДАННЫХ (только здесь и только один раз)
         this.Chat.load(); 
         this.Chat.subscribe();
         if (document.getElementById('todo-list')) this.Todo.load();
-        this.SyncProfile(this.user);
+        
+        // Загрузка ника и авы в профиль, если мы на странице профиля
+        if (path.includes('profile.html')) {
+            const { data: p } = await this.sb.from('profiles').select('*').eq('id', this.user.id).single();
+            if (p) {
+                const nEl = document.getElementById('nick-input');
+                const aEl = document.getElementById('avatar-img');
+                if (nEl) nEl.value = p.nickname || "";
+                if (aEl && p.avatar_url) aEl.src = p.avatar_url;
+            }
+        }
     }
 
-    // 2. СЛУШАЕМ ВЫХОД (чтобы выкинуть со страницы, если нажали Logout)
+    // 2. СЛУШАТЕЛЬ ТОЛЬКО ДЛЯ ВЫХОДА (Чтобы редирект не зацикливался при входе)
     this.sb.auth.onAuthStateChange((event) => {
-        if (event === 'SIGNED_OUT') window.location.href = 'station.html';
+        if (event === 'SIGNED_OUT') {
+            window.location.href = 'station.html';
+        }
     });
 
-    // Часы
+    // Остальное (часы, UI)
     const clockEl = document.getElementById('clock');
     if (clockEl) {
         setInterval(() => {
             clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
         }, 1000);
     }
-
+    
     this.UI();
     this.loop();
 },
