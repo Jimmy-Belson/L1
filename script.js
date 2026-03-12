@@ -135,62 +135,44 @@ async UpdateProfile() {
     if (!this.user) return;
 
     const btn = document.getElementById('save-btn');
-    const nickInput = document.getElementById('nick-input'); // Исправлено под твой HTML
-    const fileInput = document.getElementById('avatar-file'); // Поле файла
-    const previewImg = document.getElementById('avatar-img'); // Превью
+    const nickInput = document.getElementById('nick-input'); 
+    const previewImg = document.getElementById('avatar-img');
     
-    if (!nickInput || !btn) return;
+    if (!nickInput || !btn || !previewImg) return;
 
-    const originalBtnText = btn.innerText;
     btn.innerText = ">> SYNCING...";
     btn.disabled = true;
 
     try {
-        let finalAvatarUrl = previewImg.src;
+        const currentAvatarData = previewImg.src;
 
-        // А) Если выбран новый файл — грузим в Storage
-        if (fileInput && fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const fileExt = file.name.split('.').pop();
-            const filePath = `${this.user.id}/avatar_${Date.now()}.${fileExt}`;
-
-            const { error: uploadError } = await this.sb.storage
-                .from('avatars')
-                .upload(filePath, file, { upsert: true });
-
-            if (uploadError) throw uploadError;
-
-            const { data } = this.sb.storage.from('avatars').getPublicUrl(filePath);
-            finalAvatarUrl = data.publicUrl;
-        }
-
-        // Б) Обновление ТАБЛИЦЫ
+        // 1. Обновляем базу
         const { error: dbError } = await this.sb
             .from('profiles')
             .update({ 
                 nickname: nickInput.value.trim(), 
-                avatar_url: finalAvatarUrl 
+                avatar_url: currentAvatarData 
             })
             .eq('id', this.user.id);
 
         if (dbError) throw dbError;
 
-        // В) Обновление МЕТАДАННЫХ сессии
-        await this.sb.auth.updateUser({
+        // 2. Обновляем сессию
+        const { data: { user } } = await this.sb.auth.updateUser({
             data: { 
                 nickname: nickInput.value.trim(), 
-                avatar_url: finalAvatarUrl 
+                avatar_url: currentAvatarData 
             }
         });
 
-        this.Msg("IDENTITY_STABILIZED: DATA_SYNCED");
-        setTimeout(() => window.location.href = 'index.html', 1500);
+        this.user = user;
+        this.Msg("SYSTEM: DATA_SYNCED");
+        setTimeout(() => window.location.href = 'index.html', 1000);
 
-    } catch (err) {
-        console.error("Ошибка:", err);
-        this.Msg("SYNC_FAILED: " + err.message, "error");
+    } catch (e) {
+        this.Msg("SYNC_ERROR: " + e.message, "error");
     } finally {
-        btn.innerText = originalBtnText;
+        btn.innerText = "[ SYNC_WITH_STATION ]";
         btn.disabled = false;
     }
 },
