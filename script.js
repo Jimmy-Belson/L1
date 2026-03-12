@@ -153,26 +153,27 @@ async SyncProfile(user) {
     } catch (e) { console.warn("Profile sync error:", e); }
 },
 
-// ДОБАВЬ ЭТОТ МЕТОД (для ручного изменения ника и авы)
 async UpdateProfile() {
     if (!this.user) return;
 
-    // Берем данные из твоих полей ввода в профиле
     const nickInput = document.getElementById('edit-nick');
+    // ВАЖНО: берем SRC из картинки-превью, если input пустой
+    const avatarPreview = document.getElementById('avatar-img');
     const avatarInput = document.getElementById('edit-avatar');
     
-    if (!nickInput || !avatarInput) return;
+    if (!nickInput) return;
 
     const newNick = nickInput.value.trim();
-    const newAvatar = avatarInput.value.trim();
+    // Логика: приоритет инпуту, если пуст — берем то, что на экране (из previewFile)
+    const newAvatar = (avatarInput && avatarInput.value) ? avatarInput.value : (avatarPreview ? avatarPreview.src : '');
 
     if (!newNick) {
         this.Msg("ERROR: NICKNAME_REQUIRED", "error");
         return;
     }
 
-    // Сохраняем в базу данных Supabase
-    const { error } = await this.sb
+    // 1. Обновляем таблицу PROFILES
+    const { error: dbError } = await this.sb
         .from('profiles')
         .update({ 
             nickname: newNick, 
@@ -180,12 +181,29 @@ async UpdateProfile() {
         })
         .eq('id', this.user.id);
 
-    if (error) {
-        this.Msg("SAVE_ERROR: " + error.message, "error");
+    if (dbError) {
+        this.Msg("SAVE_ERROR: " + dbError.message, "error");
+        return;
+    }
+
+    // 2. КРИТИЧЕСКИЙ ШАГ: Обновляем метаданные AUTH
+    // Без этого Core.user будет хранить старую ссылку до следующего логина!
+    const { data: { user }, error: authError } = await this.sb.auth.updateUser({
+        data: { 
+            nickname: newNick, 
+            avatar_url: newAvatar 
+        }
+    });
+
+    if (authError) {
+        this.Msg("AUTH_SYNC_ERROR: " + authError.message, "error");
     } else {
-        this.Msg("SYSTEM: PROFILE_UPDATED");
-        // После сохранения возвращаемся на главную через секунду
-        setTimeout(() => window.location.href = 'index.html', 1000);
+        // Обновляем локальную переменную, чтобы чат сразу подхватил новую аву
+        this.user = user; 
+        this.Msg("SYSTEM: PROFILE_SYNCHRONIZED", "info");
+        
+        // Даем время прочитать уведомление и уходим на главную
+        setTimeout(() => window.location.href = 'index.html', 1500);
     }
 },
 
