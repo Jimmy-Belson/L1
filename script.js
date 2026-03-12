@@ -131,23 +131,62 @@ this.sb.auth.onAuthStateChange((event, session) => {
     this.loop();
 },
 
+// ОСТАВЬ ОДИН SyncProfile (для автоматического входа)
 async SyncProfile(user) {
     try {
-        const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
         const { data: profile } = await this.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
 
         if (!profile) {
+            // Если профиля нет — создаем из метаданных Google/Email
+            const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+            const metaNick = user.user_metadata?.nickname || user.email.split('@')[0];
+
             await this.sb.from('profiles').insert([{
                 id: user.id,
-                nickname: user.user_metadata?.nickname || user.email.split('@')[0],
+                nickname: metaNick,
                 avatar_url: metaAvatar || this.getAvatar(user.id),
-                kills_astronauts: 0, nlo_clicks: 0, message_count: 0
+                kills_astronauts: 0, 
+                nlo_clicks: 0, 
+                message_count: 0
             }]);
-        } else if (metaAvatar && profile.avatar_url !== metaAvatar) {
-            // Если в базе старый робот, а в Google есть фото — обновляем один раз
-            await this.sb.from('profiles').update({ avatar_url: metaAvatar }).eq('id', user.id);
         }
-    } catch (e) { console.warn("Sync Profile error:", e); }
+    } catch (e) { console.warn("Profile sync error:", e); }
+},
+
+// ДОБАВЬ ЭТОТ МЕТОД (для ручного изменения ника и авы)
+async UpdateProfile() {
+    if (!this.user) return;
+
+    // Берем данные из твоих полей ввода в профиле
+    const nickInput = document.getElementById('edit-nick');
+    const avatarInput = document.getElementById('edit-avatar');
+    
+    if (!nickInput || !avatarInput) return;
+
+    const newNick = nickInput.value.trim();
+    const newAvatar = avatarInput.value.trim();
+
+    if (!newNick) {
+        this.Msg("ERROR: NICKNAME_REQUIRED", "error");
+        return;
+    }
+
+    // Сохраняем в базу данных Supabase
+    const { error } = await this.sb
+        .from('profiles')
+        .update({ 
+            nickname: newNick, 
+            avatar_url: newAvatar || this.getAvatar(this.user.id) 
+        })
+        .eq('id', this.user.id);
+
+    if (error) {
+        this.Msg("SAVE_ERROR: " + error.message, "error");
+    } else {
+        this.Msg("SYSTEM: PROFILE_UPDATED");
+        // После сохранения возвращаемся на главную через секунду
+        setTimeout(() => window.location.href = 'index.html', 1000);
+    }
 },
 
     async Auth() {
@@ -280,28 +319,7 @@ render(t) { // Обязательно с маленькой буквы, как �
     }
 },
 
-async SyncProfile(user) {
-    try {
-        const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
 
-        if (!profile) {
-            console.log("DB: Creating new profile...");
-            await this.sb.from('profiles').insert([{
-                id: user.id,
-                nickname: user.user_metadata?.nickname || user.email.split('@')[0],
-                avatar_url: metaAvatar || this.getAvatar(user.id),
-                kills_astronauts: 0, nlo_clicks: 0, message_count: 0
-            }]);
-        } else if (metaAvatar && profile.avatar_url !== metaAvatar) {
-            // Если в базе старая ава, а в Google новая — обновляем
-            console.log("DB: Syncing avatar...");
-            await this.sb.from('profiles').update({ avatar_url: metaAvatar }).eq('id', user.id);
-        }
-    } catch (e) {
-        console.warn("Profile sync skipped:", e.message);
-    }
-},
 
 Chat: {
 
@@ -371,18 +389,20 @@ async send() {
     const i = document.getElementById('chat-in'); 
     if (!i || !i.value.trim() || !Core.user) return; 
 
-    const n = Core.user.user_metadata?.nickname || Core.user.email.split('@')[0];
-    
-    // ЛОГИКА ДЛЯ НОВЫХ СООБЩЕНИЙ:
-    let a = Core.user.user_metadata?.avatar_url;
-    
-    // Если авы нет, генерируем робота сразу перед отправкой
-    if (!a || a.includes('placeholder') || a.length < 5) {
-        a = `https://api.dicebear.com/7.x/bottts/svg?seed=${Core.user.id}&backgroundColor=001a2d`;
-    }
+    // 1. Сначала достаем свежайшие ник и аву из таблицы profiles
+    const { data: p } = await Core.sb.from('profiles')
+        .select('nickname, avatar_url')
+        .eq('id', Core.user.id)
+        .single();
 
-    const val = i.value; i.value = ''; 
+    // 2. Если в профиле пусто, берем из почты
+    const n = p?.nickname || Core.user.email.split('@')[0];
+    const a = p?.avatar_url || Core.getAvatar(Core.user.id);
 
+    const val = i.value; 
+    i.value = ''; 
+
+    // 3. Отправляем сообщение в базу
     const { data, error } = await Core.sb.from('comments').insert([{
         message: val, 
         nickname: n, 
@@ -392,9 +412,7 @@ async send() {
 
     if (!error && data) {
         this.render(data[0]);
-        
-        // ИНТЕГРАЦИЯ СТАТИСТИКИ:
-        // После отрисовки сообщения обновляем счетчик в профиле
+     
         Core.UpdateStat('message_count', 1);
     }
 },

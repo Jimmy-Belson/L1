@@ -33,16 +33,18 @@
                     </button>
                 </div>
 
-                <label>PILOT_CALLSIGN:</label>
-                <input type="text" id="nick-input" class="input-field" placeholder="Enter callsign...">
+        <label>PILOT_CALLSIGN:</label>
+<input type="text" id="edit-nick" class="input-field" placeholder="Enter callsign...">
 
-                <div class="profile-actions">
-                    <button id="save-btn" class="save-btn" onclick="updateProfile()">
-                        [ SYNC_WITH_STATION ]
-                    </button>
-                    
-                    <a href="index.html" class="back-link"><< RETURN_TO_DECK</a>
-                </div>
+<input type="hidden" id="edit-avatar"> 
+
+<div class="profile-actions">
+    <button id="save-btn" class="save-btn" onclick="Core.UpdateProfile()">
+        [ SYNC_WITH_STATION ]
+    </button>
+    
+    <a href="index.html" class="back-link"><< RETURN_TO_DECK</a>
+</div>
             </div>
         </div>
     </div>
