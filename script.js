@@ -123,10 +123,10 @@ async init() {
         this.Chat.subscribe();
         if (document.getElementById('todo-list')) this.Todo.load();
         
-        // Пытаемся синхронизировать профиль (если функция есть)
-        if (typeof this.SyncProfile === 'function') {
-            this.SyncProfile(this.user);
-        }
+        // Проверяем, существует ли функция, прежде чем её вызывать
+if (typeof this.SyncProfile === 'function') {
+    await this.SyncProfile(this.user);
+}
     }
 
     // 3. Запуск систем (Часы, UI, Анимация) — теперь это сработает ВСЕГДА
@@ -153,7 +153,25 @@ startClock() {
         setInterval(update, 1000);
     }
     
-    
+
+},
+
+async SyncProfile(user) {
+    if (!user) return;
+    try {
+        const { data, error } = await this.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        if (error) throw error;
+        
+        if (data) {
+            // Если на странице есть элементы ника и аватарки — обновляем их
+            const nickEl = document.getElementById('nick-display');
+            const avatarEl = document.getElementById('avatar-display');
+            if (nickEl) nickEl.innerText = data.nickname || user.email.split('@')[0];
+            if (avatarEl && data.avatar_url) avatarEl.src = data.avatar_url;
+        }
+    } catch (e) {
+        console.warn("SYNC_PROFILE_WARNING:", e.message);
+    }
 },
 
 async UpdateProfile() {
