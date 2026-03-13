@@ -109,7 +109,7 @@ body {
 /* ЧАТ */
 .chat-panel { 
     width: 100%; 
-    max-width: 370px; /* Уменьшено в 1.5 раза для компактности */
+    max-width: 385px; /* Уменьшено в 1.5 раза для компактности */
     height: 100%; 
     background: var(--glass); 
     backdrop-filter: blur(15px); 
