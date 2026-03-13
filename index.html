@@ -67,7 +67,7 @@
         <div id="chat-content">
             <div id="chat-stream"></div>
             
-            <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px;">
+            <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px; flex-shrink: 0; ">
                 <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100" style="flex: 1;">
                 <button id="chat-send-btn" onclick="Core.Chat.send()" title="SEND_DATA">
                     <i class="fa-solid fa-paper-plane"></i>
