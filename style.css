@@ -1210,24 +1210,41 @@ body {
 }
 /* Увеличиваем основной контейнер, делаем его массивным */
 #user-popover {
+    /* ЦЕНТРИРОВАНИЕ */
     position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Сдвиг на половину ширины/высоты назад */
+    
     z-index: 10000;
-    min-width: 320px; /* Было 220px */
-    background: rgba(0, 10, 20, 0.98); /* Глубокий темный фон */
-    border: 2px solid var(--neon-aqua); /* Двойная толщина рамки */
-    padding: 25px; /* Больше отступов внутри */
+    min-width: 320px;
+    background: rgba(0, 10, 20, 0.98);
+    border: 2px solid var(--neon-aqua);
+    padding: 25px;
     backdrop-filter: blur(20px);
     box-shadow: 0 0 50px rgba(0, 255, 255, 0.25), inset 0 0 15px rgba(0, 255, 255, 0.1);
     display: none;
-    border-radius: 0; /* Строго квадратные углы! */
+    border-radius: 0;
     font-family: 'Share Tech Mono', monospace;
+}
+
+/* Затемнение фона вокруг карточки (Overlay) */
+#user-popover::after {
+    content: '';
+    position: fixed;
+    top: -100vh; left: -100vw;
+    width: 300vw; height: 300vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: -1;
+    pointer-events: none;
 }
 
 /* Декоративный уголок (Sci-Fi деталь) */
 #user-popover::before {
     content: "SCAN_RESULT_ID";
     position: absolute;
-    
+    top: -12px; /* Выносим за пределы рамки вверх */
+    left: -2px;
     background: var(--neon-aqua);
     color: #000;
     font-size: 9px;
@@ -1239,17 +1256,17 @@ body {
 /* Контентная часть */
 .popover-content {
     display: flex;
-    flex-direction: column; /* Элементы друг под другом */
-    align-items: center;    /* Центрируем всё */
+    flex-direction: column;
+    align-items: center;
     gap: 20px;
 }
 
 /* Крупная КВАДРАТНАЯ аватарка */
 #pop-avatar {
-    width: 140px;  /* Было 60px */
-    height: 140px; /* Было 60px */
+    width: 140px;
+    height: 140px;
     border: 1px solid rgba(0, 255, 255, 0.5);
-    border-radius: 0; /* Гарантированно квадратная */
+    border-radius: 0;
     object-fit: cover;
     background: #000;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
@@ -1264,7 +1281,7 @@ body {
 #pop-nick {
     color: var(--neon-aqua);
     font-family: 'Orbitron', sans-serif;
-    font-size: 20px; /* Крупнее ник */
+    font-size: 20px;
     letter-spacing: 2px;
     text-transform: uppercase;
     margin-bottom: 20px;
@@ -1276,17 +1293,17 @@ body {
 .pop-stats {
     display: flex;
     flex-direction: column;
-    gap: 6px; /* Отступы между строками */
-    font-size: 14px; /* Читабельнее текст */
+    gap: 6px;
+    font-size: 14px;
     color: #aaa;
     width: 100%;
 }
 
 .pop-stats span {
     display: flex;
-    justify-content: space-between; /* Название слева, цифра справа */
+    justify-content: space-between;
     background: rgba(0, 255, 255, 0.03);
-    padding: 6px 12px;
+    padding: 8px 12px; /* Немного увеличил отступ */
     border: 1px solid rgba(0, 255, 255, 0.05);
 }
 
