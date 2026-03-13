@@ -197,7 +197,7 @@ async UpdateProfile() {
                 id: this.user.id, 
                 nickname: nick, 
                 avatar_url: ava,
-                updated_at: new Date()
+                
             });
 
         if (error) throw error;
