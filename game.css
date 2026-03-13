@@ -1,3 +1,31 @@
+/* РАЗБЛОКИРОВКА СКРОЛЛА */
+html, body {
+    overflow-y: auto !important; /* Разрешаем вертикальный скролл */
+    height: auto !important;     /* Снимаем жесткую фиксацию высоты */
+    scroll-behavior: smooth;     /* Делаем прокрутку плавной */
+}
+
+/* ФИКС СТРЕЛОЧКИ */
+.scroll-arrow {
+    position: relative;
+    z-index: 9999;               /* Выводим на самый передний план */
+    margin-top: 50px;            /* Отступ от чата и музыки */
+    background: rgba(0, 0, 0, 0.5); /* Небольшая подложка для читаемости */
+    width: 100%;
+}
+
+/* ПРОВЕРКА ФОНА */
+#starfield {
+    position: fixed;             /* Звезды должны оставаться на месте при скролле */
+    top: 0;
+    left: 0;
+    z-index: -1;                 /* Убираем их максимально назад */
+}
+
+#ambient-station {
+    position: fixed;             /* Станция тоже не должна уезжать вверх */
+    z-index: -1;
+}
 /* 1. ГЛАВНЫЙ КОНТЕЙНЕР ИГРЫ */
 #combat-zone {
     width: 100%;
