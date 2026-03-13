@@ -475,29 +475,28 @@ render(m) {
 const triggerElements = d.querySelectorAll('.chat-row-avatar, .msg-nick');
 triggerElements.forEach(el => {
     el.onclick = async (e) => {
-        e.stopPropagation(); // Останавливаем всплытие, чтобы клик не закрыл карточку сразу
+        e.stopPropagation();
         const pop = document.getElementById('user-popover');
         if (!pop) return;
 
-        // 1. Получаем свежие данные из базы
+        // Показываем "загрузку" в нике, пока ждем базу
+        document.getElementById('pop-nick').innerText = "SCANNING...";
+
         const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
         
         if (p) {
-            // 2. Заполняем поля данными
+            // Наполняем данными
             document.getElementById('pop-avatar').src = p.avatar_url || avatar;
             document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN_PILOT").toUpperCase();
             document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
             document.getElementById('pop-msgs').innerText = p.message_count || 0;
             document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
             
-            // 3. Включаем видимость
-            // Мы УДАЛИЛИ строки с pop.style.left и pop.style.top.
-            // Теперь CSS сработает автоматически и выровняет окно по центру экрана.
+            // Включаем! CSS сделает всё остальное.
             pop.style.display = 'block';
         }
     };
-    
-    });
+});
 
     // Твоя логика удаления (контекстное меню)
     if (isMy) {

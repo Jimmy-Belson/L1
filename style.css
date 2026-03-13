@@ -1312,3 +1312,40 @@ body {
     font-family: 'Orbitron', sans-serif;
     font-weight: normal;
 }
+/* Анимация появления */
+@keyframes slideCenter {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%) scale(0.9); /* Чуть ниже и меньше */
+        filter: brightness(2) blur(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1); /* В центр и полный размер */
+        filter: brightness(1) blur(0);
+    }
+}
+
+#user-popover[style*="display: block"] {
+    animation: slideCenter 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+/* Эффект сканирующей полоски (опционально, для стиля) */
+.popover-content::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 10px var(--neon-aqua);
+    animation: scanLine 3s linear infinite;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+@keyframes scanLine {
+    0% { top: 0; }
+    100% { top: 100%; }
+}
+
