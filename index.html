@@ -79,6 +79,7 @@
 
         </div>
 
+
         <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
             <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
                 <div class="bars">
@@ -124,6 +125,28 @@
         </div>
     </div>
 </div>
+
+
+<div id="scroll-to-game" class="scroll-arrow" onclick="document.getElementById('combat-zone').scrollIntoView({behavior: 'smooth'})">
+    <span>[ INITIALIZE COMBAT PROTOCOL ]</span>
+    <div class="arrow-down"></div>
+</div>
+
+<section id="combat-zone">
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <aside class="leaderboard">
+            <h3>TACTICAL LOG</h3>
+            <ul id="highscores-list">
+                <li><span>1. SYS_ADMIN</span> <span>99999</span></li>
+            </ul>
+        </aside>
+    </div>
+</section>
+
+<script type="module" src="ranks.js"></script>
+<script type="module" src="game.js"></script>
 
 </body>
 </html>
