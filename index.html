@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ORBITRON - STATION</title>
 
-    
-    
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -57,28 +53,26 @@
                 <div id="todo-list"></div>
             </section>
 
-<div class="chat-wrapper">
-    <section class="panel chat-panel" id="main-chat-window">
-        <div onclick="Core.toggleChat()" style="padding: 15px; border-bottom: 1px solid var(--border); font-family: 'Orbitron'; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-            <span>COMM_LINK</span>
-            <i id="chat-toggle-icon" class="fa-solid fa-window-minimize" style="font-size: 10px; transition: 0.3s; color: var(--border);"></i>
-        </div>
-        
-        <div id="chat-content">
-            <div id="chat-stream"></div>
-            
-            <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px; flex-shrink: 0; ">
-                <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100" style="flex: 1;">
-                <button id="chat-send-btn" onclick="Core.Chat.send()" title="SEND_DATA">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+            <div class="chat-wrapper">
+                <section class="panel chat-panel" id="main-chat-window">
+                    <div onclick="Core.toggleChat()" style="padding: 15px; border-bottom: 1px solid var(--border); font-family: 'Orbitron'; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>COMM_LINK</span>
+                        <i id="chat-toggle-icon" class="fa-solid fa-window-minimize" style="font-size: 10px; transition: 0.3s; color: var(--border);"></i>
+                    </div>
+                    
+                    <div id="chat-content">
+                        <div id="chat-stream"></div>
+                        
+                        <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px; flex-shrink: 0; ">
+                            <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100" style="flex: 1;">
+                            <button id="chat-send-btn" onclick="Core.Chat.send()" title="SEND_DATA">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
-    </section>
-</div>
-
-        </div>
-
 
         <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
             <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
@@ -92,62 +86,46 @@
 
     </div>
 
+    <a href="battle.html" id="scroll-to-game" class="scroll-arrow" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
+        <span>[ INITIALIZE COMBAT PROTOCOL ]</span>
+        <div class="arrow-down"></div>
+    </a>
+
     <div id="custom-confirm" class="confirm-overlay" style="display:none">
-    <div class="confirm-box">
-        <div class="confirm-header">TERMINAL_REQUEST</div>
-        <div class="confirm-body">ERASE_DATA_STREAM?</div>
-        <div class="confirm-actions">
-            <button id="confirm-yes">CONFIRM</button>
-            <button id="confirm-no">ABORT</button>
-        </div>
-    </div>
-</div>
-
-    <script src="script.js"></script>
-
- <div id="stats-link" onclick="window.location.href='stats.html'" 
-     style="position:fixed; right:0; top:50%; transform:translateY(-50%); 
-            background:rgba(0,255,255,0.1); border:1px solid #0ff; 
-            padding:15px 5px; cursor:pointer; z-index:9999; border-radius:10px 0 0 10px;">
-    <span style="color:#0ff; writing-mode: vertical-rl; text-orientation: upright; font-size:12px; letter-spacing:2px;">RANKING ▶</span>
-</div>
-
-<div id="user-popover" class="popover-hidden">
-    <div class="popover-content">
-        <img id="pop-avatar" src="" referrerpolicy="no-referrer">
-        <div class="pop-info">
-            <div id="pop-nick">PILOT_NAME</div>
-            <div class="pop-stats">
-                <span>KILLS: <b id="pop-kills">0</b></span>
-                <span>MSGS: <b id="pop-msgs">0</b></span>
-                 <span>UFO_HUNT: <b id="pop-ufo">0</b></span>
+        <div class="confirm-box">
+            <div class="confirm-header">TERMINAL_REQUEST</div>
+            <div class="confirm-body">ERASE_DATA_STREAM?</div>
+            <div class="confirm-actions">
+                <button id="confirm-yes">CONFIRM</button>
+                <button id="confirm-no">ABORT</button>
             </div>
         </div>
     </div>
-</div>
 
+    <script src="script.js"></script>
 
-<div id="scroll-to-game" class="scroll-arrow" 
-     onclick="window.gameActive = true; document.getElementById('combat-zone').scrollIntoView({behavior: 'smooth'})">
-    <span>[ INITIALIZE COMBAT PROTOCOL ]</span>
-    <div class="arrow-down"></div>
-</div>
-
-<section id="combat-zone">
-    <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
-        
-        <aside class="leaderboard">
-            <h3>TACTICAL LOG</h3>
-            <ul id="highscores-list">
-                <li><span>1. SYS_ADMIN</span> <span>99999</span></li>
-            </ul>
-        </aside>
+    <div id="stats-link" onclick="window.location.href='stats.html'" 
+        style="position:fixed; right:0; top:50%; transform:translateY(-50%); 
+                background:rgba(0,255,255,0.1); border:1px solid #0ff; 
+                padding:15px 5px; cursor:pointer; z-index:9999; border-radius:10px 0 0 10px;">
+        <span style="color:#0ff; writing-mode: vertical-rl; text-orientation: upright; font-size:12px; letter-spacing:2px;">RANKING ▶️</span>
     </div>
-</section>
 
-<script type="module" src="ranks.js"></script>
-<script type="module" src="game.js"></script>
+    <div id="user-popover" class="popover-hidden">
+        <div class="popover-content">
+            <img id="pop-avatar" src="" referrerpolicy="no-referrer">
+            <div class="pop-info">
+                <div id="pop-nick">PILOT_NAME</div>
+                <div class="pop-stats">
+                    <span>KILLS: <b id="pop-kills">0</b></span>
+                    <span>MSGS: <b id="pop-msgs">0</b></span>
+                    <span>UFO_HUNT: <b id="pop-ufo">0</b></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
 
 </body>
 </html>
