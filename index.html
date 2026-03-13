@@ -57,28 +57,21 @@
                 <div id="todo-list"></div>
             </section>
 
-<div class="chat-wrapper">
-    <section id="chat-panel" class="chat-panel">
-        <div class="chat-header-actions">
-            <span class="panel-label">COMM_LINK</span>
-            <button id="toggle-chat" onclick="Core.ToggleChat()" title="TOGGLE_PANEL">
-                <i class="fa-solid fa-compress-alt"></i>
-            </button>
-        </div>
-
-        <div id="chat-content-wrapper">
-            <div id="chat-stream">
-                </div>
-            
-            <div class="input-box">
-                <input type="text" id="chat-input" placeholder="TYPE_MESSAGE..." maxlength="100">
-                <button id="chat-send-btn" onclick="Core.Chat.send()">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+            <div class="chat-wrapper">
+                <section class="panel chat-panel">
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border); font-family: 'Orbitron'; font-size: 12px;">COMM_LINK</div>
+                    <div id="chat-stream"></div>
+                    
+                    <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px;">
+                        <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100" style="flex: 1;">
+                        <button id="chat-send-btn" onclick="Core.Chat.send()" title="SEND_DATA">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </section>
             </div>
+
         </div>
-    </section>
-</div>
 
         <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
             <div class="audio-link" id="audio-btn" onclick="Core.Audio.toggle()">
