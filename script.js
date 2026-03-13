@@ -2,6 +2,17 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
+toggleChat() {
+    const chatWindow = document.getElementById('main-chat-window');
+    // Проверка на существование элемента, чтобы не было ошибок в консоли
+    if (chatWindow) {
+        chatWindow.classList.toggle('minimized');
+        console.log("System: Chat state toggled.");
+    }
+},
+
+
+
 getAvatar(user_id, current_avatar) {
     // 1. Если передана реальная ссылка (не робот и не заглушка) — возвращаем её
     if (current_avatar && current_avatar.length > 15 && !current_avatar.includes('dicebear')) {
@@ -343,22 +354,8 @@ render(t) { // Обязательно с маленькой буквы, как �
 },
 
 
-ToggleChat() {
-    const chatPanel = document.getElementById('chat-panel');
-    const toggleBtn = document.querySelector('#toggle-chat i');
-    
-    chatPanel.classList.toggle('collapsed');
 
-    // Меняем иконку в зависимости от состояния
-    if (chatPanel.classList.contains('collapsed')) {
-        toggleBtn.className = 'fa-solid fa-expand-alt'; // Иконка развернуть
-    } else {
-        toggleBtn.className = 'fa-solid fa-compress-alt'; // Иконка свернуть
-    }
-},
 
-// Внутри объекта Core или просто как функция
-// ToggleChat теперь внутри объекта Core, удаляем эту внешнюю реализацию.
 
 Chat: {
 

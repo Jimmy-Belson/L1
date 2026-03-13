@@ -1348,5 +1348,36 @@ body {
     0% { top: 0; }
     100% { top: 100%; }
 }
+/* Плавный переход для всей панели */
+.chat-panel {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); /* "Технологичная" кривая анимации */
+    max-height: 80vh; /* Ограничиваем высоту для скролла */
+}
 
+/* Состояние при сворачивании */
+.chat-panel.minimized {
+    max-height: 44px; /* Высота только заголовка */
+    opacity: 0.7;
+    background: rgba(0, 20, 30, 0.4); /* Делаем более прозрачным для вида на космос */
+    border-color: rgba(0, 255, 255, 0.2);
+}
+
+/* Скрываем контент внутри плавно */
+#chat-content {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.minimized #chat-content {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+}
+
+/* Поворот иконки при сворачивании */
+.minimized #chat-toggle-icon {
+    transform: rotate(-90deg);
+    color: #0ff; /* Подсветка активной кнопки */
+}
 
