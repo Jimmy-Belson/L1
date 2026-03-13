@@ -127,7 +127,8 @@
 </div>
 
 
-<div id="scroll-to-game" class="scroll-arrow" onclick="document.getElementById('combat-zone').scrollIntoView({behavior: 'smooth'})">
+<div id="scroll-to-game" class="scroll-arrow" 
+     onclick="window.gameActive = true; document.getElementById('combat-zone').scrollIntoView({behavior: 'smooth'})">
     <span>[ INITIALIZE COMBAT PROTOCOL ]</span>
     <div class="arrow-down"></div>
 </div>

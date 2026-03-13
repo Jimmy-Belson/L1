@@ -1430,3 +1430,37 @@ body {
     scrollbar-width: thin;
     scrollbar-color: var(--n) rgba(0, 242, 255, 0.05);
 }
+/* --- GAME & SCROLL FIX --- */
+
+/* 1. Разблокируем скролл для всей страницы */
+html, body {
+    overflow-y: auto !important; /* Разрешаем вертикальную прокрутку */
+    height: auto !important;     /* Снимаем фиксацию высоты 100vh */
+    min-height: 100vh;
+    scroll-behavior: smooth;     /* Плавный переход при клике на стрелку */
+}
+
+/* 2. Позволяем главному контейнеру растягиваться */
+.os-container {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important; /* Чтобы игра не обрезалась */
+}
+
+/* 3. Фиксируем фон, чтобы он не уезжал вверх при скролле */
+#starfield, #ambient-station {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Оставляем звезды и станцию за всеми элементами */
+}
+
+/* 4. Принудительный показ стрелки поверх всего */
+.scroll-arrow {
+    position: relative;
+    z-index: 9999;
+    margin-top: 50px;
+    background: rgba(0, 0, 0, 0.3); /* Легкое затемнение для контраста */
+}
