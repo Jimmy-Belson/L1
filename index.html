@@ -57,19 +57,27 @@
                 <div id="todo-list"></div>
             </section>
 
-            <div class="chat-wrapper">
-                <section class="panel chat-panel">
-                    <div style="padding: 15px; border-bottom: 1px solid var(--border); font-family: 'Orbitron'; font-size: 12px;">COMM_LINK</div>
-                    <div id="chat-stream"></div>
-                    
-                    <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px;">
-                        <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100" style="flex: 1;">
-                        <button id="chat-send-btn" onclick="Core.Chat.send()" title="SEND_DATA">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </section>
+<div class="chat-wrapper">
+    <section class="panel chat-panel">
+        <div style="padding: 15px; border-bottom: 1px solid var(--border); font-family: 'Orbitron'; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span>COMM_LINK</span>
+            <button id="toggle-chat" onclick="Core.ToggleChat()" title="TOGGLE_PANEL" style="background: none; border: 1px solid var(--border); color: var(--neon-aqua); cursor: pointer; padding: 2px 8px; font-family: 'Share Tech Mono';">
+                <i class="fa-solid fa-compress"></i>
+            </button>
+        </div>
+
+        <div id="chat-content-wrapper">
+            <div id="chat-stream"></div>
+            
+            <div class="input-box" style="display: flex; gap: 5px; align-items: center; padding: 10px;">
+                <input type="text" id="chat-in" placeholder="TYPE_MESSAGE..." maxlength="100" style="flex: 1;">
+                <button id="chat-send-btn" onclick="Core.Chat.send()" title="SEND_DATA">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
+        </div>
+    </section>
+</div>
 
         </div>
 
