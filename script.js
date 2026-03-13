@@ -91,52 +91,45 @@ Msg(text, type = 'info') {
     },
 
 async init() {
-    console.log("SYSTEM: INITIATING_BOOT_SEQUENCE...");
-
-    // 1. Получаем сессию один раз
-    const { data: { session }, error: sessionError } = await this.sb.auth.getSession();
-    const path = window.location.pathname;
-    const isStation = path.includes('station.html');
-
-    if (sessionError) {
-        console.error("AUTH_ERROR:", sessionError);
-    }
-
-    // 2. Логика редиректов (без циклов)
-    if (!session) {
-        if (!isStation) {
-            console.log("ACCESS_DENIED: REDIRECTING_TO_STATION");
-            window.location.replace('station.html');
-            return; 
-        }
-    } else {
-        this.user = session.user;
-        console.log("ACCESS_GRANTED: USER_", this.user.id);
-        
-        if (isStation) {
-            window.location.replace('index.html');
-            return;
-        }
-
-        // Загружаем данные только если мы на нужной странице
-        this.Chat.load(); 
-        this.Chat.subscribe();
-        if (document.getElementById('todo-list')) this.Todo.load();
-        
-        // Проверяем, существует ли функция, прежде чем её вызывать
-if (typeof this.SyncProfile === 'function') {
-    await this.SyncProfile(this.user);
-}
-    }
-
-    // 3. Запуск систем (Часы, UI, Анимация) — теперь это сработает ВСЕГДА
-    this.startClock(); // Вынес в отдельную функцию для надежности
+    // 1. МГНОВЕННЫЙ ЗАПУСК ВИЗУАЛА (без ожидания)
+    // Это включит звезды, часы и UI сразу, до проверки сессии
+    if (this.Canvas) this.Canvas.init();
+    if (this.Audio) this.Audio.setup();
     this.UI();
-    if (this.Canvas) this.Canvas.init(); 
-    if (this.Audio) this.Audio.setup(); 
     this.loop();
+    
+    const clockEl = document.getElementById('clock');
+    if (clockEl) {
+        setInterval(() => {
+            clockEl.innerText = new Date().toLocaleTimeString('ru-RU', { hour12: false });
+        }, 1000);
+    }
 
-    // Слушатель только на выход
+    // 2. АСИНХРОННАЯ ПРОВЕРКА (в фоне)
+    // Мы не ставим await перед getSession, чтобы не тормозить поток
+    this.sb.auth.getSession().then(({ data: { session } }) => {
+        const path = window.location.pathname;
+        const isStation = path.includes('station.html');
+
+        if (!session) {
+            if (!isStation) {
+                window.location.replace('station.html');
+            }
+        } else {
+            this.user = session.user;
+            if (isStation) {
+                window.location.replace('index.html');
+            } else {
+                // Грузим данные только если мы внутри
+                this.Chat.load();
+                this.Chat.subscribe();
+                if (document.getElementById('todo-list')) this.Todo.load();
+                if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
+            }
+        }
+    });
+
+    // Слушатель выхода
     this.sb.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') window.location.replace('station.html');
     });
