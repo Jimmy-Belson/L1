@@ -4,10 +4,24 @@ import { getRankByScore } from './ranks.js';
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Адаптируем размер под контейнер в battle.html
 canvas.width = 600;
 canvas.height = 800;
 
-// Глобальный флаг активности
+// Добавь это в начало game.js после определения canvas
+function resizeCanvas() {
+    // Сохраняем пропорции 3:4, но подгоняем под высоту экрана
+    const padding = 40;
+    const availableHeight = window.innerHeight - padding;
+    canvas.height = availableHeight;
+    canvas.width = availableHeight * 0.75; 
+}
+
+// Вызови один раз или оставь свои фиксированные 600x800
+// resizeCanvas();
+
+window.Core = Core;
+
 window.gameActive = false; 
 
 const player = {
@@ -26,6 +40,27 @@ const projectiles = [];
 const enemies = [];
 let spawnTimer = 0;
 
+// --- НОВАЯ ФУНКЦИЯ: Загрузка Лидерборда ---
+async function updateTacticalLog() {
+    const listEl = document.getElementById('highscores-list');
+    if (!listEl || !window.Core) return;
+
+    const { data: pilots, error } = await window.Core.sb
+        .from('profiles')
+        .select('nickname, kills_astronauts')
+        .order('kills_astronauts', { ascending: false })
+        .limit(10);
+
+    if (!error && pilots) {
+        listEl.innerHTML = '';
+        pilots.forEach((p, i) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${i + 1}. ${p.nickname || 'PILOT'}</span> <span>${p.kills_astronauts || 0}</span>`;
+            listEl.appendChild(li);
+        });
+    }
+}
+
 // Управление
 canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -33,6 +68,7 @@ canvas.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mousedown', (e) => {
+    // Стреляем только если игра активна и клик по левой кнопке
     if (e.button === 0 && window.gameActive) { 
         shoot();
     }
@@ -93,7 +129,6 @@ function updateProjectiles() {
 }
 
 function updateEnemies() {
-    // Враги спавнятся ТОЛЬКО если игра активна
     if (!window.gameActive) return;
 
     spawnTimer++;
@@ -124,7 +159,7 @@ function updateEnemies() {
     }
 }
 
-function checkCollisions() {
+async function checkCollisions() {
     if (!window.gameActive) return;
 
     // Пуля -> Враг
@@ -132,6 +167,7 @@ function checkCollisions() {
         for (let j = enemies.length - 1; j >= 0; j--) {
             const p = projectiles[i];
             const e = enemies[j];
+            if (!p || !e) continue;
             const dist = Math.hypot(p.x - e.x, p.y - e.y);
             if (dist < 25) {
                 projectiles.splice(i, 1);
@@ -149,50 +185,52 @@ function checkCollisions() {
         if (distToPlayer < 35) {
             enemies.splice(i, 1);
             player.lives -= 1;
+            
+            // --- ЛОГИКА СМЕРТИ ---
             if (player.lives <= 0) {
-                alert(`MISSION FAILED. FINAL SCORE: ${player.score}`);
-                player.score = 0;
-                player.lives = 3;
                 window.gameActive = false;
-                window.scrollTo({top: 0, behavior: 'smooth'}); // Возврат в меню
+                const earnedKills = Math.floor(player.score / 10);
+
+                // Сохраняем результат в Supabase
+                if (window.Core && earnedKills > 0) {
+                    await window.Core.UpdateStat('kills_astronauts', earnedKills);
+                }
+
+                alert(`CRITICAL DAMAGE. MISSION FAILED.\nSCORE: ${player.score}\nKILLS ADDED: ${earnedKills}`);
+                
+                // Перенаправляем на главную
+                window.location.href = 'index.html';
             }
         }
     }
 }
 
-// Следим за скроллом: если игрок ушел вверх, ставим на паузу
-window.addEventListener('scroll', () => {
-    const combatZone = document.getElementById('combat-zone');
-    const rect = combatZone.getBoundingClientRect();
-    // Если верхняя граница боевой зоны ниже середины экрана — пауза
-    if (rect.top > window.innerHeight / 2) {
-        window.gameActive = false;
-    }
-});
+// УДАЛЕНО: window.addEventListener('scroll') больше не нужен!
 
 function update() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const dx = player.targetX - player.x;
-    player.x += dx * player.speed;
-
-    updateProjectiles();
-    updateEnemies();
-    checkCollisions();
+    if (window.gameActive) {
+        const dx = player.targetX - player.x;
+        player.x += dx * player.speed;
+        updateProjectiles();
+        updateEnemies();
+        checkCollisions();
+    }
 
     drawPlayer();
 
-    // --- ИНТЕРФЕЙС И РАНГИ ---
+    // ИНТЕРФЕЙС
+  
     const currentRank = getRankByScore(player.score);
-    
-    // Отрисовка счета
+ 
     ctx.fillStyle = '#00f2ff';
     ctx.font = 'bold 16px Share Tech Mono';
     ctx.fillText(`SCORE: ${player.score}`, 20, 30);
     ctx.fillText(`LIVES: ${player.lives}`, 20, 55);
     
-    // Отрисовка ранга (цвет меняется динамически!)
+
     ctx.fillStyle = currentRank.color || '#ff00e5';
     ctx.font = 'bold 18px Orbitron';
     ctx.fillText(`RANK: ${currentRank.name}`, 20, 85);
@@ -200,4 +238,6 @@ function update() {
     requestAnimationFrame(update);
 }
 
+// Запуск
 update();
+updateTacticalLog(); // Грузим ТОП при старте

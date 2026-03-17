@@ -1,105 +1,100 @@
-/* РАЗБЛОКИРОВКА СКРОЛЛА */
-html, body {
-    overflow-y: auto !important; /* Разрешаем вертикальный скролл */
-    height: auto !important;     /* Снимаем жесткую фиксацию высоты */
-    scroll-behavior: smooth;     /* Делаем прокрутку плавной */
+/* game.css — Автономный боевой сектор */
+
+:root {
+    --neon: #00f2ff;
+    --pink: #ff00e5;
+    --bg: #01050a;
 }
 
-/* ФИКС СТРЕЛОЧКИ */
-.scroll-arrow {
-    position: relative;
-    z-index: 9999;               /* Выводим на самый передний план */
-    margin-top: 50px;            /* Отступ от чата и музыки */
-    background: rgba(0, 0, 0, 0.5); /* Небольшая подложка для читаемости */
-    width: 100%;
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg);
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
 
-/* ПРОВЕРКА ФОНА */
+/* Фон со звездами (из Core.Canvas) */
 #starfield {
-    position: fixed;             /* Звезды должны оставаться на месте при скролле */
+    position: fixed;
     top: 0;
     left: 0;
-    z-index: -1;                 /* Убираем их максимально назад */
-}
-
-#ambient-station {
-    position: fixed;             /* Станция тоже не должна уезжать вверх */
+    width: 100%;
+    height: 100%;
     z-index: -1;
 }
-/* 1. ГЛАВНЫЙ КОНТЕЙНЕР ИГРЫ */
-#combat-zone {
-    width: 100%;
-    min-height: 100vh; /* Занимает весь экран при скролле */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    background: #000;
-    border-top: 2px solid var(--n); /* Твоя неоновая линия разделения */
-    padding-top: 50px;
-    position: relative;
-    z-index: 10;
-}
 
-/* 2. КНОПКА-СТРЕЛОЧКА (ШЛЮЗ) */
-.scroll-arrow {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 0;
-    cursor: pointer;
-    color: var(--n);
-    font-family: 'Orbitron', sans-serif;
-    text-shadow: 0 0 10px var(--n);
-    transition: 0.5s ease;
+/* Кнопка возврата */
+.back-btn {
+    position: fixed;
+    top: 30px;
+    left: 30px;
+    padding: 12px 24px;
+    color: var(--neon);
+    border: 1px solid var(--neon);
+    text-decoration: none;
+    font-family: 'Orbitron';
+    font-size: 10px;
+    letter-spacing: 2px;
+    background: rgba(0, 242, 255, 0.05);
+    transition: 0.3s;
     z-index: 100;
 }
 
-.scroll-arrow:hover {
-    transform: scale(1.1);
-    color: #fff;
+.back-btn:hover {
+    background: var(--neon);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon);
 }
 
-.scroll-arrow span {
-    font-size: 12px;
-    letter-spacing: 5px;
-    margin-bottom: 15px;
-}
-
-/* Анимация стрелки вниз */
-.arrow-down {
-    width: 20px;
-    height: 20px;
-    border-right: 3px solid var(--n);
-    border-bottom: 3px solid var(--n);
-    transform: rotate(45deg);
-    animation: arrow-bounce 1.5s infinite;
-}
-
-@keyframes arrow-bounce {
-    0% { transform: translateY(0) rotate(45deg); opacity: 0.3; }
-    50% { transform: translateY(15px) rotate(45deg); opacity: 1; }
-    100% { transform: translateY(0) rotate(45deg); opacity: 0.3; }
-}
-
-/* 3. ИГРОВОЕ ПОЛЕ */
+/* Игровой интерфейс */
 .game-container {
-    position: relative;
-    border: 1px solid var(--border);
-    box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+    display: flex;
+    gap: 30px;
+    padding: 20px;
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
 }
 
 #gameCanvas {
-    background: #000;
-    display: block;
-    image-rendering: pixelated; /* Чтобы неон был четким */
+    border: 2px solid var(--neon);
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.15);
 }
 
-/* 4. ТАБЛИЦА ЛИДЕРОВ */
+/* Tactical Log */
 .leaderboard {
-    width: 200px;
-    border: 1px solid var(--border);
-    padding: 15px;
-    background: rgba(0, 0, 0, 0.8);
+    width: 220px;
+    border-left: 1px solid rgba(0, 242, 255, 0.2);
+    padding-left: 20px;
+}
+
+.leaderboard h3 {
+    font-family: 'Orbitron';
+    font-size: 14px;
+    color: var(--neon);
+    margin-top: 0;
+    text-shadow: 0 0 10px var(--neon);
+}
+
+.leaderboard ul {
+    list-style: none;
+    padding: 0;
+}
+
+.leaderboard li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 12px;
+}
+
+.leaderboard li span:last-child {
+    color: var(--pink);
 }

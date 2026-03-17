@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBITRON - COMBAT SECTOR</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="game.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    
+    <a href="index.html" class="back-btn">[ RETURN TO STATION ]</a>
+
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <aside class="leaderboard">
+            <h3>TACTICAL LOG</h3>
+            <ul id="highscores-list">
+                <li><span>LOADING...</span></li>
+            </ul>
+        </aside>
+    </div>
+
+    <script src="script.js"></script> 
+    <script type="module" src="ranks.js"></script>
+    <script type="module" src="game.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Инициализируем только нужные части Core для этой страницы
+            if (Core.Canvas) Core.Canvas.init();
+            
+            Core.sb.auth.getSession().then(({ data: { session } }) => {
+                if (!session) {
+                    window.location.replace('station.html');
+                } else {
+                    Core.user = session.user;
+                    window.gameActive = true;
+                    // Здесь можно вызвать загрузку лидерборда
+                }
+            });
+        });
+    </script>
+</body>
+</html>
