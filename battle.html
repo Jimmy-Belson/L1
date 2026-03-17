@@ -1,13 +1,12 @@
+<script type="module" src="./script.js"></script>
+
 <script type="module">
     import { getRankByScore } from './ranks.js';
 
-    /**
-     * Основная логика запуска боевого сектора
-     */
     async function bootstrap() {
         console.log("%c[SYSTEM] Waiting for ORBITRON_CORE...", "color: #0ff");
 
-        // Улучшенный поиск Core в глобальном пространстве
+        // Функция поиска Core в глобальном окне
         const getCore = () => {
             return new Promise((resolve) => {
                 const check = () => {
@@ -20,8 +19,19 @@
                 };
 
                 if (!check()) {
+                    // Проверяем каждые 50мс и слушаем событие готовности
                     const timer = setInterval(() => { if (check()) clearInterval(timer); }, 50);
                     window.addEventListener('core-ready', () => { if (check()) clearInterval(timer); }, { once: true });
+                    
+                    // Предохранитель на 5 секунд: если ядро не загрузилось, пишем ошибку
+                    setTimeout(() => {
+                        if (!window.Core) {
+                            clearInterval(timer);
+                            console.error("CRITICAL: script.js failed to load.");
+                            const statusText = document.querySelector('.waiting-text');
+                            if (statusText) statusText.innerText = "CORE_NOT_FOUND";
+                        }
+                    }, 5000);
                 }
             });
         };
@@ -29,53 +39,43 @@
         try {
             const Core = await getCore();
             
-            // Проверяем сессию
+            // Проверка авторизации
             const { data: { session }, error } = await Core.sb.auth.getSession();
 
             if (error || !session) {
-                console.warn("ACCESS_DENIED: Redirecting to station.");
+                console.warn("ACCESS_DENIED: Ejecting...");
                 window.location.replace('station.html');
                 return;
             }
 
             Core.user = session.user;
 
-            // --- ДОБАВЛЕНО: Плавное скрытие экрана загрузки ---
+            // Визуальное скрытие загрузки
             const overlay = document.getElementById('loading-screen') || document.querySelector('.waiting-overlay');
             if (overlay) {
-                overlay.style.transition = 'opacity 0.8s ease, visibility 0.8s';
+                overlay.style.transition = 'opacity 0.8s ease';
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 800);
             }
 
-            // Активируем игровые системы
             window.gameActive = true; 
-            console.log("%c[SYSTEM] Combat sector engaged. Welcome, Pilot.", "color: #0f0");
+            console.log("%c[SYSTEM] Combat sector engaged.", "color: #0f0");
 
-            // Синхронизируем профиль игрока (чтобы обновить его локальный ранг)
-            if (typeof Core.SyncProfile === 'function') {
-                await Core.SyncProfile(Core.user);
-            }
+            // Обновляем ранг игрока в углу экрана
+            if (typeof Core.SyncProfile === 'function') await Core.SyncProfile(Core.user);
 
-            // Загружаем лог рекордов
+            // Загружаем таблицу лидеров
             await updateTacticalLog(Core);
 
         } catch (err) {
-            console.error("BOOTSTRAP_CRITICAL_ERROR:", err);
-            // Если всё совсем плохо, показываем ошибку на экране
-            const statusText = document.querySelector('.waiting-text');
-            if (statusText) statusText.innerText = "SYSTEM_CRITICAL_FAILURE";
+            console.error("BOOTSTRAP_ERROR:", err);
         }
     }
 
-    /**
-     * Загрузка топ-10 пилотов в Tactical Log
-     */
     async function updateTacticalLog(Core) {
         const logList = document.getElementById('highscores-list');
         if (!logList) return;
 
-        // Показываем статус загрузки
         logList.innerHTML = '<li class="loading-log">SCANNING_SECTOR...</li>';
 
         const { data, error } = await Core.sb
@@ -85,39 +85,28 @@
             .limit(10);
 
         if (error) {
-            console.error("FETCH_LOG_ERROR:", error);
             logList.innerHTML = '<li style="color:#f00">[ LINK_ERROR ]</li>';
             return;
         }
 
         logList.innerHTML = ''; 
-        
-        if (!data || data.length === 0) {
-            logList.innerHTML = '<li>[ NO_PILOTS_IN_RANGE ]</li>';
-            return;
-        }
-
         data.forEach((pilot, i) => {
             const score = pilot.combat_score || 0;
             const rank = getRankByScore(score);
             const li = document.createElement('li');
-            
-            // Стилизация строки лога
             li.style.borderLeft = `3px solid ${rank.color}`;
-            li.style.marginBottom = "5px";
             li.style.background = "rgba(0, 255, 255, 0.03)";
-            
+            li.style.marginBottom = "4px";
+            li.style.padding = "5px 10px";
             li.innerHTML = `
-                <span class="rank-index" style="opacity: 0.5; font-size: 0.8em;">0${i + 1}</span>
-                <span class="pilot-name" style="margin-left: 10px; flex-grow: 1;">${(pilot.nickname || 'Unknown').toUpperCase()}</span>
-                <span class="pilot-xp" style="color: ${rank.color}; text-shadow: 0 0 8px ${rank.color}; font-family: 'Share Tech Mono';">
-                    ${score.toLocaleString()} XP
-                </span>
+                <span style="opacity:0.5; font-size:10px;">0${i+1}</span>
+                <span style="margin-left:10px; flex-grow:1;">${(pilot.nickname || 'Unknown').toUpperCase()}</span>
+                <span style="color:${rank.color}; text-shadow:0 0 5px ${rank.color}">${score} XP</span>
             `;
             logList.appendChild(li);
         });
     }
 
-    // Запуск системы
+
     bootstrap();
 </script>
