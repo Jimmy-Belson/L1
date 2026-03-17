@@ -5,58 +5,45 @@
 // Включает: ранги, боссов, перегрев, VFX и интеграцию Supabase.
 // ==========================================
 
-import { getRankByScore } from 'ranks.js';
+import { getRankByScore } from './ranks.js';
 
-// --- ИНИЦИАЛИЗАЦИЯ И КОНФИГУРАЦИЯ ---
+
+
+
+
 const canvas = document.getElementById('gameCanvas');
-if (!canvas) {
-    console.error("CRITICAL ERROR: 'gameCanvas' element not found.");
-}
+
 const ctx = canvas.getContext('2d');
+
 
 const CONFIG = {
     WIDTH: 600,
     HEIGHT: 800,
-    GAME_JUICE: {
-        SHAKE_INTENSITY: 5,
-        PARTICLE_COUNT: 10,
-        GLOW_COLOR: '#00f2ff'
-    },
-    BALANCE: {
-        LIVES: 3,
-        SPAWN_INTERVAL: 60, 
-        SCORE_PER_LEVEL: 500 
-    }
+    GAME_JUICE: { SHAKE_INTENSITY: 5, PARTICLE_COUNT: 10, GLOW_COLOR: '#00f2ff' },
+    BALANCE: { LIVES: 3, SPAWN_INTERVAL: 60, SCORE_PER_LEVEL: 500 }
 };
 
-// Устанавливаем внутреннее разрешение холста
 canvas.width = CONFIG.WIDTH;
 canvas.height = CONFIG.HEIGHT;
 
-// --- ФУНКЦИЯ БРОНИРОВАННОГО РЕСАЙЗА ---
 function resizeGame() {
-    const padding = 40; // Отступы от краев экрана
+    const padding = 20;
     const availableWidth = window.innerWidth - padding;
     const availableHeight = window.innerHeight - padding;
-    
-    // Считаем соотношение сторон (0.75)
     const ratio = CONFIG.WIDTH / CONFIG.HEIGHT;
-    
     let newWidth = availableWidth;
     let newHeight = availableWidth / ratio;
-    
-    // Если по ширине не влезает — подгоняем по высоте
     if (newHeight > availableHeight) {
         newHeight = availableHeight;
         newWidth = availableHeight * ratio;
     }
     
-    // Применяем CSS размеры, не трогая внутреннее разрешение 600x800
+
     canvas.style.width = `${newWidth}px`;
     canvas.style.height = `${newHeight}px`;
 }
 
-// Слушаем изменение окна и вызываем сразу
+
 window.addEventListener('resize', resizeGame);
 resizeGame();
 
@@ -589,7 +576,7 @@ class GameEngine {
         // VFX: Частицы и Динамический Неоновый Фон
         if (this.particles.length > 0) {
             // Подсветка холста цветом последней уничтоженной частицы
-            ctx.fillStyle = rgba(255, 255, 255, 0.01);
+            ctx.fillStyle = `rgba(255, 255, 255, 0.01)`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
