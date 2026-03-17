@@ -1,3 +1,5 @@
+import { getRankByScore } from './ranks.js';
+
 const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
@@ -91,6 +93,7 @@ Msg(text, type = 'info') {
             });
         }
     },
+    
 
     TogglePass() {
         const passInput = document.getElementById('pass');
@@ -181,10 +184,18 @@ async SyncProfile(user) {
         if (error) throw error;
         
         if (data) {
-            // Если на странице есть элементы ника и аватарки — обновляем их
             const nickEl = document.getElementById('nick-display');
             const avatarEl = document.getElementById('avatar-display');
-            if (nickEl) nickEl.innerText = data.nickname || user.email.split('@')[0];
+            
+            if (nickEl) {
+                // РАССЧИТЫВАЕМ РАНГ ДЛЯ СЕБЯ
+                const rank = getRankByScore(data.combat_score || 0);
+                nickEl.innerText = data.nickname || user.email.split('@')[0];
+                
+                // КРАСИМ СВОЙ НИК В ЦВЕТ РАНГА
+                nickEl.style.color = rank.color;
+                nickEl.style.textShadow = `0 0 8px ${rank.color}`;
+            }
             if (avatarEl && data.avatar_url) avatarEl.src = data.avatar_url;
         }
     } catch (e) {
@@ -538,22 +549,37 @@ triggerElements.forEach(el => {
         const pop = document.getElementById('user-popover');
         if (!pop) return;
 
-        // Показываем "загрузку" в нике, пока ждем базу
         document.getElementById('pop-nick').innerText = "SCANNING...";
 
         const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
         
-        if (p) {
-            // Наполняем данными
-            document.getElementById('pop-avatar').src = p.avatar_url || avatar;
-            document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN_PILOT").toUpperCase();
-            document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
-            document.getElementById('pop-msgs').innerText = p.message_count || 0;
-            document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
-            
-            // Включаем! CSS сделает всё остальное.
-            pop.style.display = 'block';
-        }
+if (p) {
+    const rank = getRankByScore(p.combat_score || 0);
+
+    // 1. Ставим аватар и ник
+    document.getElementById('pop-avatar').src = p.avatar_url || avatar;
+    const nickEl = document.getElementById('pop-nick');
+    nickEl.innerText = (p.nickname || "UNKNOWN_PILOT").toUpperCase();
+    nickEl.style.color = rank.color; // Красим ник в цвет ранга
+
+    // 2. ЗАПОЛНЯЕМ РАНГ
+    const rankEl = document.getElementById('pop-rank');
+    rankEl.innerText = rank.name.toUpperCase();
+    rankEl.style.color = rank.color;
+    rankEl.style.textShadow = `0 0 10px ${rank.color}`;
+    
+    // Добавляем фоновую плашку для ранга (необязательно, но стильно)
+    rankEl.style.background = `${rank.color}22`; 
+    rankEl.style.padding = "2px 6px";
+    rankEl.style.border = `1px solid ${rank.color}44`;
+
+    // 3. Остальная стата
+    document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
+    document.getElementById('pop-msgs').innerText = p.message_count || 0;
+    document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+
+    pop.style.display = 'block';
+}
     };
 });
 

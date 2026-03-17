@@ -31,21 +31,62 @@
     <script type="module" src="ranks.js"></script>
     <script type="module" src="game.js"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Инициализируем только нужные части Core для этой страницы
-            if (Core.Canvas) Core.Canvas.init();
-            
-            Core.sb.auth.getSession().then(({ data: { session } }) => {
+<script type="module">
+    import { getRankByScore } from './ranks.js';
+
+    // Функция загрузки (вынесена наружу для порядка)
+    async function loadLeaderboard() {
+        const list = document.getElementById('highscores-list');
+        // Ждем секунду, если Core еще не прогрузился из script.js
+        if (!window.Core || !window.Core.sb) {
+            setTimeout(loadLeaderboard, 500);
+            return;
+        }
+
+        const { data, error } = await Core.sb
+            .from('profiles')
+            .select('nickname, combat_score')
+            .order('combat_score', { ascending: false })
+            .limit(10);
+
+        if (error) {
+            list.innerHTML = '<li><span>[ SYSTEM_ERROR ]</span></li>';
+            return;
+        }
+
+        list.innerHTML = ''; 
+        data.forEach((entry, index) => {
+            const li = document.createElement('li');
+            const rank = getRankByScore(entry.combat_score || 0);
+            li.innerHTML = `
+                <span>${index + 1}. ${entry.nickname || 'Pilot'}</span>
+                <span style="color: ${rank.color}; text-shadow: 0 0 5px ${rank.color}">
+                    ${entry.combat_score || 0}
+                </span>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Проверяем сессию только когда Core готов
+        const checkSession = async () => {
+            if (window.Core && window.Core.sb) {
+                const { data: { session } } = await Core.sb.auth.getSession();
                 if (!session) {
                     window.location.replace('station.html');
                 } else {
                     Core.user = session.user;
                     window.gameActive = true;
-                    // Здесь можно вызвать загрузку лидерборда
+                    loadLeaderboard();
                 }
-            });
-        });
-    </script>
+            } else {
+                setTimeout(checkSession, 100);
+            }
+        };
+        checkSession();
+    });
+</script>
+    
 </body>
 </html>
