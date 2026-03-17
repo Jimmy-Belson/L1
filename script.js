@@ -4,14 +4,13 @@ const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
 
-toggleChat() {
-    const chatWindow = document.getElementById('main-chat-window');
-    // Проверка на существование элемента, чтобы не было ошибок в консоли
-    if (chatWindow) {
-        chatWindow.classList.toggle('minimized');
-        console.log("System: Chat state toggled.");
-    }
-},
+    toggleChat() { // <--- Проверь, чтобы здесь и дальше была правильная вложенность
+        const chatWindow = document.getElementById('main-chat-window');
+        if (chatWindow) {
+            chatWindow.classList.toggle('minimized');
+            console.log("System: Chat state toggled.");
+        }
+    }, // Запятая после метода
 
 
 
