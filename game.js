@@ -11,7 +11,7 @@ import { getRankByScore } from './ranks.js';
 
 
 
-const canvas = document.getElementById('starfield');
+const canvas = document.getElementById('gameCanvas');
 
 const ctx = canvas.getContext('2d');
 
@@ -480,10 +480,10 @@ checkDeath() {
 
         // Финальное сообщение
         alert(
-            `--- MISSION FAILED ---\n\n` +
-            `FINAL SCORE: ${finalScore}\n` +
-            `PROMOTED TO: ${rank.name}\n\n` +
-            `RETURNING TO STATION...`
+            "--- MISSION FAILED ---\n\n" +
+            "FINAL SCORE: " + finalScore + "\n" +
+            "PROMOTED TO: " + rank.name + "\n\n" +
+            "RETURNING TO STATION..."
         );
 
         // Редирект обратно на главную
