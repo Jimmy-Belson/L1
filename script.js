@@ -302,31 +302,20 @@ async Logout() {
 
 async UpdateStat(field, value = 1) {
     if (!this.user) return;
-    const { data, error } = await this.sb.from('profiles').select(field).eq('id', this.user.id).single();
-    if (error) return;
-    if (data) {
-        const newValue = (data[field] || 0) + value;
-        await this.sb.from('profiles').update({ [field]: newValue }).eq('id', this.user.id);
+    try {
+        const { data, error } = await this.sb.from('profiles').select(field).eq('id', this.user.id).single();
+        if (error) throw error;
+        if (data) {
+            const newValue = (data[field] || 0) + value;
+            await this.sb.from('profiles').update({ [field]: newValue }).eq('id', this.user.id);
+        }
+    } catch (e) {
+        console.error("STAT_UPDATE_ERROR:", e.message);
     }
 }, // Запятая важна!
 
 async UpdateCombatScore(newScore) {
     if (!this.user) return;
-    try {
-        const { data, error } = await this.sb.from('profiles').select('combat_score').eq('id', this.user.id).single();
-        if (error) throw error;
-        const totalScore = (data.combat_score || 0) + newScore;
-        await this.sb.from('profiles').update({ combat_score: totalScore }).eq('id', this.user.id);
-        this.Msg(`COMBAT_REPORT: +${newScore} XP_GAINED`);
-        if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
-    } catch (e) {
-        console.error("SCORE_SYNC_ERROR:", e.message);
-    }
-}, // И тут запятая!
-
-async UpdateCombatScore(newScore) {
-    if (!this.user) return;
-
     try {
         console.log("SYNCING_COMBAT_XP: " + newScore);
         
@@ -339,11 +328,11 @@ async UpdateCombatScore(newScore) {
 
         if (error) throw error;
 
-        // 2. Суммируем (старые + новые)
+        // 2. Суммируем
         const currentScore = data.combat_score || 0;
         const totalScore = currentScore + newScore;
 
-        // 3. Сохраняем итоговое значение
+        // 3. Сохраняем
         const { error: updError } = await this.sb
             .from('profiles')
             .update({ combat_score: totalScore })
@@ -353,14 +342,15 @@ async UpdateCombatScore(newScore) {
 
         this.Msg(`COMBAT_REPORT: +${newScore} XP_GAINED`);
         
-        // Обновляем визуальный ранг на странице сразу
+        // Обновляем визуальный ранг на странице
         if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
 
     } catch (e) {
         console.error("SCORE_SYNC_ERROR:", e.message);
         this.Msg("SYNC_FAILED: CONNECTION_LOST", "error");
     }
-},
+}, // Запятая важна!
+
 
 Todo: {
     async load() {
