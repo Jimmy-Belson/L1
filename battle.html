@@ -1,34 +1,44 @@
 <style>
-    body {
+    /* 1. ИЗОЛЯЦИЯ БАЗЫ */
+    html, body {
         margin: 0;
         padding: 0;
-        overflow: hidden; /* Убираем прокрутку */
-        background-color: #000; /* Черный фон по умолчанию */
+        width: 100%;
+        height: 100%;
+        background-color: #000; /* Черный фон страницы */
+        overflow-x: hidden; /* Защита от горизонтальной прокрутки */
     }
 
+    /* 2. ХОЛСТ (GAME CANVAS) - УХОДИТ В ГЛУБИНУ */
     #game-canvas {
-        position: fixed;
+        position: fixed; /* Вырываем из потока, чтобы не ломал сетку */
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: 0; /* Игра на заднем плане */
+        z-index: -1; /* ОЧЕНЬ ВАЖНО: он теперь ПОД всем остальным */
         display: block;
+        pointer-events: none; /* Чтобы клики проходили сквозь него, если нужно */
     }
 
-    /* Слой для интерфейса, чтобы он был поверх игры */
+    /* 3. ИНТЕРФЕЙС (Твоя сломанная сетка) */
     .ui-layer {
         position: relative;
-        z-index: 10;
-        pointer-events: none; /* Чтобы можно было кликать сквозь пустые места по врагам */
-    }
-    
-    .ui-layer * {
-        pointer-events: auto; /* Возвращаем клики для кнопок и чата */
+        z-index: 1; /* Поверх холста */
+        width: 100%;
+        min-height: 100vh;
+        /* Если дизайн всё еще "съезжает", добавь сюда свою сетку:
+           display: grid; или что ты использовал ранее. */
     }
 </style>
 
 <canvas id="game-canvas"></canvas>
+
+<div class="ui-layer">
+    <div class="grid-container">
+        <ul id="highscores-list"></ul>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module" src="./script.js"></script>
