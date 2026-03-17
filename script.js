@@ -978,6 +978,7 @@ DrawPlanet() {
         }
     },
 
+// --- КОНЕЦ ОБЪЕКТА CORE ---
     loop() {
         if (this.Canvas && this.Canvas.draw) {
             this.Canvas.draw();
@@ -986,33 +987,29 @@ DrawPlanet() {
     }
 };
 
-window.addEventListener('click', () => {
-    const pop = document.getElementById('user-popover');
-    if (pop) pop.style.display = 'none';
-});
-
-// Запуск приложения
-document.addEventListener('DOMContentLoaded', () => Core.init());
-
-// --- НИЗ ФАЙЛА script.js ---
-
-// 1. Сначала отдаем объект окну (МГНОВЕННО)
+// 1. МГНОВЕННАЯ ГЛОБАЛИЗАЦИЯ (Самое важное!)
 window.Core = Core;
+console.log("CORE_SYSTEM: GLOBAL_LINK_ESTABLISHED");
 
-// 2. Слушатель клика для поповера
-window.addEventListener('click', () => {
-    const pop = document.getElementById('user-popover');
-    if (pop) pop.style.display = 'none';
-});
+// 2. Единый запуск
+const startSystem = () => {
+    if (!window.Core_Initialized) {
+        Core.init();
+        window.Core_Initialized = true;
+        console.log("CORE_SYSTEM: INITIALIZED");
+        // Сигнал для battle.html, что Core готов
+        window.dispatchEvent(new Event('core-ready'));
+    }
+};
 
-// 3. Инициализация системы
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => Core.init());
+    document.addEventListener('DOMContentLoaded', startSystem);
 } else {
-    // Если DOM уже загружен (часто бывает с модулями), запускаем сразу
-    Core.init();
+    startSystem();
 }
 
-// 4. Финальный сигнал для всех окон (включая battle.html)
-window.dispatchEvent(new Event('core-ready'));
-console.log("CORE_READY_GLOBAL: System active and dispatched.");
+// Поповер (закрытие при клике)
+window.addEventListener('click', () => {
+    const pop = document.getElementById('user-popover');
+    if (pop) pop.style.display = 'none';
+});
