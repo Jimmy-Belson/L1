@@ -230,13 +230,27 @@ async UpdateProfile() {
         if(error) this.Msg("ACCESS_DENIED: " + error.message, "error");
     },
 
-    async Register() {
-        const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
-        if(!emailEl || !passEl) return;
-        const { error } = await this.sb.auth.signUp({email:emailEl.value, password:passEl.value});
-        if(error) this.Msg("REG_ERROR: " + error.message, "error"); 
-        else this.Msg("PILOT_REGISTERED. INITIATE SESSION.");
-    },
+async Register() {
+    const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
+    
+    // ЛОГ ДЛЯ ПРОВЕРКИ:
+    console.log("Данные для регистрации:", emailEl.value, passEl.value);
+
+    if(!emailEl || !passEl) return;
+    
+    const { error } = await this.sb.auth.signUp({
+        email: emailEl.value.trim(), // trim() уберет лишние пробелы
+        password: passEl.value
+    });
+
+    if(error) {
+        console.error("SUPABASE_ERR:", error); // Посмотри в консоль, там будет объект с деталями
+        this.Msg("REG_ERROR: " + error.message, "error"); 
+    } else {
+        this.Msg("PILOT_REGISTERED. INITIATE SESSION.");
+    }
+}
+,
 
 async Logout() { 
     await this.sb.auth.signOut(); 
