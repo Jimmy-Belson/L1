@@ -964,4 +964,6 @@ window.addEventListener('click', () => {
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => Core.init());
 
-window.core = Core;
+// Самый низ файла script.js
+window.Core = Core;
+console.log("CORE_READY_GLOBAL"); // Добавь этот лог для проверки

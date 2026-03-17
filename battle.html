@@ -1,60 +1,65 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORBITRON - COMBAT SECTOR</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="game.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-    <canvas id="starfield"></canvas>
-    
-    <a href="index.html" class="back-btn">[ RETURN TO STATION ]</a>
-
-    <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
-        
-        <aside class="leaderboard">
-            <h3>TACTICAL LOG</h3>
-            <ul id="highscores-list">
-                <li><span>LOADING...</span></li>
-            </ul>
-        </aside>
-    </div>
-
-<script type="module" src="script.js"></script> 
-
-<script type="module" src="ranks.js"></script>
-<script type="module" src="game.js"></script>
-
 <script type="module">
+    
     import { getRankByScore } from './ranks.js';
 
-    async function loadLeaderboard() {
-        const list = document.getElementById('highscores-list');
-        // Ждем, пока Core и Core.sb появятся в окне
-        if (!window.Core || !window.Core.sb) {
-            setTimeout(loadLeaderboard, 100);
+    async function initSystem() {
+        console.log("Waiting for Core...");
+        
+        // 1. Ждем появления объекта Core в глобальном окне
+        const waitForCore = () => {
+            return new Promise(resolve => {
+                if (window.Core && window.Core.sb) return resolve(window.Core);
+                const interval = setInterval(() => {
+                    if (window.Core && window.Core.sb) {
+                        clearInterval(interval);
+                        resolve(window.Core);
+                    }
+                }, 50);
+            });
+        };
+
+        const Core = await waitForCore();
+        console.log("Core detected. Checking session...");
+
+        // 2. Проверяем сессию
+        const { data: { session }, error } = await Core.sb.auth.getSession();
+
+        if (error || !session) {
+            console.log("No session, redirecting...");
+            window.location.replace('station.html');
             return;
         }
 
-        const { data, error } = await window.Core.sb
+        Core.user = session.user;
+        window.gameActive = true;
+        console.log("Session active. Loading leaderboard...");
+
+        // 3. Загружаем лидерборд
+        await loadLeaderboard(Core);
+    }
+
+    async function loadLeaderboard(Core) {
+        const list = document.getElementById('highscores-list');
+        if (!list) return;
+
+        const { data, error } = await Core.sb
             .from('profiles')
             .select('nickname, combat_score')
             .order('combat_score', { ascending: false })
             .limit(10);
 
         if (error) {
-            list.innerHTML = '<li><span>[ SYSTEM_ERROR ]</span></li>';
+            console.error("Supabase Error:", error);
+            list.innerHTML = '<li><span>[ CONNECTION_ERROR ]</span></li>';
             return;
         }
 
         list.innerHTML = ''; 
+        if (!data || data.length === 0) {
+            list.innerHTML = '<li><span>[ NO_DATA ]</span></li>';
+            return;
+        }
+
         data.forEach((entry, index) => {
             const li = document.createElement('li');
             const rank = getRankByScore(entry.combat_score || 0);
@@ -68,29 +73,6 @@
         });
     }
 
-    // Инициализация при загрузке
-    const initGameSession = async () => {
-        // Ждем Core.sb
-        if (window.Core && window.Core.sb) {
-            try {
-                const { data: { session } } = await window.Core.sb.auth.getSession();
-                if (!session) {
-                    window.location.replace('station.html');
-                } else {
-                    window.Core.user = session.user;
-                    window.gameActive = true;
-                    loadLeaderboard();
-                }
-            } catch (e) {
-                console.error("Auth failed:", e);
-            }
-        } else {
-            setTimeout(initGameSession, 100);
-        }
-    };
-
-    initGameSession();
+    // Запускаем всё
+    initSystem();
 </script>
-    
-</body>
-</html>
