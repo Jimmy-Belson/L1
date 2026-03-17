@@ -695,9 +695,13 @@ UI() {
 
    Canvas: {
 // Инициализация холста и объектов
-        init() {
-            this.cvs = document.getElementById('starfield'); 
-            if(!this.cvs) return; // Если холста нет, выходим
+init() {
+    this.cvs = document.getElementById('starfield');
+    // Если мы на главной и тут нет холста — просто выходим из инициализации графики
+    if (!this.cvs) {
+        console.log("No starfield found, skipping canvas init.");
+        return; 
+    }
             this.ctx = this.cvs.getContext('2d');
             this.res(); // Устанавливаем размер при старте
             window.addEventListener('resize', () => this.res()); // И при изменении окна
