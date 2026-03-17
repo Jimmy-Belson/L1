@@ -963,3 +963,5 @@ window.addEventListener('click', () => {
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => Core.init());
+
+window.core = Core;
