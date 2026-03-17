@@ -1,19 +1,14 @@
 import { getRankByScore } from './ranks.js';
 
+// Мгновенно объявляем Core в глобальном поле
 const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
-    
-toggleChat() {
-    const chatWindow = document.getElementById('main-chat-window');
-    // Проверка на существование элемента, чтобы не было ошибок в консоли
-    if (chatWindow) {
-        chatWindow.classList.toggle('minimized');
-        console.log("System: Chat state toggled.");
-    }
-},
 
-
+    toggleChat() {
+        const chatWindow = document.getElementById('main-chat-window');
+        if (chatWindow) chatWindow.classList.toggle('minimized');
+    },
 
 getAvatar(user_id, current_avatar) {
     // 1. Если передана реальная ссылка (не робот и не заглушка) — возвращаем её
@@ -979,7 +974,7 @@ DrawPlanet() {
         }
     },
 
-    loop() {
+loop() {
         if (this.Canvas && this.Canvas.draw) {
             this.Canvas.draw();
         }
@@ -987,34 +982,12 @@ DrawPlanet() {
     }
 };
 
-window.addEventListener('click', () => {
-    const pop = document.getElementById('user-popover');
-    if (pop) pop.style.display = 'none';
-});
+// ВАЖНО: Выносим объект в window ПЕРЕД запуском init
+window.Core = Core;
 
-// Запуск приложения
-document.addEventListener('DOMContentLoaded', () => Core.init());
+// Запускаем
+Core.init();
 
-// ЭТО ДОЛЖНО БЫТЬ ВНЕ ЛЮБЫХ ФУНКЦИЙ В КОНЦЕ ФАЙЛА
-window.Core = Core; 
-
-
-const startSystem = () => {
-    if (!window.Core_Initialized) {
-        Core.init();
-    
-        window.Core_Initialized = true;
-    
-        window.dispatchEvent(new Event('core-ready'));
-        console.log("CORE_SYSTEM: READY");
-    }
-};
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startSystem);
-} else {
-    startSystem();
-}
-
-
-
+// Маякуем системе, что мы живы
+window.dispatchEvent(new Event('core-ready'));
+console.log("CORE_SYSTEM: FULL_READY_SIGNAL_SENT");
