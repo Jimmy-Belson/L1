@@ -35,16 +35,15 @@
 <script type="module">
     import { getRankByScore } from './ranks.js';
 
-    // Функция загрузки (вынесена наружу для порядка)
     async function loadLeaderboard() {
         const list = document.getElementById('highscores-list');
-        // Ждем секунду, если Core еще не прогрузился из script.js
+        // Ждем, пока Core и Core.sb появятся в окне
         if (!window.Core || !window.Core.sb) {
-            setTimeout(loadLeaderboard, 500);
+            setTimeout(loadLeaderboard, 100);
             return;
         }
 
-        const { data, error } = await Core.sb
+        const { data, error } = await window.Core.sb
             .from('profiles')
             .select('nickname, combat_score')
             .order('combat_score', { ascending: false })
@@ -69,24 +68,28 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Проверяем сессию только когда Core готов
-        const checkSession = async () => {
-            if (window.Core && window.Core.sb) {
-                const { data: { session } } = await Core.sb.auth.getSession();
+    // Инициализация при загрузке
+    const initGameSession = async () => {
+        // Ждем Core.sb
+        if (window.Core && window.Core.sb) {
+            try {
+                const { data: { session } } = await window.Core.sb.auth.getSession();
                 if (!session) {
                     window.location.replace('station.html');
                 } else {
-                    Core.user = session.user;
+                    window.Core.user = session.user;
                     window.gameActive = true;
                     loadLeaderboard();
                 }
-            } else {
-                setTimeout(checkSession, 100);
+            } catch (e) {
+                console.error("Auth failed:", e);
             }
-        };
-        checkSession();
-    });
+        } else {
+            setTimeout(initGameSession, 100);
+        }
+    };
+
+    initGameSession();
 </script>
     
 </body>
