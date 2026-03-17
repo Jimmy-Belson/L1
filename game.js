@@ -461,7 +461,7 @@ class GameEngine {
         }
     }
 
-   checkDeath() {
+checkDeath() {
     if (this.player.lives <= 0) {
         window.gameActive = false;
         
@@ -470,9 +470,8 @@ class GameEngine {
 
         // Интеграция с ORBITRON Core
         if (window.Core && finalScore > 0) {
-            // Теперь отправляем в combat_score вместо kills_astronauts
-            // Если твоя функция UpdateStat просто прибавляет значение:
-            window.Core.UpdateStat('combat_score', finalScore);
+            // ВАЖНО: Используем специальный метод для сохранения очков боя
+            window.Core.UpdateCombatScore(finalScore);
             
             if (window.Core.Msg) {
                 window.Core.Msg(`MISSION_END: ${finalScore} combat experience synced.`, "info");

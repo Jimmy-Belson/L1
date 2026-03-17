@@ -321,6 +321,44 @@ async UpdateStat(field, value = 1) {
     }
 },
 
+async UpdateCombatScore(newScore) {
+    if (!this.user) return;
+
+    try {
+        console.log("SYNCING_COMBAT_XP: " + newScore);
+        
+        // 1. Получаем текущие очки из базы
+        const { data, error } = await this.sb
+            .from('profiles')
+            .select('combat_score')
+            .eq('id', this.user.id)
+            .single();
+
+        if (error) throw error;
+
+        // 2. Суммируем (старые + новые)
+        const currentScore = data.combat_score || 0;
+        const totalScore = currentScore + newScore;
+
+        // 3. Сохраняем итоговое значение
+        const { error: updError } = await this.sb
+            .from('profiles')
+            .update({ combat_score: totalScore })
+            .eq('id', this.user.id);
+
+        if (updError) throw updError;
+
+        this.Msg(`COMBAT_REPORT: +${newScore} XP_GAINED`);
+        
+        // Обновляем визуальный ранг на странице сразу
+        if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
+
+    } catch (e) {
+        console.error("SCORE_SYNC_ERROR:", e.message);
+        this.Msg("SYNC_FAILED: CONNECTION_LOST", "error");
+    }
+},
+
 Todo: {
     async load() {
         if (!Core.user) return;
