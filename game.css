@@ -164,12 +164,4 @@ body {
     max-width: 100vw;
     max-height: 100vh;
 }
-#starfield {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1; /* Чтобы он был за интерфейсом, но перед фоном */
-    background: #000; /* Черный космос вместо белого экрана */
-}
+
