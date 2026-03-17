@@ -3,14 +3,15 @@ import { getRankByScore } from './ranks.js';
 const Core = {
     sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
     user: null,
-
-    toggleChat() { // <--- Проверь, чтобы здесь и дальше была правильная вложенность
-        const chatWindow = document.getElementById('main-chat-window');
-        if (chatWindow) {
-            chatWindow.classList.toggle('minimized');
-            console.log("System: Chat state toggled.");
-        }
-    }, // Запятая после метода
+    
+toggleChat() {
+    const chatWindow = document.getElementById('main-chat-window');
+    // Проверка на существование элемента, чтобы не было ошибок в консоли
+    if (chatWindow) {
+        chatWindow.classList.toggle('minimized');
+        console.log("System: Chat state toggled.");
+    }
+},
 
 
 
@@ -978,7 +979,6 @@ DrawPlanet() {
         }
     },
 
-// --- КОНЕЦ ОБЪЕКТА CORE ---
     loop() {
         if (this.Canvas && this.Canvas.draw) {
             this.Canvas.draw();
@@ -987,18 +987,26 @@ DrawPlanet() {
     }
 };
 
-// 1. МГНОВЕННАЯ ГЛОБАЛИЗАЦИЯ (Самое важное!)
-window.Core = Core;
-console.log("CORE_SYSTEM: GLOBAL_LINK_ESTABLISHED");
+window.addEventListener('click', () => {
+    const pop = document.getElementById('user-popover');
+    if (pop) pop.style.display = 'none';
+});
 
-// 2. Единый запуск
+// Запуск приложения
+document.addEventListener('DOMContentLoaded', () => Core.init());
+
+// ЭТО ДОЛЖНО БЫТЬ ВНЕ ЛЮБЫХ ФУНКЦИЙ В КОНЦЕ ФАЙЛА
+window.Core = Core; 
+
+
 const startSystem = () => {
     if (!window.Core_Initialized) {
         Core.init();
+    
         window.Core_Initialized = true;
-        console.log("CORE_SYSTEM: INITIALIZED");
-        // Сигнал для battle.html, что Core готов
+    
         window.dispatchEvent(new Event('core-ready'));
+        console.log("CORE_SYSTEM: READY");
     }
 };
 
@@ -1008,8 +1016,5 @@ if (document.readyState === 'loading') {
     startSystem();
 }
 
-// Поповер (закрытие при клике)
-window.addEventListener('click', () => {
-    const pop = document.getElementById('user-popover');
-    if (pop) pop.style.display = 'none';
-});
+
+
