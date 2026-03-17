@@ -694,9 +694,9 @@ UI() {
     },
 
    Canvas: {
-        // Инициализация холста и объектов
+// Инициализация холста и объектов
         init() {
-            this.cvs = document.getElementById('game-canvas'); 
+            this.cvs = document.getElementById('starfield'); 
             if(!this.cvs) return; // Если холста нет, выходим
             this.ctx = this.cvs.getContext('2d');
             this.res(); // Устанавливаем размер при старте
