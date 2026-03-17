@@ -223,34 +223,52 @@ async UpdateProfile() {
 
 },
 
-    async Auth() {
-        const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
-        if(!emailEl || !passEl) return;
-        const { error } = await this.sb.auth.signInWithPassword({email:emailEl.value, password:passEl.value});
-        if(error) this.Msg("ACCESS_DENIED: " + error.message, "error");
-    },
-
-async Register() {
+async Auth() {
     const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
-    
-    // ЛОГ ДЛЯ ПРОВЕРКИ:
-    console.log("Данные для регистрации:", emailEl.value, passEl.value);
-
     if(!emailEl || !passEl) return;
-    
-    const { error } = await this.sb.auth.signUp({
-        email: emailEl.value.trim(), // trim() уберет лишние пробелы
+
+    const { data, error } = await this.sb.auth.signInWithPassword({
+        email: emailEl.value, 
         password: passEl.value
     });
 
     if(error) {
-        console.error("SUPABASE_ERR:", error); // Посмотри в консоль, там будет объект с деталями
+        this.Msg("ACCESS_DENIED: " + error.message, "error");
+    } else {
+        this.Msg("ACCESS_GRANTED. WELCOME BACK.");
+        
+        // Моментальный переход после логина
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    }
+},
+
+async Register() {
+    const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
+    
+
+    
+    if(!emailEl || !passEl) return;
+    
+    const { data, error } = await this.sb.auth.signUp({
+        email: emailEl.value.trim(),
+        password: passEl.value
+    });
+
+    if(error) {
+        console.error("SUPABASE_ERR:", error);
         this.Msg("REG_ERROR: " + error.message, "error"); 
     } else {
-        this.Msg("PILOT_REGISTERED. INITIATE SESSION.");
+        this.Msg("PILOT_REGISTERED. INITIATING SESSION...");
+        
+        // ВАЖНО: Если регистрация прошла успешно, 
+        // принудительно перекидываем пользователя на главную через секунду
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1500); 
     }
-}
-,
+},
 
 async Logout() { 
     await this.sb.auth.signOut(); 
