@@ -1,10 +1,19 @@
 import { getRankByScore } from './ranks.js';
 
-// Мгновенно объявляем Core в глобальном поле
-const Core = {
-    sb: window.supabase.createClient('https://ebjsxlympwocluxgmwcu.supabase.co', 'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'),
-    user: null,
+// ПРОВЕРКА: Если библиотека не загружена, ждем её
+if (!window.supabase) {
+    console.warn("SYSTEM: Supabase SDK not found, retrying...");
+}
 
+const Core = {
+    // Инициализируем клиент один раз при обращении
+    sb: (window.supabase) ? window.supabase.createClient(
+        'https://ebjsxlympwocluxgmwcu.supabase.co', 
+        'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
+    ) : null,
+
+    user: null,
+    
     toggleChat() {
         const chatWindow = document.getElementById('main-chat-window');
         if (chatWindow) chatWindow.classList.toggle('minimized');
