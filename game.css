@@ -1,100 +1,141 @@
-/* game.css — Автономный боевой сектор */
+/* game.css — Battle Sector UI */
 
 :root {
-    --neon: #00f2ff;
-    --pink: #ff00e5;
-    --bg: #01050a;
+    --neon-blue: #00f2ff;
+    --neon-pink: #ff00e5;
+    --bg-black: #01050a;
 }
 
 body {
     margin: 0;
     padding: 0;
-    background-color: var(--bg);
+    background-color: var(--bg-black);
     color: #fff;
     font-family: 'Share Tech Mono', monospace;
-    overflow: hidden;
+    overflow: hidden; /* Чтобы не было скролла во время боя */
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
 }
 
-/* Фон со звездами (из Core.Canvas) */
-#starfield {
+/* Сетка на фоне для глубины */
+body::before {
+    content: "";
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    background-image: 
+        linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
     z-index: -1;
 }
 
-/* Кнопка возврата */
-.back-btn {
-    position: fixed;
-    top: 30px;
-    left: 30px;
-    padding: 12px 24px;
-    color: var(--neon);
-    border: 1px solid var(--neon);
-    text-decoration: none;
-    font-family: 'Orbitron';
-    font-size: 10px;
-    letter-spacing: 2px;
-    background: rgba(0, 242, 255, 0.05);
-    transition: 0.3s;
-    z-index: 100;
-}
-
-.back-btn:hover {
-    background: var(--neon);
-    color: #000;
-    box-shadow: 0 0 15px var(--neon);
-}
-
-/* Игровой интерфейс */
+/* Главный контейнер */
 .game-container {
     display: flex;
-    gap: 30px;
-    padding: 20px;
-    border: 1px solid rgba(0, 242, 255, 0.2);
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
+    gap: 20px;
+    padding: 15px;
+    border: 2px solid rgba(0, 242, 255, 0.2);
+    background: rgba(0, 10, 20, 0.8);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 1), inset 0 0 20px rgba(0, 242, 255, 0.05);
+    border-radius: 8px;
+    position: relative;
 }
 
+/* Холст игры */
 #gameCanvas {
-    border: 2px solid var(--neon);
-    box-shadow: 0 0 30px rgba(0, 242, 255, 0.15);
+    background: #000;
+    border: 1px solid var(--neon-blue);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+    cursor: crosshair;
+    image-rendering: pixelated; /* Делаем пиксели четкими */
 }
 
-/* Tactical Log */
+/* Правая панель (Leaderboard) */
 .leaderboard {
     width: 220px;
+    display: flex;
+    flex-direction: column;
     border-left: 1px solid rgba(0, 242, 255, 0.2);
     padding-left: 20px;
 }
 
 .leaderboard h3 {
-    font-family: 'Orbitron';
+    font-family: 'Orbitron', sans-serif;
     font-size: 14px;
-    color: var(--neon);
-    margin-top: 0;
-    text-shadow: 0 0 10px var(--neon);
+    color: var(--neon-blue);
+    margin: 0 0 15px 0;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
 .leaderboard ul {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .leaderboard li {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 12px;
+    padding: 8px 5px;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+    transition: background 0.2s;
+}
+
+.leaderboard li:hover {
+    background: rgba(0, 242, 255, 0.1);
 }
 
 .leaderboard li span:last-child {
-    color: var(--pink);
+    color: var(--neon-pink);
+    font-weight: bold;
+}
+
+/* Кнопка выхода */
+.back-btn {
+    position: absolute;
+    top: -50px;
+    left: 0;
+    color: var(--neon-blue);
+    text-decoration: none;
+    font-size: 12px;
+    font-family: 'Orbitron';
+    border: 1px solid var(--neon-blue);
+    padding: 5px 15px;
+    background: transparent;
+    transition: 0.3s;
+}
+
+.back-btn:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon-blue);
+}
+
+/* Адаптивность под мобилки */
+@media (max-width: 900px) {
+    .game-container {
+        flex-direction: column;
+        gap: 10px;
+        padding: 5px;
+    }
+    .leaderboard {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(0, 242, 255, 0.2);
+        padding: 10px 0 0 0;
+        height: 120px;
+        overflow-y: auto;
+    }
+    .back-btn {
+        top: 5px;
+        left: 5px;
+        font-size: 10px;
+    }
 }
