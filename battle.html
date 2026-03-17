@@ -1,46 +1,62 @@
 <script type="module">
-    
     import { getRankByScore } from './ranks.js';
 
-    async function initSystem() {
-        console.log("Waiting for Core...");
-        
-        // 1. Ждем появления объекта Core в глобальном окне
-        const waitForCore = () => {
-            return new Promise(resolve => {
+    /**
+     * Основная логика запуска боевого сектора
+     */
+    async function bootstrap() {
+        console.log("%c[SYSTEM] Waiting for ORBITRON_CORE...", "color: #0ff");
+
+        // Функция ожидания появления Core в window
+        const getCore = () => {
+            return new Promise((resolve) => {
+                // Если Core уже готов
                 if (window.Core && window.Core.sb) return resolve(window.Core);
-                const interval = setInterval(() => {
+                
+                // Если нет — подписываемся на событие или проверяем интервалом
+                const check = setInterval(() => {
                     if (window.Core && window.Core.sb) {
-                        clearInterval(interval);
+                        clearInterval(check);
                         resolve(window.Core);
                     }
-                }, 50);
+                }, 100);
             });
         };
 
-        const Core = await waitForCore();
-        console.log("Core detected. Checking session...");
+        try {
+            const Core = await getCore();
+            console.log("%c[SYSTEM] Core detected. Verifying session...", "color: #0ff");
 
-        // 2. Проверяем сессию
-        const { data: { session }, error } = await Core.sb.auth.getSession();
+            // Проверяем авторизацию через Supabase
+            const { data: { session }, error } = await Core.sb.auth.getSession();
 
-        if (error || !session) {
-            console.log("No session, redirecting...");
-            window.location.replace('station.html');
-            return;
+            if (error || !session) {
+                console.warn("No active session. Ejecting to station.");
+                window.location.replace('station.html');
+                return;
+            }
+
+            // Устанавливаем данные пользователя в Core
+            Core.user = session.user;
+            
+            // Активируем игру (убирает экран ожидания)
+            window.gameActive = true; 
+            console.log("%c[SYSTEM] Combat sector engaged.", "color: #0f0");
+
+            // Загружаем лог рекордов
+            await updateTacticalLog(Core);
+
+        } catch (err) {
+            console.error("BOOTSTRAP_CRITICAL_ERROR:", err);
         }
-
-        Core.user = session.user;
-        window.gameActive = true;
-        console.log("Session active. Loading leaderboard...");
-
-        // 3. Загружаем лидерборд
-        await loadLeaderboard(Core);
     }
 
-    async function loadLeaderboard(Core) {
-        const list = document.getElementById('highscores-list');
-        if (!list) return;
+    /**
+     * Загрузка топ-10 пилотов в Tactical Log
+     */
+    async function updateTacticalLog(Core) {
+        const logList = document.getElementById('highscores-list');
+        if (!logList) return;
 
         const { data, error } = await Core.sb
             .from('profiles')
@@ -49,30 +65,32 @@
             .limit(10);
 
         if (error) {
-            console.error("Supabase Error:", error);
-            list.innerHTML = '<li><span>[ CONNECTION_ERROR ]</span></li>';
+            logList.innerHTML = '<li style="color:red">[ LINK_ERROR ]</li>';
             return;
         }
 
-        list.innerHTML = ''; 
+        logList.innerHTML = ''; 
+        
         if (!data || data.length === 0) {
-            list.innerHTML = '<li><span>[ NO_DATA ]</span></li>';
+            logList.innerHTML = '<li>[ NO_DATA_FOUND ]</li>';
             return;
         }
 
-        data.forEach((entry, index) => {
+        data.forEach((pilot, i) => {
+            const rank = getRankByScore(pilot.combat_score || 0);
             const li = document.createElement('li');
-            const rank = getRankByScore(entry.combat_score || 0);
+            li.style.borderLeft = `2px solid ${rank.color}`;
             li.innerHTML = `
-                <span>${index + 1}. ${entry.nickname || 'Pilot'}</span>
-                <span style="color: ${rank.color}; text-shadow: 0 0 5px ${rank.color}">
-                    ${entry.combat_score || 0}
+                <span class="rank-index">${i + 1}.</span>
+                <span class="pilot-name">${(pilot.nickname || 'Unknown').toUpperCase()}</span>
+                <span class="pilot-xp" style="color: ${rank.color}; text-shadow: 0 0 5px ${rank.color}">
+                    ${pilot.combat_score || 0} XP
                 </span>
             `;
-            list.appendChild(li);
+            logList.appendChild(li);
         });
     }
 
-    // Запускаем всё
-    initSystem();
+    // Инициализация
+    bootstrap();
 </script>
