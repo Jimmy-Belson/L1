@@ -302,24 +302,27 @@ async Logout() {
 
 async UpdateStat(field, value = 1) {
     if (!this.user) return;
-    
-    // 1. Получаем текущее значение из базы данных
     const { data, error } = await this.sb.from('profiles').select(field).eq('id', this.user.id).single();
-    
-    if (error) {
-        console.error("UPDATE_STAT_ERROR:", error);
-        return;
-    }
-
+    if (error) return;
     if (data) {
         const newValue = (data[field] || 0) + value;
-        
-        // 2. Обновляем базу данных (тихо, без уведомлений)
         await this.sb.from('profiles').update({ [field]: newValue }).eq('id', this.user.id);
-        
-        // Уведомления удалены. Теперь всё пишется в базу "молча".
     }
-},
+}, // Запятая важна!
+
+async UpdateCombatScore(newScore) {
+    if (!this.user) return;
+    try {
+        const { data, error } = await this.sb.from('profiles').select('combat_score').eq('id', this.user.id).single();
+        if (error) throw error;
+        const totalScore = (data.combat_score || 0) + newScore;
+        await this.sb.from('profiles').update({ combat_score: totalScore }).eq('id', this.user.id);
+        this.Msg(`COMBAT_REPORT: +${newScore} XP_GAINED`);
+        if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
+    } catch (e) {
+        console.error("SCORE_SYNC_ERROR:", e.message);
+    }
+}, // И тут запятая!
 
 async UpdateCombatScore(newScore) {
     if (!this.user) return;
