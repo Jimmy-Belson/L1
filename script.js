@@ -1005,6 +1005,25 @@ window.addEventListener('click', () => {
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => Core.init());
 
-// Самый низ файла script.js
+// --- НИЗ ФАЙЛА script.js ---
+
+// 1. Сначала отдаем объект окну (МГНОВЕННО)
 window.Core = Core;
-console.log("CORE_READY_GLOBAL"); // Добавь этот лог для проверки
+
+// 2. Слушатель клика для поповера
+window.addEventListener('click', () => {
+    const pop = document.getElementById('user-popover');
+    if (pop) pop.style.display = 'none';
+});
+
+// 3. Инициализация системы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => Core.init());
+} else {
+    // Если DOM уже загружен (часто бывает с модулями), запускаем сразу
+    Core.init();
+}
+
+// 4. Финальный сигнал для всех окон (включая battle.html)
+window.dispatchEvent(new Event('core-ready'));
+console.log("CORE_READY_GLOBAL: System active and dispatched.");
