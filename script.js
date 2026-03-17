@@ -141,9 +141,23 @@ async init() {
     });
 
     // Слушатель выхода
-    this.sb.auth.onAuthStateChange((event) => {
-        if (event === 'SIGNED_OUT') window.location.replace('station.html');
-    });
+    // Внутри метода init() замени старый слушатель на этот:
+this.sb.auth.onAuthStateChange((event, session) => {
+    console.log("AUTH_EVENT:", event); // Посмотришь в консоли, что происходит
+
+    if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (window.location.pathname.includes('station.html')) {
+            this.Msg("CONNECTION_ESTABLISHED. REDIRECTING...");
+            setTimeout(() => {
+                window.location.replace('index.html');
+            }, 1000);
+        }
+    }
+    
+    if (event === 'SIGNED_OUT') {
+        window.location.replace('station.html');
+    }
+});
 },
 
 // Добавь эту вспомогательную функцию внутри Core
