@@ -694,12 +694,10 @@ UI() {
     },
 
    Canvas: {
-// Инициализация холста и объектов
+        // Инициализация холста и объектов
         init() {
-            // Исправлено: ищем game-canvas (ID из battle.html)
             this.cvs = document.getElementById('game-canvas'); 
             if(!this.cvs) return; // Если холста нет, выходим
-            
             this.ctx = this.cvs.getContext('2d');
             this.res(); // Устанавливаем размер при старте
             window.addEventListener('resize', () => this.res()); // И при изменении окна
@@ -717,38 +715,65 @@ UI() {
             this.ufo = { x: -250, y: 350, v: 2.1, parts: [] };
             
             // Астронавты: массив из 3-х детализированных пилотов
-            this.crew = Array.from({length: 3}, () => ({
-                x: Math.random() * this.cvs.width, 
-                y: Math.random() * this.cvs.height, 
-                vx: (Math.random() - 0.5) * 0.4, 
-                vy: (Math.random() - 0.5) * 0.4, 
-                rot: Math.random() * Math.PI * 2, 
-                vr: (Math.random() - 0.5) * 0.02, 
-                p: Math.random() * Math.PI,
-                isFalling: false 
-            }));
+           this.crew = Array.from({length: 3}, () => ({
+    x: Math.random() * this.cvs.width, 
+    y: Math.random() * this.cvs.height, 
+    vx: (Math.random() - 0.5) * 0.4, 
+    vy: (Math.random() - 0.5) * 0.4, 
+    rot: Math.random() * Math.PI * 2, 
+    vr: (Math.random() - 0.5) * 0.02, // РАЗНЫЙ ДРИФТ: теперь крутятся в разные стороны
+    p: Math.random() * Math.PI,
+    isFalling: false // Состояние падения
+}));
+window.addEventListener('mousedown', (e) => {
+    // Если мы кликнули по кнопке или инпуту — ничего не делаем
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.panel')) return;
 
-            window.addEventListener('mousedown', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.panel')) return;
+    const rect = this.cvs.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
 
-                const rect = this.cvs.getBoundingClientRect();
-                const mx = e.clientX - rect.left;
-                const my = e.clientY - rect.top;
-
-                this.crew.forEach(a => {
-                    const dist = Math.hypot(a.x - mx, a.y - my);
-                    if (dist < 60 && !a.isFalling) { 
-                        a.isFalling = true;
-                        a.vy = 10;
-                        a.vr = 0.2;
-                        Core.Msg("PILOT_LOST: EMERGENCY_EXIT");
-                        Core.UpdateStat('kills_astronauts', 1);
-                    }
-                });
-            });
+    // Проверка попадания в астронавтов
+    this.crew.forEach(a => {
+        const dist = Math.hypot(a.x - mx, a.y - my);
+        // Добавили !a.isFalling, чтобы нельзя было "накликивать" на летящего вниз
+        if (dist < 60 && !a.isFalling) { 
+            a.isFalling = true;
+            a.vy = 10;
+            a.vr = 0.2;
+            Core.Msg("PILOT_LOST: EMERGENCY_EXIT");
             
-            console.log("%c[CANVAS] Engine Online", "color: #0f0");
+            // ОБНОВЛЕНИЕ СТАТИСТИКИ: Сбитые космонавты
+            Core.UpdateStat('kills_astronauts', 1);
+        }
+    });
+
+    // Проверка попадания в НЛО
+    const u = this.ufo;
+    const ufoY = u.y + Math.sin(Date.now() / 600) * 35;
+    if (Math.hypot(u.x - mx, ufoY - my) < 70) {
+        u.v = 15;
+        Core.Msg("UFO_BOOST: WARP_DRIVE");
+        
+        // ОБНОВЛЕНИЕ СТАТИСТИКИ: Клики по НЛО
+        Core.UpdateStat('nlo_clicks', 1);
+        
+        setTimeout(() => u.v = 2.1, 600);
+    }
+});
+            
+            // Комета (изначально неактивна)
+            this.comet = { x: -100, y: 0, active: false };
         },
+
+        // Установка размера холста на весь экран
+        res() { 
+            if(this.cvs) { 
+                this.cvs.width = window.innerWidth; 
+                this.cvs.height = window.innerHeight; 
+            } 
+        },
+        
 DrawPlanet() {
             const ctx = this.ctx;
             const img = document.getElementById('planet-pic');
