@@ -164,10 +164,12 @@ body {
     max-width: 100vw;
     max-height: 100vh;
 }
-
-#gameCanvas {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain; /* Сохраняет пропорции внутри блока */
+#game-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Чтобы он был за интерфейсом, но перед фоном */
+    background: #000; /* Черный космос вместо белого экрана */
 }

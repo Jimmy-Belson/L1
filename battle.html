@@ -1,5 +1,36 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Убираем прокрутку */
+        background-color: #000; /* Черный фон по умолчанию */
+    }
 
+    #game-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 0; /* Игра на заднем плане */
+        display: block;
+    }
+
+    /* Слой для интерфейса, чтобы он был поверх игры */
+    .ui-layer {
+        position: relative;
+        z-index: 10;
+        pointer-events: none; /* Чтобы можно было кликать сквозь пустые места по врагам */
+    }
+    
+    .ui-layer * {
+        pointer-events: auto; /* Возвращаем клики для кнопок и чата */
+    }
+</style>
+
+<canvas id="game-canvas"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module" src="./script.js"></script>
 
 <script type="module">
@@ -8,11 +39,11 @@
     async function bootstrap() {
         console.log("%c[SYSTEM] Waiting for ORBITRON_CORE...", "color: #0ff");
 
-        // Функция поиска Core в глобальном окне
         const getCore = () => {
             return new Promise((resolve) => {
                 const check = () => {
-                    if (window.Core && window.Core.sb) {
+                    // Проверяем наличие Core и инициализированного Canvas
+                    if (window.Core && window.Core.sb && window.Core.Canvas) {
                         console.log("%c[SYSTEM] Core link established.", "color: #0f0");
                         resolve(window.Core);
                         return true;
@@ -21,11 +52,9 @@
                 };
 
                 if (!check()) {
-                    // Проверяем каждые 50мс и слушаем событие готовности
                     const timer = setInterval(() => { if (check()) clearInterval(timer); }, 50);
                     window.addEventListener('core-ready', () => { if (check()) clearInterval(timer); }, { once: true });
                     
-                    // Предохранитель на 5 секунд: если ядро не загрузилось, пишем ошибку
                     setTimeout(() => {
                         if (!window.Core) {
                             clearInterval(timer);
@@ -41,18 +70,15 @@
         try {
             const Core = await getCore();
             
-            // Проверка авторизации
             const { data: { session }, error } = await Core.sb.auth.getSession();
-
             if (error || !session) {
-                console.warn("ACCESS_DENIED: Ejecting...");
                 window.location.replace('station.html');
                 return;
             }
 
             Core.user = session.user;
 
-            // Визуальное скрытие загрузки
+            // Скрываем загрузочный экран
             const overlay = document.getElementById('loading-screen') || document.querySelector('.waiting-overlay');
             if (overlay) {
                 overlay.style.transition = 'opacity 0.8s ease';
@@ -60,13 +86,15 @@
                 setTimeout(() => overlay.remove(), 800);
             }
 
+            // --- ВАЖНО: Принудительно запускаем отрисовку, если она не стартовала ---
             window.gameActive = true; 
+            if (Core.Canvas && typeof Core.Canvas.res === 'function') {
+                Core.Canvas.res(); // Подгоняем размер под экран
+            }
+            
             console.log("%c[SYSTEM] Combat sector engaged.", "color: #0f0");
 
-            // Обновляем ранг игрока в углу экрана
             if (typeof Core.SyncProfile === 'function') await Core.SyncProfile(Core.user);
-
-            // Загружаем таблицу лидеров
             await updateTacticalLog(Core);
 
         } catch (err) {
