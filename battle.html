@@ -172,21 +172,24 @@
         import { getRankByScore } from './ranks.js';
 
         async function bootstrap() {
-            const getCore = () => {
-                return new Promise((resolve) => {
-                    const check = () => {
-                        // Ждем пока script.js создаст объект Core и систему Canvas
-                        if (window.Core && window.Core.sb && window.Core.Canvas) {
-                            resolve(window.Core);
-                            return true;
-                        }
-                        return false;
-                    };
-                    if (!check()) {
-                        const timer = setInterval(() => { if (check()) clearInterval(timer); }, 50);
-                    }
-                });
-            };
+const getCore = () => {
+    return new Promise((resolve) => {
+        const check = () => {
+            // Достаточно проверить наличие Core и метода Canvas
+            if (window.Core && window.Core.Canvas) {
+                console.log("SYSTEM: CORE_DETECTED");
+                resolve(window.Core);
+                return true;
+            }
+            return false;
+        };
+        if (!check()) {
+            const timer = setInterval(() => { 
+                if (check()) clearInterval(timer); 
+            }, 50);
+        }
+    });
+};
 
             try {
                 const Core = await getCore();

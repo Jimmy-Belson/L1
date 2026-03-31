@@ -47,10 +47,7 @@ function resizeGame() {
 window.addEventListener('resize', resizeGame);
 resizeGame();
 
-window.gameActive = false; 
-window.Core = window.Core || null;
-// Глобальная привязка Ядра ORBITRON
-window.Core = window.Core || null; 
+window.gameActive = window.gameActive || false; // Флаг для контроля состояния игры 
 
 
 // ==========================================
@@ -333,7 +330,7 @@ class Boss {
 // ==========================================
 
 class GameEngine {
-    constructor() {
+constructor() {
         // 1. Инициализация базовых сущностей
         this.player = new Player();
         this.projectiles = [];
@@ -347,27 +344,26 @@ class GameEngine {
         this.screenShakeTime = 0;
         this.screenShakeIntensity = 0;
 
-        // --- ВНЕДРЕНИЕ СВЯЗКИ С ЯДРОМ (Второй шаг) ---
-        // Проверяем, загружен ли ORBITRON_CORE из внешнего скрипта
-        if (window.Core) {
-            console.log("%c[GAME_ENGINE] Linked to ORBITRON_CORE", "color: #0ff");
-            
-            // Если в Core уже есть данные игрока, подтягиваем их
-            if (window.Core.user) {
-                window.gameActive = true; 
+        // --- ИСПРАВЛЕННЫЙ БЛОК СВЯЗКИ ---
+        
+        // СРАЗУ разрешаем запуск графики и логики
+        window.gameActive = true; 
+
+        // Даем небольшую паузу (100мс), чтобы script.js успел передать данные Core
+        setTimeout(() => {
+            if (window.Core) {
+                console.log("%c[GAME_ENGINE] Linked to ORBITRON_CORE", "color: #0ff");
+                // Если в Core есть данные, игра просто продолжит работать с ними
+            } else {
+                console.warn("[GAME_ENGINE] Core not linked, score might not save.");
             }
-        } else {
-            console.warn("[GAME_ENGINE] Core not found. Running in offline mode.");
-            // Для тестов в оффлайне можно оставить true, 
-            // но для продакшена лучше ждать Core в battle.html
-            window.gameActive = false; 
-        }
+        }, 100);
 
         // 2. Инициализация систем вывода
         this.setupCanvas();
         this.initControls();
     }
-
+    
     setupCanvas() {
         // Адаптивный размер холста (Твоя идея №1)
         const resize = () => {
@@ -479,27 +475,20 @@ class GameEngine {
     }
 
 checkDeath() {
-    if (this.player.lives <= 0) {
-        window.gameActive = false;
-        
-        const finalScore = this.player.score;
-        const rank = getRankByScore(finalScore);
+        if (this.player.lives <= 0) {
+            window.gameActive = false;
+            
+            const finalScore = this.player.score;
 
-        if (window.Core && finalScore > 0) {
-            // Проверяем, есть ли метод в ядре, прежде чем вызывать
-            if (typeof window.Core.UpdateCombatScore === 'function') {
+            // Проверяем наличие Core перед отправкой очков
+            if (window.Core && typeof window.Core.UpdateCombatScore === 'function') {
                 window.Core.UpdateCombatScore(finalScore);
             }
-            
-            if (window.Core.Msg) {
-                window.Core.Msg(`MISSION_END: ${finalScore} XP synced.`, "info");
-            }
-        }
 
-        alert(`--- MISSION FAILED ---\nFINAL SCORE: ${finalScore}\nRANK: ${rank.name}`);
-        window.location.href = 'index.html'; 
+            alert(`MISSION FAILED! SCORE: ${finalScore}`);
+            window.location.href = 'index.html'; 
+        }
     }
-}
 
     update() {
         if (!window.gameActive) return;

@@ -5,6 +5,8 @@ if (!window.supabase) {
     console.warn("SYSTEM: Supabase SDK not found, retrying...");
 }
 
+window.core = {}
+
 const Core = {
     // Инициализируем клиент один раз при обращении
     sb: (window.supabase) ? window.supabase.createClient(
@@ -996,9 +998,13 @@ loop() {
     }
 };
 
-// ВАЖНО: Выносим объект в window ПЕРЕД запуском init
-window.Core = Core;
 
+
+
+
+
+
+Object.assign(window.core, Core);
 // Запускаем
 Core.init();
 
