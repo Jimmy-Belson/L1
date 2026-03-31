@@ -1,9 +1,19 @@
 import { getRankByScore } from './ranks.js';
 
-window.Core = {}; // Создаем глобальный объект, если его нет
-// ПРОВЕРКА: Если библиотека не загружена, ждем её
-if (!window.supabase) {
-    console.warn("SYSTEM: Supabase SDK not found, retrying...");
+// МГНОВЕННАЯ ИНИЦИАЛИЗАЦИЯ (Самый верх файла)
+window.Core = {
+    sb: (window.supabase) ? window.supabase.createClient(
+        'https://ebjsxlympwocluxgmwcu.supabase.co', 
+        'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
+    ) : null,
+    user: null
+};
+
+// Проверка в консоли для тебя
+if (window.Core.sb) {
+    console.log("%c[CORE] Supabase Client Initialized", "color: #0ff");
+} else {
+    console.error("[CORE] Supabase SDK missing!");
 }
 
 
@@ -1007,15 +1017,12 @@ loop() {
 
 
 
-// 1. Копируем всё из твоего заполненного константой Core в окно браузера
+// Копируем методы (Msg, UpdateProfile и т.д.) в уже созданный объект
 Object.assign(window.Core, Core);
 
-// 2. Явно прописываем Supabase в window, чтобы battle.html его увидел
-window.Core.sb = Core.sb; 
-
-// 3. Запускаем инициализацию
+// Запускаем
 window.Core.init();
 
-// 4. Маякуем системе, что всё готово
+
 window.dispatchEvent(new Event('core-ready'));
 console.log("CORE_SYSTEM: FULL_READY_SIGNAL_SENT");
