@@ -21,12 +21,9 @@ if (window.Core.sb) {
 
 const Core = {
     // Инициализируем клиент один раз при обращении
-    sb: (window.supabase) ? window.supabase.createClient(
-        'https://ebjsxlympwocluxgmwcu.supabase.co', 
-        'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
-    ) : null,
 
-    user: null,
+
+
     
     toggleChat() {
         const chatWindow = document.getElementById('main-chat-window');
@@ -140,44 +137,47 @@ async init() {
 
     // 2. АСИНХРОННАЯ ПРОВЕРКА (в фоне)
     // Мы не ставим await перед getSession, чтобы не тормозить поток
-    this.sb.auth.getSession().then(({ data: { session } }) => {
-        const path = window.location.pathname;
-        const isStation = path.includes('station.html');
+this.sb.auth.getSession().then(({ data: { session } }) => {
+    const path = window.location.pathname;
+    const isAuthPage = path.includes('station.html');
+    const isGamePage = path.includes('battle.html'); // Добавили проверку для боя
 
-        if (!session) {
-            if (!isStation) {
-                window.location.replace('station.html');
-            }
+    if (!session) {
+        // Если нет сессии и мы не на странице входа — гоним на вход
+        if (!isAuthPage) window.location.replace('station.html');
+    } else {
+        this.user = session.user;
+        // Если залогинены и зашли на страницу входа — гоним в меню
+        if (isAuthPage) {
+            window.location.replace('index.html');
         } else {
-            this.user = session.user;
-            if (isStation) {
-                window.location.replace('index.html');
-            } else {
-                // Грузим данные только если мы внутри
-                this.Chat.load();
-                this.Chat.subscribe();
-                if (document.getElementById('todo-list')) this.Todo.load();
-                if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
-            }
+            // Загружаем данные только если мы внутри системы
+            this.Chat.load();
+            this.Chat.subscribe();
+            if (document.getElementById('todo-list')) this.Todo.load();
+            if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
         }
-    });
+    }
+});
 
     // Слушатель выхода
     // Внутри метода init() замени старый слушатель на этот:
 this.sb.auth.onAuthStateChange((event, session) => {
-    console.log("AUTH_EVENT:", event); // Посмотришь в консоли, что происходит
+    const path = window.location.pathname;
 
-    if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (window.location.pathname.includes('station.html')) {
-            this.Msg("CONNECTION_ESTABLISHED. REDIRECTING...");
-            setTimeout(() => {
-                window.location.replace('index.html');
-            }, 1000);
+    if (event === 'SIGNED_IN') {
+        // Редирект в меню только если мы сейчас на странице ввода данных
+        if (path.includes('station.html')) {
+            this.Msg("CONNECTION_ESTABLISHED...");
+            setTimeout(() => window.location.replace('index.html'), 1000);
         }
     }
     
     if (event === 'SIGNED_OUT') {
-        window.location.replace('station.html');
+        // Выкидываем на вход, только если мы еще не там
+        if (!path.includes('station.html')) {
+            window.location.replace('station.html');
+        }
     }
 });
 },
