@@ -1,14 +1,12 @@
 import { getRankByScore } from './ranks.js';
 
+window.Core = {}; // Создаем глобальный объект, если его нет
 // ПРОВЕРКА: Если библиотека не загружена, ждем её
 if (!window.supabase) {
     console.warn("SYSTEM: Supabase SDK not found, retrying...");
 }
 
-window.Core = {
-    user: null,
-    sb: null,
-};
+
 
 
 const Core = {
@@ -1009,12 +1007,15 @@ loop() {
 
 
 
-// Копируем все методы из константы Core в глобальный объект window.Core
+// 1. Копируем всё из твоего заполненного константой Core в окно браузера
 Object.assign(window.Core, Core);
 
-// Запускаем инициализацию
+// 2. Явно прописываем Supabase в window, чтобы battle.html его увидел
+window.Core.sb = Core.sb; 
+
+// 3. Запускаем инициализацию
 window.Core.init();
 
-// Маякуем системе, что мы живы
+// 4. Маякуем системе, что всё готово
 window.dispatchEvent(new Event('core-ready'));
 console.log("CORE_SYSTEM: FULL_READY_SIGNAL_SENT");

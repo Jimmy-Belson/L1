@@ -168,45 +168,66 @@
     
     <script type="module" src="./game.js"></script>
 
-    <script type="module">
+<script type="module">
         import { getRankByScore } from './ranks.js';
 
-        async function bootstrap() {
-const getCore = () => {
-    return new Promise((resolve) => {
-        let attempts = 0;
-        const check = () => {
-            attempts++;
-            // Если Core нашелся или прошло слишком много времени (5 секунд)
-            if (window.Core || attempts > 100) {
-                console.log("SYSTEM: BYPASSING_LOADING_SCREEN");
-                resolve(window.Core || {}); 
-                return true;
-            }
-            return false;
+        // 1. ФУНКЦИЯ ПОИСКА ЯДРА (ОБЯЗАТЕЛЬНО!)
+        const getCore = () => {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const check = () => {
+                    attempts++;
+                    // Проверяем, появилось ли Core и инициализирован ли Supabase (sb)
+                    if (window.Core && window.Core.sb) {
+                        resolve(window.Core);
+                        return true;
+                    }
+                    // Если прошло 5 секунд (100 попыток по 50мс)
+                    if (attempts > 100) {
+                        resolve(window.Core || {}); 
+                        return true;
+                    }
+                    return false;
+                };
+                const timer = setInterval(() => { if (check()) clearInterval(timer); }, 50);
+            });
         };
-        const timer = setInterval(() => { if (check()) clearInterval(timer); }, 50);
-    });
-};
 
+        // 2. ОСНОВНАЯ ФУНКЦИЯ ЗАПУСКА
+        async function bootstrap() {
+            // Исправлено: ищем правильный селектор оверлея
+            const overlay = document.querySelector('.waiting-overlay');
+            
             try {
+                console.log("SYSTEM: INITIATING_BOOTSTRAP...");
                 const Core = await getCore();
-                
-                // Проверка сессии
-                const { data: { session }, error } = await Core.sb.auth.getSession();
-                if (error || !session) {
-                    window.location.replace('index.html');
+
+                // Проверка: готов ли клиент Supabase
+                if (!Core || !Core.sb) {
+                    console.warn("BOOTSTRAP_PENDING: Core.sb not found, retrying...");
+                    setTimeout(bootstrap, 200);
                     return;
                 }
-                Core.user = session.user;
 
-                // Принудительно запускаем инициализацию холста
-                if (typeof Core.Canvas.init === 'function') {
-                    Core.Canvas.init();
+                // Проверка сессии
+                const { data: { session }, error } = await Core.sb.auth.getSession();
+                
+                if (error || !session) {
+                    console.error("AUTH_REQUIRED: Redirecting to station...");
+                    window.location.replace('station.html');
+                    return;
                 }
 
-                // Убираем загрузку
-                const overlay = document.querySelector('.waiting-overlay');
+                // Устанавливаем пользователя в Core
+                Core.user = session.user;
+
+                // Принудительно запускаем инициализацию холста (если еще не запущен)
+                if (Core.Canvas && typeof Core.Canvas.init === 'function') {
+                    Core.Canvas.init();
+                    Core.Canvas.res(); // Растягиваем на весь экран
+                }
+
+                // Убираем загрузку (красивое исчезновение)
                 if (overlay) {
                     overlay.style.transition = 'opacity 0.8s ease, filter 0.8s ease';
                     overlay.style.opacity = '0';
@@ -214,17 +235,22 @@ const getCore = () => {
                     setTimeout(() => overlay.remove(), 800);
                 }
 
-                // Обновляем топ игроков
+                console.log("%c[BOOTSTRAP] SUCCESS: COMBAT_LINK_ACTIVE", "color: #0f0");
+
+                // Обновляем лог игроков
                 await updateTacticalLog(Core);
 
             } catch (err) {
                 console.error("BOOTSTRAP_CRITICAL_FAILURE:", err);
+                // План Б: Убираем экран если всё зависло
+                setTimeout(() => { if(overlay) overlay.remove(); }, 3000);
             }
         }
 
+        // 3. ФУНКЦИЯ ОБНОВЛЕНИЯ ЛОГА
         async function updateTacticalLog(Core) {
             const logList = document.getElementById('highscores-list');
-            if (!logList) return;
+            if (!logList || !Core.sb) return;
 
             const { data, error } = await Core.sb
                 .from('profiles')
@@ -233,7 +259,7 @@ const getCore = () => {
                 .limit(10);
 
             if (error) {
-                logList.innerHTML = '<li style="color:#f00">LINK_ERROR</li>';
+                logList.innerHTML = '<li style="color:#f00; font-size:10px;">LINK_ERROR: DATABASE_OFFLINE</li>';
                 return;
             }
 
@@ -243,7 +269,7 @@ const getCore = () => {
                 const rank = getRankByScore(score);
                 const li = document.createElement('li');
                 li.className = 'log-entry';
-                li.style.borderLeftColor = rank.color;
+                li.style.borderLeft = `3px solid ${rank.color}`;
                 li.innerHTML = `
                     <span style="opacity:0.5; font-size:10px;">0${i+1}</span>
                     <span style="margin-left:10px; flex-grow:1;">${(pilot.nickname || 'Unknown').toUpperCase()}</span>
@@ -253,7 +279,7 @@ const getCore = () => {
             });
         }
 
-        // Поехали!
+        // ПОЕХАЛИ!
         bootstrap();
     </script>
 </body>
