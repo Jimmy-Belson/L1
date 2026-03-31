@@ -5,7 +5,11 @@ if (!window.supabase) {
     console.warn("SYSTEM: Supabase SDK not found, retrying...");
 }
 
-window.core = {}
+window.Core = {
+    user: null,
+    sb: null,
+};
+
 
 const Core = {
     // Инициализируем клиент один раз при обращении
@@ -114,6 +118,7 @@ async init() {
     // 1. МГНОВЕННЫЙ ЗАПУСК ВИЗУАЛА (без ожидания)
     // Это включит звезды, часы и UI сразу, до проверки сессии
     if (this.Canvas) this.Canvas.init();
+    this.Canvas.res();
     if (this.Audio) this.Audio.setup();
     this.UI();
     this.loop();
@@ -1004,9 +1009,11 @@ loop() {
 
 
 
-Object.assign(window.core, Core);
-// Запускаем
-Core.init();
+// Копируем все методы из константы Core в глобальный объект window.Core
+Object.assign(window.Core, Core);
+
+// Запускаем инициализацию
+window.Core.init();
 
 // Маякуем системе, что мы живы
 window.dispatchEvent(new Event('core-ready'));
