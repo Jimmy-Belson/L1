@@ -11,7 +11,7 @@ import { getRankByScore } from './ranks.js';
 
 
 
-const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('game-canvas');
 
 const ctx = canvas.getContext('2d');
 
@@ -334,10 +334,11 @@ class Boss {
 
 class GameEngine {
     constructor() {
+        // 1. Инициализация базовых сущностей
         this.player = new Player();
         this.projectiles = [];
         this.enemies = [];
-        this.enemyProjectiles = []; // Снаряды врагов/босса
+        this.enemyProjectiles = []; 
         this.particles = [];
         this.boss = null;
         this.spawnTimer = 0;
@@ -346,7 +347,23 @@ class GameEngine {
         this.screenShakeTime = 0;
         this.screenShakeIntensity = 0;
 
-        // Инициализация холста
+        // --- ВНЕДРЕНИЕ СВЯЗКИ С ЯДРОМ (Второй шаг) ---
+        // Проверяем, загружен ли ORBITRON_CORE из внешнего скрипта
+        if (window.Core) {
+            console.log("%c[GAME_ENGINE] Linked to ORBITRON_CORE", "color: #0ff");
+            
+            // Если в Core уже есть данные игрока, подтягиваем их
+            if (window.Core.user) {
+                window.gameActive = true; 
+            }
+        } else {
+            console.warn("[GAME_ENGINE] Core not found. Running in offline mode.");
+            // Для тестов в оффлайне можно оставить true, 
+            // но для продакшена лучше ждать Core в battle.html
+            window.gameActive = false; 
+        }
+
+        // 2. Инициализация систем вывода
         this.setupCanvas();
         this.initControls();
     }
@@ -468,25 +485,18 @@ checkDeath() {
         const finalScore = this.player.score;
         const rank = getRankByScore(finalScore);
 
-        // Интеграция с ORBITRON Core
         if (window.Core && finalScore > 0) {
-            // ВАЖНО: Используем специальный метод для сохранения очков боя
-            window.Core.UpdateCombatScore(finalScore);
+            // Проверяем, есть ли метод в ядре, прежде чем вызывать
+            if (typeof window.Core.UpdateCombatScore === 'function') {
+                window.Core.UpdateCombatScore(finalScore);
+            }
             
             if (window.Core.Msg) {
-                window.Core.Msg(`MISSION_END: ${finalScore} combat experience synced.`, "info");
+                window.Core.Msg(`MISSION_END: ${finalScore} XP synced.`, "info");
             }
         }
 
-        // Финальное сообщение
-        alert(
-            "--- MISSION FAILED ---\n\n" +
-            "FINAL SCORE: " + finalScore + "\n" +
-            "PROMOTED TO: " + rank.name + "\n\n" +
-            "RETURNING TO STATION..."
-        );
-
-        // Редирект обратно на главную
+        alert(`--- MISSION FAILED ---\nFINAL SCORE: ${finalScore}\nRANK: ${rank.name}`);
         window.location.href = 'index.html'; 
     }
 }

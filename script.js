@@ -693,14 +693,18 @@ UI() {
         }
     },
 
-   Canvas: {
-// Инициализация холста и объектов
-init() {
-// Инициализация холста и объектов
-            this.cvs = document.getElementById('starfield'); 
-            if(!this.cvs) return; // Если холста нет, выходим
-            this.ctx = this.cvs.getContext('2d');
-            this.res(); // Устанавливаем размер при старте
+Canvas: {
+    init() {
+        // Проверяем сначала игровой холст, если его нет - ищем фоновый для индекса
+        this.cvs = document.getElementById('game-canvas') || document.getElementById('starfield');
+        
+        if (!this.cvs) {
+            console.log("CANVAS_SYSTEM: No canvas found on this page.");
+            return; 
+        }
+
+        this.ctx = this.cvs.getContext('2d');
+        this.res();
             window.addEventListener('resize', () => this.res()); // И при изменении окна
             
             // Создаем мерцающие звёзды
