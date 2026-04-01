@@ -3,7 +3,7 @@
 // ==========================================
 import { getRankByScore } from './ranks.js';
 
-const canvas = document.getElementById('game-canvas');
+const canvas = document.getElementById('starfield');
 const ctx = canvas.getContext('2d');
 
 // --- ГЛОБАЛЬНЫЙ КОНФИГ ---
