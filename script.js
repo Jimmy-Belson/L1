@@ -109,78 +109,56 @@ Msg(text, type = 'info') {
     },
 
 async init() {
-    // 1. МГНОВЕННЫЙ ЗАПУСК ВИЗУАЛА (Чтобы юзер не видел пустой экран)
+    // 1. МГНОВЕННЫЙ ЗАПУСК ВИЗУАЛА (Сначала рисуем, потом грузим данные)
     if (this.Canvas) {
         this.Canvas.init();
-        if (typeof this.Canvas.res === 'function') this.Canvas.res();
+        // Запускаем петлю отрисовки сразу!
+        this.loop();
     }
-    if (this.Audio) this.Audio.setup();
     
     this.UI();
     this.startClock(); 
+    if (this.Audio) this.Audio.setup();
 
-    // 2. ПРОВЕРКА СЕССИИ ЧЕРЕЗ SUPABASE
+    // 2. ФОНОВАЯ ПРОВЕРКА СЕССИИ
     const { data: { session } } = await this.sb.auth.getSession();
-    
     const path = window.location.pathname;
     const isStation = path.includes('station.html');
 
     if (!session) {
-        // Если нет сессии и мы не на странице логина — редирект
         if (!isStation) window.location.replace('station.html');
-    } else {
-        // СЕССИЯ ЕСТЬ
-        this.user = session.user;
-
-        if (isStation) {
-            // Если залогинены, но зашли на страницу входа — кидаем в панель
-            window.location.replace('index.html');
-        } else {
-            console.log("%c[SYSTEM] SESSION_ACTIVE, LOADING_MODULES...", "color: #0ff;");
-
-            // --- КЛЮЧЕВОЙ МОМЕНТ: ЗАГРУЗКА ПРОФИЛЯ ДЛЯ ЧАТА ---
-            // Грузим один раз здесь, чтобы Chat.send() работал мгновенно
-            try {
-                const { data: profile } = await this.sb
-                    .from('profiles')
-                    .select('nickname, avatar_url')
-                    .eq('id', this.user.id)
-                    .maybeSingle();
-                
-                // Сохраняем в объект Core, чтобы Chat.send видел это
-                this.userProfile = {
-                    nickname: profile?.nickname || this.user.email.split('@')[0],
-                    avatar_url: profile?.avatar_url || (typeof this.getAvatar === 'function' ? this.getAvatar(this.user.id) : '')
-                };
-            } catch (e) {
-                console.warn("PROFILE_LOAD_FAIL: Используем дефолтные данные");
-                this.userProfile = { nickname: "PILOT", avatar_url: "" };
-            }
-
-            // Загрузка Todo
-            if (document.getElementById('todo-list')) {
-                await this.Todo.load();
-            }
-            
-            // Загрузка Чата
-            if (document.getElementById('chat-stream')) {
-                await this.Chat.load();
-                this.Chat.subscribe();
-            }
-
-            if (typeof this.SyncProfile === 'function') {
-                this.SyncProfile(this.user);
-            }
-        }
+        return; // Дальше не идем, если нет юзера
     }
 
-    // Слушатель событий авторизации (выход из системы)
-    this.sb.auth.onAuthStateChange((event, session) => {
+    this.user = session.user;
+    if (isStation) {
+        window.location.replace('index.html');
+    } else {
+        // Подгружаем данные профиля в фоне
+        this.loadAppData();
+    }
+
+    this.sb.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') window.location.replace('station.html');
     });
+},
 
-    // Запускаем петлю отрисовки
-    this.loop();
+// Вынес загрузку данных в отдельный метод, чтобы не блокировать поток
+async loadAppData() {
+    try {
+        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', this.user.id).maybeSingle();
+        this.userProfile = {
+            nickname: profile?.nickname || this.user.email.split('@')[0],
+            avatar_url: profile?.avatar_url || this.getAvatar(this.user.id)
+        };
+        this.SyncProfile(this.user);
+    } catch (e) { console.warn("Load Fail"); }
+
+    if (document.getElementById('todo-list')) await this.Todo.load();
+    if (document.getElementById('chat-stream')) {
+        await this.Chat.load();
+        this.Chat.subscribe();
+    }
 },
 
 // Добавь эту вспомогательную функцию внутри Core
@@ -359,6 +337,9 @@ async UpdateCombatScore(newScore) {
 },
 
 Todo: {
+    // Хранилище для локальной сортировки без перезапроса к БД
+    items: [],
+
     async load() {
         if (!window.Core.user) return;
         const { data, error } = await window.Core.sb.from('todo')
@@ -366,15 +347,16 @@ Todo: {
             .eq('user_id', window.Core.user.id) 
             .order('id', { ascending: false });
 
-        if (error) {
-            console.error("TODO_LOAD_ERR:", error);
-            return;
-        }
+        if (error) return console.error("TODO_LOAD_ERR:", error);
+        
         const list = document.getElementById('todo-list');
         if (list) { 
             list.innerHTML = ''; 
-            // Используем window.Core.Todo.render для надежности
-            data.forEach(t => window.Core.Todo.render(t)); 
+            this.items = data;
+            // Рендерим с задержкой для эффекта "потоковой загрузки"
+            data.forEach((t, i) => {
+                setTimeout(() => this.render(t), i * 50);
+            });
         }
     },
 
@@ -385,40 +367,63 @@ Todo: {
         const d = document.createElement('div');
         d.className = `task ${t.is_completed ? 'completed' : ''}`;
         d.id = `task-${t.id}`;
-        
+        d.draggable = true; // Включаем перетаскивание
+
         const dateStr = t.deadline ? 
-            `<span class="deadline-tag" style="font-size:9px; opacity:0.6; margin-left:10px;">
-                [UNTIL: ${new Date(t.deadline).toLocaleDateString()}]
-            </span>` : '';
+            <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span> : '';
 
         d.innerHTML = `
-            <div class="task-content" style="display:flex; justify-content:space-between; width:100%;">
-                <span>> ${t.task.toUpperCase()}</span>
+            <div class="task-drag-handle">::</div>
+            <div class="task-content">
+                <span class="task-text">> ${t.task.toUpperCase()}</span>
                 ${dateStr}
             </div>
+            <div class="task-status-icon"></div>
         `;
 
-        // Клик — выполнение
-        d.onclick = async () => {
+        // --- ЛОГИКА DRAG & DROP ---
+        d.ondragstart = (e) => {
+            d.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', t.id);
+        };
+        d.ondragend = () => d.classList.remove('dragging');
+
+        // --- КЛИК (ВЫПОЛНЕНИЕ) ---
+        d.onclick = async (e) => {
+            // Если кликнули по иконке удаления или тянем — не триггерим выполнение
+            if (e.target.classList.contains('task-drag-handle')) return;
+            
             const newState = !d.classList.contains('completed');
             d.classList.toggle('completed');
+            
+            // Звуковой эффект (если есть в Core.Audio)
+            if(window.Core.Audio?.playTick) window.Core.Audio.playTick();
+
             await window.Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
         };
 
-        // Правый клик — удаление
+        // --- ПРАВЫЙ КЛИК (УДАЛЕНИЕ С АНИМАЦИЕЙ) ---
         d.oncontextmenu = async (ev) => {
             ev.preventDefault();
-            d.style.opacity = '0.3';
-            const { error } = await window.Core.sb.from('todo').delete().eq('id', t.id);
-            if (!error) {
-                d.remove();
-                window.Core.Msg("OBJECTIVE_TERMINATED");
-            } else {
-                d.style.opacity = '1';
+            const confirmed = await window.Core.CustomConfirm("ERASE_OBJECTIVE?");
+            if (confirmed) {
+                d.style.transform = "translateX(100px) scale(0.8)";
+                d.style.opacity = "0";
+                
+                setTimeout(async () => {
+                    const { error } = await window.Core.sb.from('todo').delete().eq('id', t.id);
+                    if (!error) {
+                        d.remove();
+                        window.Core.Msg("OBJECTIVE_TERMINATED", "info");
+                    } else {
+                        d.style.transform = "none";
+                        d.style.opacity = "1";
+                    }
+                }, 300);
             }
         };
 
-        list.prepend(d); // Новые задачи вверх
+        list.prepend(d); 
     },
 
     async add(val, date) {
@@ -437,11 +442,13 @@ Todo: {
             
             if (data && data[0]) {
                 this.render(data[0]);
-                core.Msg("MISSION_UPDATED");
+                core.Msg("MISSION_ESTABLISHED", "info");
+                // Скролл к новой задаче
+                const list = document.getElementById('todo-list');
+                list.scrollTo({ top: 0, behavior: 'smooth' });
             }
         } catch (e) {
-            console.error("TODO_ADD_ERR:", e);
-            core.Msg("SYNC_ERROR", "error");
+            core.Msg("UPLINK_ERROR", "error");
         }
     }
 },
@@ -557,7 +564,7 @@ render(m) {
     const s = document.getElementById('chat-stream'); 
     if (!s || document.getElementById(`msg-${m.id}`)) return;
 
-    // ГЕНЕРАТОР ШАБЛОНА: 
+    // 1. ПОДГОТОВКА ДАННЫХ
     let avatar = m.avatar_url;
     if (!avatar || avatar.includes('placeholder') || avatar.length < 5) {
         avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${m.user_id}&backgroundColor=001a2d`;
@@ -565,68 +572,78 @@ render(m) {
 
     const d = document.createElement('div'); 
     d.id = `msg-${m.id}`;
-    d.className = 'msg-container';
+    // Добавим класс 'new-msg' для анимации появления
+    d.className = `msg-container new-msg ${m.user_id === Core.user?.id ? 'my-msg' : ''}`;
+    
     const isMy = m.user_id === Core.user?.id;
-
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {
         hour: '2-digit', minute: '2-digit', hour12: false 
     });
 
     d.innerHTML = `
         <div class="chat-row-layout">
-            <img src="${avatar}" class="chat-row-avatar" referrerpolicy="no-referrer" style="cursor:pointer">
+            <div class="avatar-wrapper">
+                <img src="${avatar}" class="chat-row-avatar" referrerpolicy="no-referrer">
+                <div class="avatar-glow"></div>
+            </div>
             <div class="chat-content-block">
                 <div class="msg-header">
-                    <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}; cursor:pointer">${m.nickname.toUpperCase()}</span>
+                    <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}">${m.nickname.toUpperCase()}</span>
                     <span class="msg-time">${time}</span>
                 </div>
                 <div class="msg-text">${m.message}</div>
             </div>
         </div>`;
 
-// --- ЛОГИКА ВСПЛЫВАЮЩЕЙ КАРТОЧКИ ---
-const triggerElements = d.querySelectorAll('.chat-row-avatar, .msg-nick');
-triggerElements.forEach(el => {
-    el.onclick = async (e) => {
-        e.stopPropagation();
-        const pop = document.getElementById('user-popover');
-        if (!pop) return;
+    // --- ЛОГИКА ВСПЛЫВАЮЩЕЙ КАРТОЧКИ (С ФИКСОМ) ---
+    const triggerElements = d.querySelectorAll('.chat-row-avatar, .msg-nick');
+    triggerElements.forEach(el => {
+        el.onclick = async (e) => {
+            e.stopPropagation(); // Останавливаем всплытие, чтобы клик по нику не считался кликом по фону
+            const pop = document.getElementById('user-popover');
+            if (!pop) return;
 
-        document.getElementById('pop-nick').innerText = "SCANNING...";
+            pop.classList.add('scanning'); // Эффект загрузки
+            pop.style.display = 'block';
 
-        const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
-        
-if (p) {
-    const rank = getRankByScore(p.combat_score || 0);
+            const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+            
+            if (p) {
+                const rank = getRankByScore(p.combat_score || 0);
+                document.getElementById('pop-avatar').src = p.avatar_url || avatar;
+                const nickEl = document.getElementById('pop-nick');
+                nickEl.innerText = (p.nickname || "UNKNOWN_PILOT").toUpperCase();
+                nickEl.style.color = rank.color;
 
-    // 1. Ставим аватар и ник
-    document.getElementById('pop-avatar').src = p.avatar_url || avatar;
-    const nickEl = document.getElementById('pop-nick');
-    nickEl.innerText = (p.nickname || "UNKNOWN_PILOT").toUpperCase();
-    nickEl.style.color = rank.color; // Красим ник в цвет ранга
+                const rankEl = document.getElementById('pop-rank');
+                rankEl.innerText = rank.name.toUpperCase();
+                rankEl.style.color = rank.color;
+                rankEl.style.textShadow = `0 0 10px ${rank.color}`;
+                rankEl.style.background = `${rank.color}15`;
 
-    // 2. ЗАПОЛНЯЕМ РАНГ
-    const rankEl = document.getElementById('pop-rank');
-    rankEl.innerText = rank.name.toUpperCase();
-    rankEl.style.color = rank.color;
-    rankEl.style.textShadow = `0 0 10px ${rank.color}`;
-    
-    // Добавляем фоновую плашку для ранга (необязательно, но стильно)
-    rankEl.style.background = `${rank.color}22`; 
-    rankEl.style.padding = "2px 6px";
-    rankEl.style.border = `1px solid ${rank.color}44`;
+                document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
+                document.getElementById('pop-msgs').innerText = p.message_count || 0;
+                document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+                
+                pop.classList.remove('scanning');
+            }
+        };
+    });
 
-    // 3. Остальная стата
-    document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
-    document.getElementById('pop-msgs').innerText = p.message_count || 0;
-    document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+    // --- ФИКС ЗАКРЫТИЯ ПО КЛИКУ ВНЕ ОКНА ---
+    // Добавляем один раз при инициализации Core или прямо здесь (безопасно)
+    if (!window.popoverHandlerSet) {
+        window.addEventListener('mousedown', (e) => {
+            const pop = document.getElementById('user-popover');
+            // Если кликнули НЕ по окну и оно открыто — закрываем
+            if (pop && pop.style.display === 'block' && !pop.contains(e.target)) {
+                pop.style.display = 'none';
+            }
+        });
+        window.popoverHandlerSet = true;
+    }
 
-    pop.style.display = 'block';
-}
-    };
-});
-
-    // Твоя логика удаления (контекстное меню)
+    // --- УДАЛЕНИЕ (Контекстное меню) ---
     if (isMy) {
         d.oncontextmenu = async (e) => {
             e.preventDefault();
@@ -634,16 +651,18 @@ if (p) {
             if (confirmed) {
                 const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
                 if (!error) {
-                    d.classList.add('removing');
+                    d.style.transform = "scale(0.9) translateX(-50px)";
+                    d.style.opacity = "0";
                     setTimeout(() => d.remove(), 300);
-                    Core.Msg("DATA_STREAM_ERASED", "info");
+                    Core.Msg("DATA_STREAM_ERASED");
                 }
             }
         };
     }
 
     s.appendChild(d);
-    s.scrollTop = s.scrollHeight;
+    // Плавный скролл вниз
+    s.scrollTo({ top: s.scrollHeight, behavior: 'smooth' });
 }
 }, // Запятая здесь важна!
 
