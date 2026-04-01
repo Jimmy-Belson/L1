@@ -13,9 +13,6 @@ body {
     color: #fff;
     font-family: 'Share Tech Mono', monospace;
     overflow: hidden; /* Чтобы не было скролла во время боя */
-    display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
 }
 
@@ -36,32 +33,54 @@ body::before {
 
 /* Главный контейнер */
 .game-container {
-    display: flex;
-    gap: 20px;
-    padding: 15px;
-    border: 2px solid rgba(0, 242, 255, 0.2);
-    background: rgba(0, 10, 20, 0.8);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 1), inset 0 0 20px rgba(0, 242, 255, 0.05);
-    border-radius: 8px;
+
     position: relative;
+    z-index: 2; /* Интерфейс ПОВЕРХ канваса */
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none; /* Чтобы клики пролетали сквозь контейнер в игру */
 }
 
-/* Холст игры */
+/* Разрешаем клики только по кнопкам и спискам внутри контейнера */
+.leaderboard, .back-btn, #tactical-log {
+    pointer-events: auto;
+}
+
+/* Растягиваем саму игру */
 #game-canvas {
+    position: fixed; /* Фиксируем на экране */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
     background: #000;
-    border: 1px solid var(--neon-blue);
-    box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
-    cursor: crosshair;
-    image-rendering: pixelated; /* Делаем пиксели четкими */
+    z-index: 1; /* Самый нижний слой */
+}
+
+/* Tactical Log — отправляем его в угол, чтобы не маячил в центре */
+#tactical-log {
+    position: fixed;
+    right: 20px;   /* Отступ справа */
+    bottom: 20px;  /* Отступ снизу */
+    width: 300px;
+    height: 200px;
+    z-index: 10;   /* Поверх игры */
+    background: rgba(0, 20, 40, 0.7);
+    border: 1px solid #0ff;
+    pointer-events: none; /* Чтобы клики проходили сквозь лог в игру */
 }
 
 /* Правая панель (Leaderboard) */
 .leaderboard {
+    position: fixed;
+    top: 20px;
+    right: 20px;
     width: 220px;
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid rgba(0, 242, 255, 0.2);
-    padding-left: 20px;
+    background: rgba(0, 10, 20, 0.8); /* Добавь фон, чтобы текст читался поверх игры */
+    padding: 15px;
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    z-index: 10;
 }
 
 .leaderboard h3 {
@@ -141,16 +160,4 @@ body::before {
 }
 
 
-.game-container {
-    display: flex;
-    position: relative;
-    max-width: 100vw;
-    max-height: 100vh;
-}
 
-#game-canvas {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain; /* Сохраняет пропорции внутри блока */
-}

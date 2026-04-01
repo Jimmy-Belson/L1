@@ -11,7 +11,16 @@ import { getRankByScore } from './ranks.js';
 
 
 
+// В самом начале game.js или в функции инициализации
 const canvas = document.getElementById('game-canvas');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// И добавь слушатель изменения размера окна
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
 
 const ctx = canvas.getContext('2d');
 
