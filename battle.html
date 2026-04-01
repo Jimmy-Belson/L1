@@ -172,30 +172,39 @@
             }
         }
 
-        async function updateTacticalLog(Core) {
-            const logList = document.getElementById('highscores-list');
-            const { data, error } = await Core.sb
-                .from('profiles')
-                .select('nickname, combat_score')
-                .order('combat_score', { ascending: false })
-                .limit(8);
+async function updateTacticalLog(Core) {
+    const logList = document.getElementById('highscores-list');
+    if (!logList) return;
 
-            if (error || !data) return;
+    // Пробуем достать данные. Убедись, что в Supabase колонка называется 'nickname'
+    const { data, error } = await Core.sb
+        .from('profiles')
+        .select('nickname, combat_score')
+        .order('combat_score', { ascending: false })
+        .limit(8);
 
-            logList.innerHTML = '';
-            data.forEach((pilot, i) => {
-                const score = pilot.combat_score || 0;
-                const rank = getRankByScore(score);
-                const li = document.createElement('li');
-                li.className = 'log-entry';
-                li.innerHTML = `
-                    <span style="color:${rank.color}">[0${i+1}]</span>
-                    <span style="flex-grow:1; margin-left:10px">${(pilot.nickname || 'Unknown').toUpperCase()}</span>
-                    <span style="color:#0ff">${score}</span>
-                `;
-                logList.appendChild(li);
-            });
-        }
+    if (error) {
+        console.error("Log error:", error);
+        return;
+    }
+
+    logList.innerHTML = '';
+    data.forEach((pilot, i) => {
+        // Если nickname пустой, выводим часть email или ID
+        const name = pilot.nickname || "PILOT_UNKNOWN";
+        const score = pilot.combat_score || 0;
+        
+        const li = document.createElement('li');
+        li.className = 'log-entry';
+        // Добавим немного стиля, чтобы ник был ярче
+        li.innerHTML = `
+            <span style="color:#0ff; font-weight:bold;">${i+1}.</span>
+            <span style="flex-grow:1; margin-left:10px; color:#fff;">${name.toUpperCase()}</span>
+            <span style="color:#ff00e5; font-family:'Orbitron';">${score}</span>
+        `;
+        logList.appendChild(li);
+    });
+}
 
         // ЗАПУСК
         bootstrap();

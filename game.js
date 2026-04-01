@@ -58,7 +58,7 @@ class Player {
         this.x = canvas.width / 2;
         this.y = canvas.height - 100;
         this.width = 40;
-        this.speed = 0.2;
+        this.speed = 0.4;
         this.score = 0;
         this.lives = CONFIG.BALANCE.LIVES;
         this.heat = 0;
@@ -114,20 +114,54 @@ class Enemy {
     constructor(type = 'BASIC') {
         const types = {
             BASIC: { hp: 1, speed: 3, score: 10, color: '#0ff', size: 30 },
-            TANK: { hp: 3, speed: 1.5, score: 50, color: '#ff00e5', size: 50 },
+            TANK:  { hp: 3, speed: 1.5, score: 50, color: '#ff00e5', size: 50 },
             SCOUT: { hp: 1, speed: 6, score: 25, color: '#ffff00', size: 20 }
         };
+        
         const t = types[type];
-        this.x = Math.random() * (canvas.width - 100) + 50;
+        
+        // --- ПРАВКА №1: УМНЫЙ СПАВН (Центрирование) ---
+        // Создаем "безопасную зону" в 15% от ширины экрана с каждой стороны
+        const margin = canvas.width * 0.15; 
+        // Враги появятся в диапазоне [margin, canvas.width - margin]
+        this.x = margin + Math.random() * (canvas.width - margin * 2);
+        
         this.y = -50;
+        
+        // Копируем свойства типа
         Object.assign(this, t);
+
+        // --- ПРАВКА №2: ВАРИАТИВНОСТЬ СКОРОСТИ ---
+        // Добавляем +/- 20% к базовой скорости, чтобы враги не летели "линейкой"
+        this.speed *= (0.9 + Math.random() * 0.4); 
     }
-    update() { this.y += this.speed; }
+
+    update() { 
+        this.y += this.speed; 
+    }
+
     draw(ctx) {
         ctx.save();
+        
+        // Эффект свечения для ретро-стиля
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
         ctx.strokeStyle = this.color;
-        ctx.shadowBlur = 10; ctx.shadowColor = this.color;
-        ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        ctx.lineWidth = 2;
+
+        // Рисуем врага (квадрат с перекрестием внутри для "технологичности")
+        const half = this.size / 2;
+        ctx.strokeRect(this.x - half, this.y - half, this.size, this.size);
+        
+        // Маленький внутренний ромб для красоты
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y - half/2);
+        ctx.lineTo(this.x + half/2, this.y);
+        ctx.lineTo(this.x, this.y + half/2);
+        ctx.lineTo(this.x - half/2, this.y);
+        ctx.closePath();
+        ctx.stroke();
+
         ctx.restore();
     }
 }
