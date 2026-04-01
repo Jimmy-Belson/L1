@@ -360,27 +360,28 @@ Todo: {
         }
     },
 
-    render(t) {
-        const list = document.getElementById('todo-list'); 
-        if (!list) return;
+render(t) {
+    const list = document.getElementById('todo-list'); 
+    if (!list) return;
 
-        const d = document.createElement('div');
-        d.className = `task ${t.is_completed ? 'completed' : ''}`;
-        d.id = `task-${t.id}`;
-        d.draggable = true; // Включаем перетаскивание
+    const d = document.createElement('div');
+    d.className = `task ${t.is_completed ? 'completed' : ''}`;
+    d.id = `task-${t.id}`;
+    d.draggable = true; 
 
-        const dateStr = t.deadline ? 
-            <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span> : '';
+    // ИСПРАВЛЕНО: Добавлены обратные кавычки вокруг HTML-кода
+    const dateStr = t.deadline ? 
+        <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span> : '';
 
-        d.innerHTML = `
-            <div class="task-drag-handle">::</div>
-            <div class="task-content">
-                <span class="task-text">> ${t.task.toUpperCase()}</span>
-                ${dateStr}
-            </div>
-            <div class="task-status-icon"></div>
-        `;
-
+    d.innerHTML = `
+        <div class="task-drag-handle">::</div>
+        <div class="task-content">
+            <span class="task-text">> ${t.task.toUpperCase()}</span>
+            ${dateStr}
+        </div>
+        <div class="task-status-icon"></div>
+    `;
+    
         // --- ЛОГИКА DRAG & DROP ---
         d.ondragstart = (e) => {
             d.classList.add('dragging');
