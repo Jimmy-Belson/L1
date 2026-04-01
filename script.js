@@ -1,20 +1,6 @@
 import { getRankByScore } from './ranks.js';
 
-// МГНОВЕННАЯ ИНИЦИАЛИЗАЦИЯ (Самый верх файла)
-window.Core = {
-    sb: (window.supabase) ? window.supabase.createClient(
-        'https://ebjsxlympwocluxgmwcu.supabase.co', 
-        'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
-    ) : null,
-    user: null
-};
 
-// Проверка в консоли для тебя
-if (window.Core.sb) {
-    console.log("%c[CORE] Supabase Client Initialized", "color: #0ff");
-} else {
-    console.error("[CORE] Supabase SDK missing!");
-}
 
 
 
@@ -334,42 +320,28 @@ async UpdateStat(field, value = 1) {
 }, // Запятая важна!
 
 async UpdateCombatScore(newScore) {
-    if (!this.user) return;
-    try {
-        console.log("SYNCING_COMBAT_XP: " + newScore);
-        
-        // 1. Получаем текущие очки из базы
-        const { data, error } = await this.sb
+    if (!window.Core.user) return;
+
+    // Сначала получаем текущий счет, чтобы не перезаписать его меньшим
+    const { data: profile } = await window.Core.sb
+        .from('profiles')
+        .select('combat_score')
+        .eq('id', window.Core.user.id)
+        .single();
+
+    const currentScore = profile?.combat_score || 0;
+
+    // Сохраняем, только если новый счет больше старого (рекорд)
+    if (newScore > currentScore) {
+        const { error } = await window.Core.sb
             .from('profiles')
-            .select('combat_score')
-            .eq('id', this.user.id)
-            .single();
+            .update({ combat_score: newScore })
+            .eq('id', window.Core.user.id);
 
-        if (error) throw error;
-
-        // 2. Суммируем
-        const currentScore = data.combat_score || 0;
-        const totalScore = currentScore + newScore;
-
-        // 3. Сохраняем
-        const { error: updError } = await this.sb
-            .from('profiles')
-            .update({ combat_score: totalScore })
-            .eq('id', this.user.id);
-
-        if (updError) throw updError;
-
-        this.Msg(`COMBAT_REPORT: +${newScore} XP_GAINED`);
-        
-        // Обновляем визуальный ранг на странице
-        if (typeof this.SyncProfile === 'function') this.SyncProfile(this.user);
-
-    } catch (e) {
-        console.error("SCORE_SYNC_ERROR:", e.message);
-        this.Msg("SYNC_FAILED: CONNECTION_LOST", "error");
+        if (error) console.error("Update Error:", error);
+        else console.log("NEW_RECORD_SAVED:", newScore);
     }
-}, // Запятая важна!
-
+},
 
 Todo: {
     async load() {
