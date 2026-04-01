@@ -4,6 +4,7 @@
     --neon-blue: #00f2ff;
     --neon-pink: #ff00e5;
     --bg-black: #01050a;
+    --panel-bg: rgba(0, 10, 20, 0.85);
 }
 
 body {
@@ -12,11 +13,12 @@ body {
     background-color: var(--bg-black);
     color: #fff;
     font-family: 'Share Tech Mono', monospace;
-    overflow: hidden; /* Чтобы не было скролла во время боя */
+    overflow: hidden;
+    width: 100vw;
     height: 100vh;
 }
 
-/* Сетка на фоне для глубины */
+/* Сетка на фоне */
 body::before {
     content: "";
     position: fixed;
@@ -28,107 +30,53 @@ body::before {
         linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
     background-size: 50px 50px;
-    z-index: -1;
+    z-index: 0;
+    pointer-events: none;
 }
 
-/* Главный контейнер */
-.game-container {
-
-    position: relative;
-    z-index: 2; /* Интерфейс ПОВЕРХ канваса */
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none; /* Чтобы клики пролетали сквозь контейнер в игру */
-}
-
-/* Разрешаем клики только по кнопкам и спискам внутри контейнера */
-.leaderboard, .back-btn, #tactical-log {
-    pointer-events: auto;
-}
-
-/* Растягиваем саму игру */
+/* Игровой холст на весь экран */
 #game-canvas {
-    position: fixed; /* Фиксируем на экране */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     display: block;
     background: #000;
-    z-index: 1; /* Самый нижний слой */
+    z-index: 1;
 }
 
-/* Tactical Log — отправляем его в угол, чтобы не маячил в центре */
-#tactical-log {
+/* Контейнер интерфейса (поверх игры) */
+.game-container {
     position: fixed;
-    right: 20px;   /* Отступ справа */
-    bottom: 20px;  /* Отступ снизу */
-    width: 300px;
-    height: 200px;
-    z-index: 10;   /* Поверх игры */
-    background: rgba(0, 20, 40, 0.7);
-    border: 1px solid #0ff;
-    pointer-events: none; /* Чтобы клики проходили сквозь лог в игру */
-}
-
-/* Правая панель (Leaderboard) */
-.leaderboard {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 220px;
-    background: rgba(0, 10, 20, 0.8); /* Добавь фон, чтобы текст читался поверх игры */
-    padding: 15px;
-    border: 1px solid rgba(0, 242, 255, 0.3);
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 10;
+    pointer-events: none; /* Клики летят в игру */
 }
 
-.leaderboard h3 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
-    color: var(--neon-blue);
-    margin: 0 0 15px 0;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+/* Разрешаем клики по элементам интерфейса */
+.tactical-log, .back-btn {
+    pointer-events: auto;
 }
 
-.leaderboard ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.leaderboard li {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    padding: 8px 5px;
-    border-bottom: 1px solid rgba(0, 242, 255, 0.1);
-    transition: background 0.2s;
-}
-
-.leaderboard li:hover {
-    background: rgba(0, 242, 255, 0.1);
-}
-
-.leaderboard li span:last-child {
-    color: var(--neon-pink);
-    font-weight: bold;
-}
-
-/* Кнопка выхода */
+/* Кнопка выхода (теперь в левом верхнем углу) */
 .back-btn {
     position: absolute;
-    top: -50px;
-    left: 0;
+    top: 20px;
+    left: 20px;
     color: var(--neon-blue);
     text-decoration: none;
     font-size: 12px;
-    font-family: 'Orbitron';
+    font-family: 'Orbitron', sans-serif;
     border: 1px solid var(--neon-blue);
-    padding: 5px 15px;
-    background: transparent;
+    padding: 8px 20px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
     transition: 0.3s;
+    letter-spacing: 1px;
 }
 
 .back-btn:hover {
@@ -137,27 +85,75 @@ body::before {
     box-shadow: 0 0 15px var(--neon-blue);
 }
 
-/* Адаптивность под мобилки */
-@media (max-width: 900px) {
-    .game-container {
-        flex-direction: column;
-        gap: 10px;
-        padding: 5px;
-    }
-    .leaderboard {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid rgba(0, 242, 255, 0.2);
-        padding: 10px 0 0 0;
-        height: 120px;
-        overflow-y: auto;
+/* Tactical Log (Правая панель) */
+.tactical-log {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 250px;
+    max-height: 80vh;
+    background: var(--panel-bg);
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.tactical-log h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: var(--neon-blue);
+    margin: 0 0 15px 0;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+    padding-bottom: 10px;
+}
+
+.tactical-log ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+}
+
+.tactical-log li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 10px 5px;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.05);
+    transition: 0.2s;
+}
+
+.tactical-log li:hover {
+    background: rgba(0, 242, 255, 0.05);
+}
+
+.tactical-log li span:last-child {
+    color: var(--neon-pink);
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--neon-pink);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 600px) {
+    .tactical-log {
+        width: 180px;
+        right: 10px;
+        top: 60px;
+        padding: 10px;
     }
     .back-btn {
-        top: 5px;
-        left: 5px;
-        font-size: 10px;
+        top: 10px;
+        left: 10px;
+        padding: 5px 10px;
     }
 }
+
+
+
 
 
 

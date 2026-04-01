@@ -143,7 +143,6 @@
     </style>
 </head>
 <body>
-
     <div class="waiting-overlay">
         <div style="font-family: 'Orbitron'; letter-spacing: 3px;">ESTABLISHING_LINK...</div>
         <div class="loader-bar"></div>
@@ -151,141 +150,24 @@
 
     <canvas id="game-canvas"></canvas>
 
-    <div class="ui-layer">
-        <div class="game-container">
-            <a href="index.html" class="back-btn">[ EXIT_TO_STATION ]</a>
-            
-            <div class="leaderboard">
-                <h3>Tactical Log</h3>
-                <ul id="highscores-list">
-                    <li style="opacity: 0.5;">SCANNING_SECTOR...</li>
-                </ul>
-            </div>
+    <div class="game-container">
+        <a href="index.html" class="back-btn">[ EXIT_TO_STATION ]</a>
+        
+        <div class="tactical-log">
+            <h3>Tactical Log</h3>
+            <ul id="highscores-list">
+                <li style="opacity: 0.5;">SCANNING_SECTOR...</li>
+            </ul>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script type="module" src="./game.js"></script>
-
-<script type="module">
-        import { getRankByScore } from './ranks.js';
-
-        // 1. ФУНКЦИЯ ПОИСКА ЯДРА (ОБЯЗАТЕЛЬНО!)
-        const getCore = () => {
-            return new Promise((resolve) => {
-                let attempts = 0;
-                const check = () => {
-                    attempts++;
-                    // Проверяем, появилось ли Core и инициализирован ли Supabase (sb)
-                    if (window.Core && window.Core.sb) {
-                        resolve(window.Core);
-                        return true;
-                    }
-                    // Если прошло 5 секунд (100 попыток по 50мс)
-                    if (attempts > 100) {
-                        resolve(window.Core || {}); 
-                        return true;
-                    }
-                    return false;
-                };
-                const timer = setInterval(() => { if (check()) clearInterval(timer); }, 50);
-            });
-        };
-
-        // 2. ОСНОВНАЯ ФУНКЦИЯ ЗАПУСКА
-        async function bootstrap() {
-            // Исправлено: ищем правильный селектор оверлея
-            const overlay = document.querySelector('.waiting-overlay');
-            
-            try {
-                console.log("SYSTEM: INITIATING_BOOTSTRAP...");
-                const Core = await getCore();
-
-                // Проверка: готов ли клиент Supabase
-                if (!Core || !Core.sb) {
-                    console.warn("BOOTSTRAP_PENDING: Core.sb not found, retrying...");
-                    setTimeout(bootstrap, 200);
-                    return;
-                }
-
-                // Проверка сессии
-                const { data: { session }, error } = await Core.sb.auth.getSession();
-                
-                if (error || !session) {
-                    console.error("AUTH_REQUIRED: Redirecting to station...");
-                    window.location.replace('station.html');
-                    return;
-                }
-
-                // Устанавливаем пользователя в Core
-                Core.user = session.user;
-
-                // Принудительно запускаем инициализацию холста (если еще не запущен)
-                if (Core.Canvas && typeof Core.Canvas.init === 'function') {
-                    Core.Canvas.init();
-                    Core.Canvas.res(); // Растягиваем на весь экран
-                }
-
-                // Убираем загрузку (красивое исчезновение)
-                if (overlay) {
-                    overlay.style.transition = 'opacity 0.8s ease, filter 0.8s ease';
-                    overlay.style.opacity = '0';
-                    overlay.style.filter = 'blur(10px)';
-                    setTimeout(() => overlay.remove(), 800);
-                }
-
-                console.log("%c[BOOTSTRAP] SUCCESS: COMBAT_LINK_ACTIVE", "color: #0f0");
-
-                // Обновляем лог игроков
-                await updateTacticalLog(Core);
-
-            } catch (err) {
-                console.error("BOOTSTRAP_CRITICAL_FAILURE:", err);
-                // План Б: Убираем экран если всё зависло
-                setTimeout(() => { if(overlay) overlay.remove(); }, 3000);
-            }
-        }
-
-        // 3. ФУНКЦИЯ ОБНОВЛЕНИЯ ЛОГА
-        async function updateTacticalLog(Core) {
-            const logList = document.getElementById('highscores-list');
-            if (!logList || !Core.sb) return;
-
-            const { data, error } = await Core.sb
-                .from('profiles')
-                .select('nickname, combat_score')
-                .order('combat_score', { ascending: false })
-                .limit(10);
-
-            if (error) {
-                logList.innerHTML = '<li style="color:#f00; font-size:10px;">LINK_ERROR: DATABASE_OFFLINE</li>';
-                return;
-            }
-
-            logList.innerHTML = ''; 
-            data.forEach((pilot, i) => {
-                const score = pilot.combat_score || 0;
-                const rank = getRankByScore(score);
-                const li = document.createElement('li');
-                li.className = 'log-entry';
-                li.style.borderLeft = `3px solid ${rank.color}`;
-                li.innerHTML = `
-                    <span style="opacity:0.5; font-size:10px;">0${i+1}</span>
-                    <span style="margin-left:10px; flex-grow:1;">${(pilot.nickname || 'Unknown').toUpperCase()}</span>
-                    <span style="color:${rank.color}; text-shadow: 0 0 5px ${rank.color}">${score} XP</span>
-                `;
-                logList.appendChild(li);
-            });
-        }
-
-        // ПОЕХАЛИ!
-        bootstrap();
+    <script src="init-core.js"></script> <script src="script.js" type="module"></script> <script type="module">
+        /* Твой код из bootstrap (getCore, bootstrap, updateTacticalLog) оставляй без изменений, 
+           но убедись, что внутри updateTacticalLog ID совпадает: 'highscores-list' */
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="init-core.js"></script>
-<script src="script.js" type="module"></script>
-
+    <script type="module" src="./game.js"></script>
 </body>
+
 </html>
