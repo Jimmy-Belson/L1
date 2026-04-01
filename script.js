@@ -496,44 +496,35 @@ async subscribe() {
 
 async send() { 
     const i = document.getElementById('chat-in'); 
-    // Используем window.Core, чтобы точно не промахнуться мимо объекта
-    const core = window.Core;
-
-    if (!i || !i.value.trim() || !core.user) return; 
+    if (!i || !i.value.trim() || !window.Core.user) return; 
 
     const val = i.value; 
-    i.value = ''; // Очищаем поле сразу для "отзывчивости" UI
+    i.value = ''; // Мгновенно очищаем поле для ощущения скорости
+
+    // Создаем объект сообщения заранее (Оптимистичный UI)
+    const tempMsg = {
+        message: val,
+        nickname: window.Core.user.email.split('@')[0], // Заглушка, пока база думает
+        user_id: window.Core.user.id,
+        created_at: new Date().toISOString()
+    };
 
     try {
-        // 1. Берем данные профиля (лучше из кеша, но пока оставим запрос, если профиль часто меняется)
-        const { data: p } = await core.sb.from('profiles')
-            .select('nickname, avatar_url')
-            .eq('id', core.user.id)
-            .maybeSingle(); // maybeSingle безопаснее, чем single (не кидает ошибку если пусто)
-
-        // 2. Формируем ник и аватару
-        const n = p?.nickname || core.user.email.split('@')[0];
-        const a = p?.avatar_url || core.getAvatar(core.user.id);
-
-        // 3. Отправляем в базу
-        const { data, error } = await core.sb.from('comments').insert([{
+        // Отправляем в базу, не дожидаясь загрузки профиля (если он уже был загружен в init)
+        const { data, error } = await window.Core.sb.from('comments').insert([{
             message: val, 
-            nickname: n, 
-            avatar_url: a, 
-            user_id: core.user.id
+            user_id: window.Core.user.id,
+            // Если у тебя в базе настроен Foreign Key на profiles, 
+            // ник и аву можно вообще не слать, а подтягивать через JOIN в load()
+            nickname: tempMsg.nickname 
         }]).select();
 
         if (error) throw error;
-
-        if (data && data[0]) {
-            // ВАЖНО: Вызываем render через полный путь, чтобы не потерять контекст
-            core.Chat.render(data[0]);
-            core.UpdateStat('message_count', 1);
-        }
+        // render() сработает либо тут, либо через подписку (subscribe)
     } catch (err) {
         console.error("CHAT_SEND_ERROR:", err);
-        core.Msg("SIGNAL_LOST: MESSAGE_NOT_SENT", "error");
-        i.value = val; // Возвращаем текст в поле, если не отправилось
+        window.Core.Msg("SIGNAL_LOST", "error");
+        i.value = val; // Возвращаем текст, если не ушло
     }
 },
 
