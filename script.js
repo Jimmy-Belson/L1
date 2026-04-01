@@ -109,32 +109,54 @@ Msg(text, type = 'info') {
     },
 
 async init() {
-    // 1. МГНОВЕННЫЙ ЗАПУСК ВИЗУАЛА
-    if (this.Canvas) this.Canvas.init();
-    // Проверка на случай если Canvas.res не определен
-    if (this.Canvas && typeof this.Canvas.res === 'function') this.Canvas.res();
+    // 1. МГНОВЕННЫЙ ЗАПУСК ВИЗУАЛА (Чтобы юзер не видел пустой экран)
+    if (this.Canvas) {
+        this.Canvas.init();
+        if (typeof this.Canvas.res === 'function') this.Canvas.res();
+    }
     if (this.Audio) this.Audio.setup();
     
     this.UI();
-    this.startClock(); // Используем отдельный метод для часов
+    this.startClock(); 
 
-    // 2. ПРОВЕРКА СЕССИИ
-    // Используем глобальный клиент из init-core.js
+    // 2. ПРОВЕРКА СЕССИИ ЧЕРЕЗ SUPABASE
     const { data: { session } } = await this.sb.auth.getSession();
     
     const path = window.location.pathname;
     const isStation = path.includes('station.html');
 
     if (!session) {
+        // Если нет сессии и мы не на странице логина — редирект
         if (!isStation) window.location.replace('station.html');
     } else {
+        // СЕССИЯ ЕСТЬ
         this.user = session.user;
+
         if (isStation) {
+            // Если залогинены, но зашли на страницу входа — кидаем в панель
             window.location.replace('index.html');
         } else {
-            // ТЕПЕРЬ ГРУЗИМ ДАННЫЕ, так как user уже есть
-            console.log("SYSTEM: SESSION_ACTIVE, LOADING_MODULES...");
-            
+            console.log("%c[SYSTEM] SESSION_ACTIVE, LOADING_MODULES...", "color: #0ff;");
+
+            // --- КЛЮЧЕВОЙ МОМЕНТ: ЗАГРУЗКА ПРОФИЛЯ ДЛЯ ЧАТА ---
+            // Грузим один раз здесь, чтобы Chat.send() работал мгновенно
+            try {
+                const { data: profile } = await this.sb
+                    .from('profiles')
+                    .select('nickname, avatar_url')
+                    .eq('id', this.user.id)
+                    .maybeSingle();
+                
+                // Сохраняем в объект Core, чтобы Chat.send видел это
+                this.userProfile = {
+                    nickname: profile?.nickname || this.user.email.split('@')[0],
+                    avatar_url: profile?.avatar_url || (typeof this.getAvatar === 'function' ? this.getAvatar(this.user.id) : '')
+                };
+            } catch (e) {
+                console.warn("PROFILE_LOAD_FAIL: Используем дефолтные данные");
+                this.userProfile = { nickname: "PILOT", avatar_url: "" };
+            }
+
             // Загрузка Todo
             if (document.getElementById('todo-list')) {
                 await this.Todo.load();
@@ -152,7 +174,7 @@ async init() {
         }
     }
 
-    // Слушатель событий авторизации
+    // Слушатель событий авторизации (выход из системы)
     this.sb.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') window.location.replace('station.html');
     });
@@ -496,35 +518,37 @@ async subscribe() {
 
 async send() { 
     const i = document.getElementById('chat-in'); 
-    if (!i || !i.value.trim() || !window.Core.user) return; 
+    const core = window.Core;
 
-    const val = i.value; 
-    i.value = ''; // Мгновенно очищаем поле для ощущения скорости
+    if (!i || !i.value.trim() || !core.user) return; 
 
-    // Создаем объект сообщения заранее (Оптимистичный UI)
-    const tempMsg = {
-        message: val,
-        nickname: window.Core.user.email.split('@')[0], // Заглушка, пока база думает
-        user_id: window.Core.user.id,
-        created_at: new Date().toISOString()
+    const val = i.value;
+    i.value = ''; 
+
+    // Берем данные, которые мы сохранили в init()
+    const profile = core.userProfile || { 
+        nickname: core.user.email.split('@')[0], 
+        avatar_url: core.getAvatar(core.user.id) 
     };
 
     try {
-        // Отправляем в базу, не дожидаясь загрузки профиля (если он уже был загружен в init)
-        const { data, error } = await window.Core.sb.from('comments').insert([{
+        const { data, error } = await core.sb.from('comments').insert([{
             message: val, 
-            user_id: window.Core.user.id,
-            // Если у тебя в базе настроен Foreign Key на profiles, 
-            // ник и аву можно вообще не слать, а подтягивать через JOIN в load()
-            nickname: tempMsg.nickname 
+            nickname: profile.nickname, 
+            avatar_url: profile.avatar_url, 
+            user_id: core.user.id
         }]).select();
 
         if (error) throw error;
-        // render() сработает либо тут, либо через подписку (subscribe)
+
+        if (data && data[0]) {
+            core.Chat.render(data[0]);
+            core.UpdateStat('message_count', 1);
+        }
     } catch (err) {
         console.error("CHAT_SEND_ERROR:", err);
-        window.Core.Msg("SIGNAL_LOST", "error");
-        i.value = val; // Возвращаем текст, если не ушло
+        core.Msg("SIGNAL_LOST", "error");
+        i.value = val; 
     }
 },
 
