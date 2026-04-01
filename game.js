@@ -1,131 +1,113 @@
 // ==========================================
-// ORBITRON: TECH-CORE ENGINE v2.0
+// ORBITRON: TECH-CORE ENGINE v2.1 [STABLE]
 // ==========================================
 import { getRankByScore } from './ranks.js';
 
-// 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (Теперь они видны всем классам ниже)
 let canvas, ctx;
 window.gameActive = true; 
 
-// --- ГЛОБАЛЬНЫЙ КОНФИГ ---
 const CONFIG = {
     FPS: 60,
     GAME_JUICE: { SHAKE_INTENSITY: 8, PARTICLE_COUNT: 15 },
-    BALANCE: { LIVES: 3, SPAWN_INTERVAL: 45, SCORE_PER_LEVEL: 1000 }
+    BALANCE: { LIVES: 3, SPAWN_INTERVAL: 45 }
+};
+
+// --- СИСТЕМА ПРЕДОТВРАЩЕНИЯ КОНФЛИКТОВ ---
+const killBackgroundProcesses = () => {
+    if (window.Core) {
+        console.log("%c[SYSTEM] DETECTED_CORE: SHUTTING_DOWN_BACKGROUND_VISUALS", "color: #ff00e5");
+        
+        // 1. Останавливаем отрисовку звезд и планет из основного скрипта
+        if (window.Core.Canvas) {
+            window.Core.Canvas.draw = () => {}; 
+        }
+        
+        // 2. Блокируем автоматические редиректы Core на время игры
+        const originalInit = window.Core.init;
+        window.Core.init = async function() {
+            console.log("[SYSTEM] CORE_STANDBY_MODE: GAME_PRIORITY");
+            // Выполняем только важную часть (авторизацию), без запуска петель отрисовки
+            const { data: { session } } = await this.sb.auth.getSession();
+            if (session) this.user = session.user;
+        };
+    }
 };
 
 // ==========================================
-// КЛАССЫ СУЩНОСТЕЙ
+// КЛАССЫ (ИГРОК, ВРАГИ, ЧАСТИЦЫ)
 // ==========================================
 
 class Particle {
     constructor(x, y, color) {
         this.x = x; this.y = y; this.color = color;
-        this.size = Math.random() * 4 + 1;
-        this.speedX = (Math.random() - 0.5) * 10;
-        this.speedY = (Math.random() - 0.5) * 10;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = (Math.random() - 0.5) * 8;
+        this.speedY = (Math.random() - 0.5) * 8;
         this.life = 1.0;
-        this.decay = Math.random() * 0.03 + 0.02;
+        this.decay = 0.02;
     }
-    update() {
-        this.x += this.speedX; this.y += this.speedY;
-        this.life -= this.decay;
-    }
+    update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; }
     draw(ctx) {
         ctx.save();
         ctx.globalAlpha = this.life;
-        ctx.shadowBlur = 10; ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
         ctx.restore();
     }
 }
 
 class Player {
     constructor() {
-        this.reset();
-    }
-    reset() {
-        // Используем глобальный canvas
-        this.x = canvas.width / 2;
-        this.y = canvas.height - 100;
-        this.width = 40;
-        this.speed = 0.15; // Плавность хода
+        this.x = window.innerWidth / 2;
+        this.y = window.innerHeight - 80;
         this.score = 0;
         this.lives = CONFIG.BALANCE.LIVES;
+        this.targetX = this.x;
         this.heat = 0;
-        this.maxHeat = 100;
         this.overheated = false;
-        this.targetX = canvas.width / 2;
     }
     update() {
-        this.x += (this.targetX - this.x) * this.speed;
-        
+        this.x += (this.targetX - this.x) * 0.15;
         if (this.overheated) {
-            this.heat -= 0.4;
-            if (this.heat <= 0) {
-                this.overheated = false;
-                this.heat = 0;
-            }
+            this.heat -= 0.5;
+            if (this.heat <= 0) { this.overheated = false; this.heat = 0; }
         } else {
-            this.heat = Math.max(0, this.heat - 0.8);
+            this.heat = Math.max(0, this.heat - 1);
         }
     }
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
-        const shipColor = this.overheated ? '#ff3333' : '#00f2ff';
-        ctx.shadowBlur = 15; ctx.shadowColor = shipColor;
-        ctx.strokeStyle = shipColor;
-        ctx.lineWidth = 3;
+        const color = this.overheated ? '#f00' : '#0ff';
+        ctx.strokeStyle = color;
+        ctx.shadowBlur = 15; ctx.shadowColor = color;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(0, -25); ctx.lineTo(-25, 20); ctx.lineTo(0, 5); ctx.lineTo(25, 20);
-        ctx.closePath();
-        ctx.stroke();
+        ctx.moveTo(0, -20); ctx.lineTo(-20, 15); ctx.lineTo(0, 5); ctx.lineTo(20, 15);
+        ctx.closePath(); ctx.stroke();
         ctx.restore();
-    }
-    shoot() {
-        if (this.overheated) return null;
-        this.heat += 18;
-        if (this.heat >= this.maxHeat) {
-            this.overheated = true;
-            return null;
-        }
-        return [
-            { x: this.x - 22, y: this.y, speed: 12, color: '#ff00e5' },
-            { x: this.x + 22, y: this.y, speed: 12, color: '#ff00e5' }
-        ];
     }
 }
 
 class Enemy {
-    constructor(type = 'BASIC') {
-        const types = {
-            BASIC: { hp: 1, speed: 3, score: 10, color: '#0ff', size: 30 },
-            TANK:  { hp: 3, speed: 1.5, score: 50, color: '#ff00e5', size: 50 },
-            SCOUT: { hp: 1, speed: 6, score: 25, color: '#ffff00', size: 20 }
-        };
-        const t = types[type];
-        const margin = canvas.width * 0.15; 
-        this.x = margin + Math.random() * (canvas.width - margin * 2);
+    constructor() {
+        this.size = 30;
+        this.x = Math.random() * (window.innerWidth - 60) + 30;
         this.y = -50;
-        Object.assign(this, t);
-        this.speed *= (0.9 + Math.random() * 0.4); 
+        this.speed = 3 + Math.random() * 2;
+        this.color = '#ff00e5';
     }
     update() { this.y += this.speed; }
     draw(ctx) {
         ctx.save();
-        ctx.shadowBlur = 15; ctx.shadowColor = this.color;
         ctx.strokeStyle = this.color;
-        ctx.lineWidth = 2;
-        const half = this.size / 2;
-        ctx.strokeRect(this.x - half, this.y - half, this.size, this.size);
+        ctx.strokeRect(this.x - 15, this.y - 15, 30, 30);
         ctx.restore();
     }
 }
 
 // ==========================================
-// ЯДРО ДВИЖКА
+// ДВИЖАТЕЛЬ
 // ==========================================
 
 class GameEngine {
@@ -136,124 +118,116 @@ class GameEngine {
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
-        this.initControls();
+        this.setupListeners();
     }
 
-    initControls() {
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            this.player.targetX = e.clientX - rect.left;
+    setupListeners() {
+        window.addEventListener('mousemove', (e) => this.player.targetX = e.clientX);
+        window.addEventListener('mousedown', () => {
+            if (this.player.overheated) return;
+            this.player.heat += 20;
+            if (this.player.heat >= 100) this.player.overheated = true;
+            this.projectiles.push({x: this.player.x, y: this.player.y - 20});
         });
-
-        window.addEventListener('mousedown', (e) => {
-            if (e.button === 0 && window.gameActive) {
-                const shots = this.player.shoot();
-                if (shots) this.projectiles.push(...shots);
-            }
-        });
-    }
-
-    addExplosion(x, y, color) {
-        for(let i=0; i<CONFIG.GAME_JUICE.PARTICLE_COUNT; i++) {
-            this.particles.push(new Particle(x, y, color));
-        }
     }
 
     update() {
         if (!window.gameActive) return;
         this.player.update();
-        this.spawnTimer++;
-        if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
-            const r = Math.random();
-            const type = r > 0.9 ? 'TANK' : (r > 0.7 ? 'SCOUT' : 'BASIC');
-            this.enemies.push(new Enemy(type));
+        
+        // Спавн
+        if (++this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
+            this.enemies.push(new Enemy());
             this.spawnTimer = 0;
         }
+
+        // Пули
         this.projectiles.forEach((p, i) => {
-            p.y -= p.speed;
+            p.y -= 10;
             if (p.y < -20) this.projectiles.splice(i, 1);
         });
-        this.enemies.forEach((e, ei) => {
+
+        // Враги
+        this.enemies.forEach((e, i) => {
             e.update();
-            if (Math.hypot(e.x - this.player.x, e.y - this.player.y) < e.size) {
-                this.enemies.splice(ei, 1);
-                this.player.lives--;
-                this.shake = 15;
-                this.addExplosion(e.x, e.y, '#f00');
-            }
+            // Коллизия с пулей
             this.projectiles.forEach((p, pi) => {
-                if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
+                if (Math.hypot(p.x - e.x, p.y - e.y) < 25) {
+                    this.player.score += 10;
+                    for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
+                    this.enemies.splice(i, 1);
                     this.projectiles.splice(pi, 1);
-                    e.hp--;
-                    if (e.hp <= 0) {
-                        this.player.score += e.score;
-                        this.addExplosion(e.x, e.y, e.color);
-                        this.enemies.splice(ei, 1);
-                    }
                 }
             });
-            if (e.y > canvas.height + 50) {
-                this.enemies.splice(ei, 1);
+            // Пропуск или столкновение
+            if (e.y > window.innerHeight + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
+                this.enemies.splice(i, 1);
                 this.player.lives--;
+                this.shake = 10;
+                if (this.player.lives <= 0) this.gameOver();
             }
         });
+
         this.particles.forEach((p, i) => {
             p.update();
             if (p.life <= 0) this.particles.splice(i, 1);
         });
-
-        if (this.player.lives <= 0) {
-            window.gameActive = false;
-            if (window.Core?.UpdateCombatScore) window.Core.UpdateCombatScore(this.player.score);
-            alert("STATION_PROTOCOL_FAILED: SCORE " + this.player.score);
-            window.location.reload();
-        }
     }
 
     draw() {
-        ctx.save();
-        if (this.shake > 0) {
-            ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
-            this.shake *= 0.9;
-        }
         ctx.fillStyle = '#01050a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        if (this.shake > 0) {
+            ctx.translate(Math.random()*this.shake, Math.random()*this.shake);
+            this.shake *= 0.9;
+        }
+
         this.particles.forEach(p => p.draw(ctx));
-        this.projectiles.forEach(p => {
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x-2, p.y, 4, 20);
-        });
         this.enemies.forEach(e => e.draw(ctx));
         this.player.draw(ctx);
+        
+        this.projectiles.forEach(p => {
+            ctx.fillStyle = '#ff00e5';
+            ctx.fillRect(p.x-2, p.y, 4, 15);
+        });
         ctx.restore();
-        this.drawUI();
-    }
 
-    drawUI() {
+        // UI
         const rank = getRankByScore(this.player.score);
         ctx.fillStyle = '#0ff';
-        ctx.font = '20px Share Tech Mono';
-        ctx.fillText(`SCORE: ${this.player.score}`, 20, 40);
-        ctx.fillText(`LIVES: ${this.player.lives}`, 20, 70);
+        ctx.font = '16px Orbitron';
+        ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
         ctx.fillStyle = rank.color;
-        ctx.fillText(`RANK: ${rank.name}`, 20, 100);
+        ctx.fillText(`RANK: ${rank.name}`, 20, 65);
     }
 
-    run() {
+    gameOver() {
+        window.gameActive = false;
+        if (window.Core?.UpdateCombatScore) window.Core.UpdateCombatScore(this.player.score);
+        alert("STATION_DEFENSE_CRITICAL: FAILED");
+        window.location.href = 'index.html';
+    }
+
+    loop() {
         this.update();
         this.draw();
-        requestAnimationFrame(() => this.run());
+        requestAnimationFrame(() => this.loop());
     }
 }
 
-// 3. ФИНАЛЬНЫЙ ЗАПУСК (После загрузки DOM)
+// --- СТАРТ ---
 document.addEventListener('DOMContentLoaded', () => {
     canvas = document.getElementById('game-canvas');
-    if (!canvas) return; // Тихо выходим, если мы не на странице игры
-    
+    if (!canvas) return;
+
     ctx = canvas.getContext('2d');
     
-    // Адаптация экрана
+    // 1. Убиваем фон из script.js
+    killBackgroundProcesses();
+
+    // 2. Ресайз
     const res = () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -261,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', res);
     res();
 
-    // Старт движка
+    // 3. Запуск
     const engine = new GameEngine();
-    engine.run();
+    engine.loop();
 });

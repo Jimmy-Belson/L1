@@ -702,7 +702,10 @@ UI() {
 Canvas: {
     init() {
         // Проверяем сначала игровой холст, если его нет - ищем фоновый для индекса
-        this.cvs = document.getElementById('game-canvas') || document.getElementById('starfield');
+    this.cvs = document.getElementById('starfield');
+    
+    if (!this.cvs) return; // Если мы на странице игры, где нет starfield — выходим
+    
         
         if (!this.cvs) {
             console.log("CANVAS_SYSTEM: No canvas found on this page.");
