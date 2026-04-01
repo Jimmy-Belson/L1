@@ -3,7 +3,24 @@
 // ==========================================
 import { getRankByScore } from './ranks.js';
 
-const canvas = document.getElementById('game-canvas');
+// game.js
+const initGame = () => {
+    const canvas = document.getElementById('game-canvas');
+    
+    // ГЛАВНОЕ: Если канваса нет, мы просто выходим из функции БЕЗ ошибки
+    if (!canvas) {
+        console.log("%c[SYSTEM] Game Canvas not present on this deck. Combat Standby.", "color: #555;");
+        return; 
+    }
+
+    const ctx = canvas.getContext('2d');
+    
+    // Твоя логика игры...
+    console.log("%c[SYSTEM] Combat System Initialized", "color: #0f0;");
+};
+
+// Запускаем
+window.addEventListener('load', initGame);
 const ctx = canvas.getContext('2d');
 
 // --- ГЛОБАЛЬНЫЙ КОНФИГ ---
