@@ -634,32 +634,25 @@ if (p) {
 UI() {
     const todoIn = document.getElementById('todo-in');
     const todoDate = document.getElementById('todo-date');
-    const todoList = document.getElementById('todo-list');
     const chatIn = document.getElementById('chat-in');
 
     if (todoIn) {
         todoIn.onkeypress = async (e) => {
             if (e.key === 'Enter' && todoIn.value.trim()) {
-                await this.Todo.add(todoIn.value, todoDate ? todoDate.value : null);
+                // Обращаемся через Core напрямую
+                await Core.Todo.add(todoIn.value, todoDate ? todoDate.value : null);
                 todoIn.value = '';
                 if (todoDate) todoDate.value = '';
             }
         };
     }
 
-    if (todoList) {
-        todoList.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const draggingItem = document.querySelector('.dragging');
-            if (!draggingItem) return;
-            const siblings = [...todoList.querySelectorAll('.task:not(.dragging)')];
-            const nextSibling = siblings.find(sibling => e.clientY <= sibling.getBoundingClientRect().top + sibling.getBoundingClientRect().height / 2);
-            todoList.insertBefore(draggingItem, nextSibling);
-        });
-    }
-
     if (chatIn) {
-        chatIn.onkeypress = (e) => { if (e.key === 'Enter') this.Chat.send(); };
+        chatIn.onkeypress = async (e) => { 
+            if (e.key === 'Enter' && chatIn.value.trim()) {
+                await Core.Chat.send(); 
+            }
+        };
     }
 },
 
