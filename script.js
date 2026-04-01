@@ -360,89 +360,90 @@ async UpdateCombatScore(newScore) {
 
 Todo: {
     async load() {
-        if (!Core.user) return;
-        const { data, error } = await Core.sb.from('todo')
+        if (!window.Core.user) return;
+        const { data, error } = await window.Core.sb.from('todo')
             .select('*')
-            .eq('user_id', Core.user.id) 
+            .eq('user_id', window.Core.user.id) 
             .order('id', { ascending: false });
 
-        if (error) return;
+        if (error) {
+            console.error("TODO_LOAD_ERR:", error);
+            return;
+        }
         const list = document.getElementById('todo-list');
         if (list) { 
             list.innerHTML = ''; 
-            data.forEach(t => this.render(t)); 
+            // Используем window.Core.Todo.render для надежности
+            data.forEach(t => window.Core.Todo.render(t)); 
         }
     },
 
-render(t) { // Обязательно с маленькой буквы, как в load()
-    const list = document.getElementById('todo-list'); 
-    if (!list) return;
+    render(t) {
+        const list = document.getElementById('todo-list'); 
+        if (!list) return;
 
-    const d = document.createElement('div');
-    d.className = `task ${t.is_completed ? 'completed' : ''}`;
-    d.id = `task-${t.id}`;
-    d.setAttribute('draggable', true);
+        const d = document.createElement('div');
+        d.className = `task ${t.is_completed ? 'completed' : ''}`;
+        d.id = `task-${t.id}`;
+        
+        const dateStr = t.deadline ? 
+            `<span class="deadline-tag" style="font-size:9px; opacity:0.6; margin-left:10px;">
+                [UNTIL: ${new Date(t.deadline).toLocaleDateString()}]
+            </span>` : '';
 
-    // События для Drag-and-Drop
-    d.addEventListener('dragstart', () => d.classList.add('dragging'));
-    d.addEventListener('dragend', () => d.classList.remove('dragging'));
-    
-    // ИСПРАВЛЕНО: Теперь это строка в обратных кавычках
-    const dateStr = t.deadline ? 
-        `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}]</span>` : '';
+        d.innerHTML = `
+            <div class="task-content" style="display:flex; justify-content:space-between; width:100%;">
+                <span>> ${t.task.toUpperCase()}</span>
+                ${dateStr}
+            </div>
+        `;
 
-    d.innerHTML = `
-        <div class="task-content">
-            <span>> ${t.task.toUpperCase()}</span>
-            ${dateStr}
-        </div>
-    `;
+        // Клик — выполнение
+        d.onclick = async () => {
+            const newState = !d.classList.contains('completed');
+            d.classList.toggle('completed');
+            await window.Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+        };
 
-    // Клик для отметки выполнения
-    d.onclick = async (e) => {
-        if (d.classList.contains('dragging')) return;
-        const newState = !d.classList.contains('completed');
-        d.classList.toggle('completed');
-        await Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
-    };
+        // Правый клик — удаление
+        d.oncontextmenu = async (ev) => {
+            ev.preventDefault();
+            d.style.opacity = '0.3';
+            const { error } = await window.Core.sb.from('todo').delete().eq('id', t.id);
+            if (!error) {
+                d.remove();
+                window.Core.Msg("OBJECTIVE_TERMINATED");
+            } else {
+                d.style.opacity = '1';
+            }
+        };
 
-    // Удаление через контекстное меню с анимацией
-   d.oncontextmenu = async (ev) => {
-    ev.preventDefault();
-    d.classList.add('removing');
+        list.prepend(d); // Новые задачи вверх
+    },
 
-    setTimeout(async () => {
-        const { error } = await Core.sb.from('todo').delete().eq('id', t.id);
-        if (!error) {
-            d.remove();
-            // ВОЗВРАЩАЕМ УВЕДОМЛЕНИЕ:
-            Core.Msg("OBJECTIVE_TERMINATED", "info"); 
-        } else {
-            d.classList.remove('removing');
-            Core.Msg("TERMINATION_FAILED", "error");
+    async add(val, date) {
+        const core = window.Core;
+        if (!core.user || !val) return;
+
+        try {
+            const { data, error } = await core.sb.from('todo').insert([{ 
+                task: val, 
+                is_completed: false,
+                user_id: core.user.id,
+                deadline: date || null
+            }]).select();
+
+            if (error) throw error;
+            
+            if (data && data[0]) {
+                this.render(data[0]);
+                core.Msg("MISSION_UPDATED");
+            }
+        } catch (e) {
+            console.error("TODO_ADD_ERR:", e);
+            core.Msg("SYNC_ERROR", "error");
         }
-    }, 400);
-};
-
-    list.appendChild(d);
-},
-
-async add(val, date) {
-    if (!Core.user || !val.trim()) return;
-    const { data, error } = await Core.sb.from('todo').insert([{ 
-        task: val, 
-        is_completed: false,
-        user_id: Core.user.id,
-        deadline: date || null
-    }]).select();
-
-    if (!error && data && data.length > 0) { // Проверка на наличие данных
-        this.render(data[0]);
-        Core.Msg("MISSION_UPDATED");
-    } else {
-        Core.Msg("SYNC_ERROR", "error");
     }
-}
 },
 
 
@@ -652,12 +653,17 @@ UI() {
     const chatIn = document.getElementById('chat-in');
 
     if (todoIn) {
+        // Очищаем старые слушатели, чтобы не было дублей
+        todoIn.onkeypress = null; 
         todoIn.onkeypress = async (e) => {
-            if (e.key === 'Enter' && todoIn.value.trim()) {
-                // Обращаемся через Core напрямую
-                await Core.Todo.add(todoIn.value, todoDate ? todoDate.value : null);
-                todoIn.value = '';
-                if (todoDate) todoDate.value = '';
+            if (e.key === 'Enter') {
+                const val = todoIn.value.trim();
+                if (val) {
+                    // Явное обращение к объекту Todo внутри Core
+                    await window.Core.Todo.add(val, todoDate ? todoDate.value : null);
+                    todoIn.value = '';
+                    if (todoDate) todoDate.value = '';
+                }
             }
         };
     }
@@ -665,7 +671,7 @@ UI() {
     if (chatIn) {
         chatIn.onkeypress = async (e) => { 
             if (e.key === 'Enter' && chatIn.value.trim()) {
-                await Core.Chat.send(); 
+                await window.Core.Chat.send(); 
             }
         };
     }
