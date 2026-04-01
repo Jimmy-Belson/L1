@@ -3,25 +3,9 @@
 // ==========================================
 import { getRankByScore } from './ranks.js';
 
-// game.js
-const initGame = () => {
-    const canvas = document.getElementById('game-canvas');
-    
-    // ГЛАВНОЕ: Если канваса нет, мы просто выходим из функции БЕЗ ошибки
-    if (!canvas) {
-        console.log("%c[SYSTEM] Game Canvas not present on this deck. Combat Standby.", "color: #555;");
-        return; 
-    }
-
-    const ctx = canvas.getContext('2d');
-    
-    // Твоя логика игры...
-    console.log("%c[SYSTEM] Combat System Initialized", "color: #0f0;");
-};
-
-// Запускаем
-window.addEventListener('load', initGame);
-const ctx = canvas.getContext('2d');
+// 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (Теперь они видны всем классам ниже)
+let canvas, ctx;
+window.gameActive = true; 
 
 // --- ГЛОБАЛЬНЫЙ КОНФИГ ---
 const CONFIG = {
@@ -29,16 +13,6 @@ const CONFIG = {
     GAME_JUICE: { SHAKE_INTENSITY: 8, PARTICLE_COUNT: 15 },
     BALANCE: { LIVES: 3, SPAWN_INTERVAL: 45, SCORE_PER_LEVEL: 1000 }
 };
-
-// --- СИСТЕМА АДАПТИВНОГО ЭКРАНА ---
-function setupScreen() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    console.log(`%c[SYSTEM] Resolution Set: ${canvas.width}x${canvas.height}`, "color: #0ff");
-}
-
-window.addEventListener('resize', setupScreen);
-setupScreen();
 
 // ==========================================
 // КЛАССЫ СУЩНОСТЕЙ
@@ -72,10 +46,11 @@ class Player {
         this.reset();
     }
     reset() {
+        // Используем глобальный canvas
         this.x = canvas.width / 2;
         this.y = canvas.height - 100;
         this.width = 40;
-        this.speed = 0.4;
+        this.speed = 0.15; // Плавность хода
         this.score = 0;
         this.lives = CONFIG.BALANCE.LIVES;
         this.heat = 0;
@@ -86,7 +61,6 @@ class Player {
     update() {
         this.x += (this.targetX - this.x) * this.speed;
         
-        // Система охлаждения
         if (this.overheated) {
             this.heat -= 0.4;
             if (this.heat <= 0) {
@@ -100,13 +74,10 @@ class Player {
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
-        
-        // Визуализация перегрева (корпус краснеет)
         const shipColor = this.overheated ? '#ff3333' : '#00f2ff';
         ctx.shadowBlur = 15; ctx.shadowColor = shipColor;
         ctx.strokeStyle = shipColor;
         ctx.lineWidth = 3;
-
         ctx.beginPath();
         ctx.moveTo(0, -25); ctx.lineTo(-25, 20); ctx.lineTo(0, 5); ctx.lineTo(25, 20);
         ctx.closePath();
@@ -134,51 +105,21 @@ class Enemy {
             TANK:  { hp: 3, speed: 1.5, score: 50, color: '#ff00e5', size: 50 },
             SCOUT: { hp: 1, speed: 6, score: 25, color: '#ffff00', size: 20 }
         };
-        
         const t = types[type];
-        
-        // --- ПРАВКА №1: УМНЫЙ СПАВН (Центрирование) ---
-        // Создаем "безопасную зону" в 15% от ширины экрана с каждой стороны
         const margin = canvas.width * 0.15; 
-        // Враги появятся в диапазоне [margin, canvas.width - margin]
         this.x = margin + Math.random() * (canvas.width - margin * 2);
-        
         this.y = -50;
-        
-        // Копируем свойства типа
         Object.assign(this, t);
-
-        // --- ПРАВКА №2: ВАРИАТИВНОСТЬ СКОРОСТИ ---
-        // Добавляем +/- 20% к базовой скорости, чтобы враги не летели "линейкой"
         this.speed *= (0.9 + Math.random() * 0.4); 
     }
-
-    update() { 
-        this.y += this.speed; 
-    }
-
+    update() { this.y += this.speed; }
     draw(ctx) {
         ctx.save();
-        
-        // Эффект свечения для ретро-стиля
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 15; ctx.shadowColor = this.color;
         ctx.strokeStyle = this.color;
         ctx.lineWidth = 2;
-
-        // Рисуем врага (квадрат с перекрестием внутри для "технологичности")
         const half = this.size / 2;
         ctx.strokeRect(this.x - half, this.y - half, this.size, this.size);
-        
-        // Маленький внутренний ромб для красоты
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y - half/2);
-        ctx.lineTo(this.x + half/2, this.y);
-        ctx.lineTo(this.x, this.y + half/2);
-        ctx.lineTo(this.x - half/2, this.y);
-        ctx.closePath();
-        ctx.stroke();
-
         ctx.restore();
     }
 }
@@ -195,9 +136,7 @@ class GameEngine {
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
-        
         this.initControls();
-        this.loop();
     }
 
     initControls() {
@@ -214,37 +153,15 @@ class GameEngine {
         });
     }
 
-    applyShake(amt) { this.shake = amt; }
-
     addExplosion(x, y, color) {
         for(let i=0; i<CONFIG.GAME_JUICE.PARTICLE_COUNT; i++) {
             this.particles.push(new Particle(x, y, color));
         }
     }
 
-    checkDeath() {
-        if (this.player.lives <= 0) {
-            window.gameActive = false;
-            const finalScore = this.player.score;
-
-            // СИНХРОНИЗАЦИЯ С SUPABASE ЧЕРЕЗ CORE
-            if (window.Core && typeof window.Core.UpdateCombatScore === 'function') {
-                window.Core.UpdateCombatScore(finalScore);
-            }
-
-            setTimeout(() => {
-                alert(`MISSION FAILED\nFINAL SCORE: ${finalScore}`);
-                window.location.href = 'index.html';
-            }, 100);
-        }
-    }
-
     update() {
         if (!window.gameActive) return;
-
         this.player.update();
-
-        // Спавн врагов
         this.spawnTimer++;
         if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
             const r = Math.random();
@@ -252,28 +169,18 @@ class GameEngine {
             this.enemies.push(new Enemy(type));
             this.spawnTimer = 0;
         }
-
-        // Обновление снарядов
         this.projectiles.forEach((p, i) => {
             p.y -= p.speed;
             if (p.y < -20) this.projectiles.splice(i, 1);
         });
-
-        // Обновление врагов и коллизии
         this.enemies.forEach((e, ei) => {
             e.update();
-            
-            // Столкновение с игроком
-            const dist = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-            if (dist < e.size) {
+            if (Math.hypot(e.x - this.player.x, e.y - this.player.y) < e.size) {
                 this.enemies.splice(ei, 1);
                 this.player.lives--;
-                this.applyShake(15);
+                this.shake = 15;
                 this.addExplosion(e.x, e.y, '#f00');
-                this.checkDeath();
             }
-
-            // Попадание пулей
             this.projectiles.forEach((p, pi) => {
                 if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
                     this.projectiles.splice(pi, 1);
@@ -285,19 +192,22 @@ class GameEngine {
                     }
                 }
             });
-
-            // Пропуск врага
             if (e.y > canvas.height + 50) {
                 this.enemies.splice(ei, 1);
                 this.player.lives--;
-                this.checkDeath();
             }
         });
-
         this.particles.forEach((p, i) => {
             p.update();
             if (p.life <= 0) this.particles.splice(i, 1);
         });
+
+        if (this.player.lives <= 0) {
+            window.gameActive = false;
+            if (window.Core?.UpdateCombatScore) window.Core.UpdateCombatScore(this.player.score);
+            alert("STATION_PROTOCOL_FAILED: SCORE " + this.player.score);
+            window.location.reload();
+        }
     }
 
     draw() {
@@ -306,25 +216,15 @@ class GameEngine {
             ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
             this.shake *= 0.9;
         }
-
-        // Очистка
         ctx.fillStyle = '#01050a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (!window.gameActive) {
-            ctx.restore(); return;
-        }
-
-        // Отрисовка
         this.particles.forEach(p => p.draw(ctx));
         this.projectiles.forEach(p => {
             ctx.fillStyle = p.color;
-            ctx.shadowBlur = 10; ctx.shadowColor = p.color;
             ctx.fillRect(p.x-2, p.y, 4, 20);
         });
         this.enemies.forEach(e => e.draw(ctx));
         this.player.draw(ctx);
-
         ctx.restore();
         this.drawUI();
     }
@@ -335,26 +235,33 @@ class GameEngine {
         ctx.font = '20px Share Tech Mono';
         ctx.fillText(`SCORE: ${this.player.score}`, 20, 40);
         ctx.fillText(`LIVES: ${this.player.lives}`, 20, 70);
-        
         ctx.fillStyle = rank.color;
         ctx.fillText(`RANK: ${rank.name}`, 20, 100);
-
-        // Полоса перегрева
-        const hX = canvas.width - 220;
-        ctx.strokeStyle = this.player.overheated ? '#f00' : '#0ff';
-        ctx.strokeRect(hX, 30, 200, 20);
-        ctx.fillStyle = this.player.overheated ? '#f00' : '#0ff';
-        ctx.fillRect(hX + 2, 32, (this.player.heat/this.player.maxHeat)*196, 16);
     }
 
-    loop() {
+    run() {
         this.update();
         this.draw();
-        requestAnimationFrame(() => this.loop());
+        requestAnimationFrame(() => this.run());
     }
 }
 
-// Запуск
+// 3. ФИНАЛЬНЫЙ ЗАПУСК (После загрузки DOM)
 document.addEventListener('DOMContentLoaded', () => {
-    window.gameEngine = new GameEngine();
-})
+    canvas = document.getElementById('game-canvas');
+    if (!canvas) return; // Тихо выходим, если мы не на странице игры
+    
+    ctx = canvas.getContext('2d');
+    
+    // Адаптация экрана
+    const res = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', res);
+    res();
+
+    // Старт движка
+    const engine = new GameEngine();
+    engine.run();
+});
