@@ -1,4 +1,4 @@
-import { getRankByScore } from './ranks.js';
+import { getRankByScore } from 'ranks.js';
 
 
 
