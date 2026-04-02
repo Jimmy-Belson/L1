@@ -20,13 +20,12 @@ const Core = {
     },
 
 getAvatar(user_id, current_avatar) {
-    // Если есть нормальная ссылка — берем её
-    if (current_avatar && current_avatar.length > 15 && !current_avatar.includes('dicebear')) {
+    // Если нам пришла ссылка (из базы), возвращаем её
+    if (current_avatar && current_avatar.startsWith('http')) {
         return current_avatar;
     }
-    // Если нет — генерируем робота по ID (чтобы у каждого юзера был свой уникальный робот)
-    // Важно: используем fallback на случай если user_id пришел битый
-    const seed = user_id || Math.random().toString(36).substring(7);
+    // Если ссылки нет — генерируем робота
+    const seed = user_id || "guest";
     return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
 },
 
@@ -179,19 +178,20 @@ async SyncProfile(user) {
         if (error) throw error;
         
         if (data) {
+            // СОХРАНЯЕМ ДАННЫЕ В КЭШ CORE
+            this.userProfile = data; 
+
             const nickEl = document.getElementById('nick-display');
             const avatarEl = document.getElementById('avatar-display');
             
             if (nickEl) {
-                // РАССЧИТЫВАЕМ РАНГ ДЛЯ СЕБЯ
                 const rank = getRankByScore(data.combat_score || 0);
                 nickEl.innerText = data.nickname || user.email.split('@')[0];
-                
-                // КРАСИМ СВОЙ НИК В ЦВЕТ РАНГА
                 nickEl.style.color = rank.color;
                 nickEl.style.textShadow = `0 0 8px ${rank.color}`;
             }
-            if (avatarEl && data.avatar_url) avatarEl.src = data.avatar_url;
+            // Обновляем главную аватарку в шапке
+            if (avatarEl) avatarEl.src = data.avatar_url || this.getAvatar(user.id);
         }
     } catch (e) {
         console.warn("SYNC_PROFILE_WARNING:", e.message);
@@ -571,34 +571,27 @@ async send() {
     const val = i.value;
     i.value = ''; 
 
-    // ГАРАНТИРОВАННОЕ ПОЛУЧЕНИЕ ДАННЫХ
-    // Пытаемся взять из кэша профиля, если нет — из сессии, если нет — дефолт
-    const nickname = core.userProfile?.nickname || 
-                     (core.user.user_metadata?.nickname) || 
-                     core.user.email.split('@')[0];
-                     
-    const avatar = core.userProfile?.avatar_url || 
-                   core.getAvatar(core.user.id);
+    // Берем ник и аватар из загруженного профиля (userProfile)
+    const nickname = core.userProfile?.nickname || core.user.email.split('@')[0];
+    const avatar = core.userProfile?.avatar_url || core.getAvatar(core.user.id);
 
     try {
         const { data, error } = await core.sb.from('comments').insert([{
             message: val, 
             nickname: nickname, 
-            avatar_url: avatar, 
+            avatar_url: avatar, // ТЕПЕРЬ ТУТ БУДЕТ ССЫЛКА
             user_id: core.user.id
         }]).select();
 
         if (error) throw error;
-
         if (data && data[0]) {
-            // Рендерим свое сообщение сразу
             this.render(data[0]);
             core.UpdateStat('message_count', 1);
         }
     } catch (err) {
         console.error("CHAT_SEND_ERROR:", err);
         core.Msg("SIGNAL_LOST", "error");
-        i.value = val; // Возвращаем текст в инпут при ошибке
+        i.value = val;
     }
 },
 
