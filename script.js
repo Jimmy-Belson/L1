@@ -604,9 +604,22 @@ render(m) {
     const currentUserId = window.Core.user?.id;
     const isMy = m.user_id === currentUserId;
     
-    // Используем исправленный getAvatar, чтобы аватарки не пропадали
+    // --- ФОРМИРОВАНИЕ ПУТИ К АВАТАРКЕ ---
+    let avatar = m.avatar_url;
+
+    if (avatar && typeof avatar === 'string') {
+        // Если в базе лежит просто имя файла (как на твоем скрине: "0.0521...png")
+        if (!avatar.startsWith('http')) {
+            const projectID = 'ebjsxlympwocluxgmwcu';
+            const bucket = 'avatars';
+            avatar = `https://${projectID}.supabase.co/storage/v1/object/public/${bucket}/${avatar}`;
+        }
+    } else {
+        // Если в базе NULL или пусто — генерируем робота
+        avatar = window.Core.getAvatar(m.user_id);
+    }
+
     const displayNick = (m.nickname || "PILOT_UNKNOWN").toUpperCase();
-    const avatar = window.Core.getAvatar(m.user_id, m.avatar_url);
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     const d = document.createElement('div'); 
@@ -616,7 +629,9 @@ render(m) {
     d.innerHTML = `
         <div class="chat-row-layout">
             <div class="avatar-wrapper" style="cursor:pointer">
-                <img src="${avatar}" class="chat-row-avatar">
+                <img src="${avatar}" 
+                     class="chat-row-avatar" 
+                     onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${m.user_id}'">
             </div>
             <div class="chat-content-block">
                 <div class="msg-header">
@@ -629,21 +644,18 @@ render(m) {
             </div>
         </div>`;
 
-    // Функция открытия мини-профиля по центру
+    // Логика поповера (мини-профиля)
     const openPop = async (e) => {
         e.stopPropagation();
         const pop = document.getElementById('user-popover');
         if (!pop) return;
 
-        // 1. Показываем и центрируем (transform гарантирует центр независимо от размера окна)
         pop.style.display = 'block';
         pop.style.position = 'fixed';
         pop.style.top = '50%';
         pop.style.left = '50%';
         pop.style.transform = 'translate(-50%, -50%)';
-        pop.style.margin = '0';
 
-        // 2. Загрузка данных
         const { data: p } = await window.Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
         if (p) {
             const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
@@ -658,49 +670,33 @@ render(m) {
 
             for (const [id, val] of Object.entries(updates)) {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.innerText = val;
-                    if (id === 'pop-nick') {
-                        el.style.color = rank.color;
-                        el.style.textShadow = `0 0 10px ${rank.color}`;
-                    }
-                }
+                if (el) el.innerText = val;
             }
+            
             const popAva = document.getElementById('pop-avatar');
-            // Если в профиле нет фото, используем робота
-            if (popAva) popAva.src = p.avatar_url || window.Core.getAvatar(m.user_id);
+            if (popAva) {
+                // Для поповера используем ту же логику: если в профиле имя файла, делаем из него ссылку
+                let pAva = p.avatar_url;
+                if (pAva && !pAva.startsWith('http')) {
+                    pAva = `https://ebjsxlympwocluxgmwcu.supabase.co/storage/v1/object/public/avatars/${pAva}`;
+                }
+                popAva.src = pAva || window.Core.getAvatar(m.user_id);
+            }
         }
     };
 
-    // Назначаем события
     const avWrapper = d.querySelector('.avatar-wrapper');
     const nickBtn = d.querySelector('.msg-nick');
     if (avWrapper) avWrapper.onclick = openPop;
     if (nickBtn) nickBtn.onclick = openPop;
 
-    // Удаление своего сообщения (ПКМ)
     if (isMy) {
         d.oncontextmenu = async (e) => {
             e.preventDefault();
             const ok = await window.Core.CustomConfirm("TERMINATE_DATA_STREAM?");
             if (ok) {
-                d.style.opacity = '0.3';
-                d.style.pointerEvents = 'none';
-
-                const { error } = await window.Core.sb
-                    .from('comments')
-                    .delete()
-                    .eq('id', m.id)
-                    .eq('user_id', currentUserId);
-
-                if (!error) {
-                    d.remove();
-                    window.Core.Msg("SIGNAL_TERMINATED");
-                } else {
-                    d.style.opacity = '1';
-                    d.style.pointerEvents = 'auto';
-                    window.Core.Msg("DELETION_ERROR", "error");
-                }
+                const { error } = await window.Core.sb.from('comments').delete().eq('id', m.id).eq('user_id', currentUserId);
+                if (!error) d.remove();
             }
         };
     }
