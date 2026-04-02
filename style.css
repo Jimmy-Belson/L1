@@ -1597,3 +1597,21 @@ html, body {
     transform: scale(1.1);
     box-shadow: 0 0 15px #0ff;
 }
+
+.my-msg {
+    background: rgba(0, 255, 157, 0.05);
+    border-left: 2px solid var(--n);
+}
+
+/* Ники и аватары теперь показывают, что на них можно кликнуть */
+.msg-nick:hover, .chat-row-avatar:hover {
+    filter: brightness(1.5);
+    text-shadow: 0 0 10px #0ff;
+}
+
+/* Состояние перетаскивания */
+.task.dragging {
+    opacity: 0.5;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px dashed #0ff;
+}

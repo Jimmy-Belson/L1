@@ -337,7 +337,6 @@ async UpdateCombatScore(newScore) {
 },
 
 Todo: {
-    // Хранилище для локальной сортировки без перезапроса к БД
     items: [],
 
     async load() {
@@ -353,57 +352,60 @@ Todo: {
         if (list) { 
             list.innerHTML = ''; 
             this.items = data;
-            // Рендерим с задержкой для эффекта "потоковой загрузки"
+
+            // ВНЕДРЕНО: Умный Drag & Drop на контейнер
+            list.ondragover = (e) => {
+                e.preventDefault();
+                const dragging = document.querySelector('.dragging');
+                const target = e.target.closest('.task');
+                
+                if (target && target !== dragging) {
+                    const rect = target.getBoundingClientRect();
+                    // Вычисляем, выше или ниже центра цели находится курсор
+                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    list.insertBefore(dragging, next ? target.nextSibling : target);
+                }
+            };
+
             data.forEach((t, i) => {
                 setTimeout(() => this.render(t), i * 50);
             });
         }
     },
 
-render(t) {
+    render(t) {
         const list = document.getElementById('todo-list'); 
         if (!list) return;
 
-        // ВАЖНО: Добавляем обработчик на контейнер ОДИН РАЗ, если его нет
-        if (!list.dataset.dragHandler) {
-            list.ondragover = (e) => e.preventDefault();
-            list.ondrop = (e) => {
-                e.preventDefault();
-                const id = e.dataTransfer.getData('text/plain');
-                const draggableElement = document.getElementById(`task-${id}`);
-                const dropzone = e.target.closest('.task');
-                if (dropzone && draggableElement !== dropzone) {
-                    list.insertBefore(draggableElement, dropzone);
-                    // Здесь можно добавить сохранение порядка в БД, если нужно
-                }
-            };
-            list.dataset.dragHandler = "true";
-        }
+        const d = document.createElement('div');
+        d.className = `task ${t.is_completed ? 'completed' : ''}`;
+        d.id = `task-${t.id}`;
+        d.draggable = true; 
 
-const d = document.createElement('div');
-d.className = `task ${t.is_completed ? 'completed' : ''}`;
-d.id = `task-${t.id}`;
-d.draggable = true; 
+        const dateStr = t.deadline ? 
+            `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
 
-// ИСПРАВЛЕНО: Теперь это строка в обратных кавычках
-const dateStr = t.deadline ? 
-    `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
+        d.innerHTML = `
+            <div class="task-drag-handle" style="cursor: grab;">::</div>
+            <div class="task-content">
+                <span class="task-text">> ${t.task.toUpperCase()}</span>
+                ${dateStr}
+            </div>
+            <div class="task-status-icon"></div>
+        `;
 
-d.innerHTML = `
-    <div class="task-drag-handle" style="cursor: grab;">::</div>
-    <div class="task-content">
-        <span class="task-text">> ${t.task.toUpperCase()}</span>
-        ${dateStr}
-    </div>
-    <div class="task-status-icon"></div>
-`;
+        // ВНЕДРЕНО: Улучшенные события Drag & Drop
+        d.ondragstart = (e) => {
+            d.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', t.id);
+            // Чтобы призрачный элемент при перетаскивании выглядел аккуратно
+            e.dataTransfer.effectAllowed = 'move';
+        };
 
-// Логика Drag & Drop
-d.ondragstart = (e) => {
-    d.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', t.id);
-};
-d.ondragend = () => d.classList.remove('dragging');
+        d.ondragend = () => {
+            d.classList.remove('dragging');
+            // Здесь можно вызвать функцию сохранения нового порядка в Supabase, если нужно
+        };
 
         d.onclick = async (e) => {
             if (e.target.classList.contains('task-drag-handle')) return;
@@ -412,14 +414,11 @@ d.ondragend = () => d.classList.remove('dragging');
             await window.Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
         };
 
-        // УДАЛЕНИЕ С АНИМАЦИЕЙ
         d.oncontextmenu = async (ev) => {
             ev.preventDefault();
             const confirmed = await window.Core.CustomConfirm("ERASE_OBJECTIVE?");
             if (confirmed) {
-                // Запускаем анимацию ДО удаления
                 d.classList.add('removing-task'); 
-                
                 setTimeout(async () => {
                     const { error } = await window.Core.sb.from('todo').delete().eq('id', t.id);
                     if (!error) {
@@ -428,7 +427,7 @@ d.ondragend = () => d.classList.remove('dragging');
                     } else {
                         d.classList.remove('removing-task');
                     }
-                }, 400); // Время должно совпадать с CSS transition
+                }, 400);
             }
         };
 
@@ -569,76 +568,74 @@ async send() {
     }
 },
 
-render(m) {
-    const s = document.getElementById('chat-stream'); 
-    if (!s || document.getElementById(`msg-${m.id}`)) return;
+    render(m) {
+        const s = document.getElementById('chat-stream'); 
+        if (!s || document.getElementById(`msg-${m.id}`)) return;
 
-    let avatar = Core.getAvatar(m.user_id, m.avatar_url);
-    const isMy = m.user_id === Core.user?.id;
+        const isMy = m.user_id === Core.user?.id;
+        const avatar = Core.getAvatar(m.user_id, m.avatar_url);
+        const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-    const d = document.createElement('div'); 
-    d.id = `msg-${m.id}`;
-    // Класс my-msg для твоих сообщений
-    d.className = `msg-container new-msg ${isMy ? 'my-msg' : ''}`;
-    
-    const time = new Date(m.created_at).toLocaleTimeString('ru-RU', {
-        hour: '2-digit', minute: '2-digit', hour12: false 
-    });
-
-    d.innerHTML = `
-        <div class="chat-row-layout">
-            <div class="avatar-wrapper">
-                <img src="${avatar}" class="chat-row-avatar" style="cursor:pointer" referrerpolicy="no-referrer">
-                <div class="avatar-glow"></div>
-            </div>
-            <div class="chat-content-block">
-                <div class="msg-header">
-                    <span class="msg-nick" style="color:${isMy ? 'var(--n)' : '#0ff'}; cursor:pointer; text-decoration: underline dotted transparent; transition: 0.2s;">
-                        ${m.nickname.toUpperCase()}
-                    </span>
-                    <span class="msg-time">${time}</span>
-                </div>
-                <div class="msg-text">${m.message}</div>
-            </div>
-        </div>`;
-
-    // Клик по нику/аватару (Поп-ап)
-    const triggerElements = d.querySelectorAll('.chat-row-avatar, .msg-nick');
-    triggerElements.forEach(el => {
-        // Подсветка при наведении
-        el.onmouseenter = () => { el.style.textDecorationColor = isMy ? 'var(--n)' : '#0ff'; };
-        el.onmouseleave = () => { el.style.textDecorationColor = 'transparent'; };
+        const d = document.createElement('div'); 
+        d.id = `msg-${m.id}`;
+        d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
         
-        el.onclick = async (e) => {
+        d.innerHTML = `
+            <div class="chat-row-layout">
+                <div class="avatar-wrapper" style="cursor:pointer">
+                    <img src="${avatar}" class="chat-row-avatar">
+                </div>
+                <div class="chat-content-block">
+                    <div class="msg-header">
+                        <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">
+                            ${m.nickname.toUpperCase()}
+                        </span>
+                        <span class="msg-time">${time}</span>
+                    </div>
+                    <div class="msg-text">${m.message}</div>
+                </div>
+            </div>`;
+
+        // ЛОГИКА ПОП-АПА (ИНФО О ПИЛОТЕ)
+        const openPop = async (e) => {
             e.stopPropagation();
             const pop = document.getElementById('user-popover');
             if (!pop) return;
-            pop.style.display = 'block';
-            // ... (дальше твоя логика загрузки профиля)
-        };
-    });
 
-    // УДАЛЕНИЕ ДЛЯ СЕБЯ
-    if (isMy) {
-        d.oncontextmenu = async (e) => {
-            e.preventDefault();
-            const confirmed = await window.Core.CustomConfirm("ERASE_DATA_STREAM?");
-            if (confirmed) {
-                const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
-                if (!error) {
-                    d.style.opacity = '0';
-                    d.style.transform = 'translateX(-20px)';
-                    setTimeout(() => d.remove(), 300);
-                    Core.Msg("DATA_STREAM_ERASED");
-                }
+            pop.style.display = 'block';
+            pop.style.left = Math.min(e.pageX, window.innerWidth - 300) + 'px';
+            pop.style.top = Math.min(e.pageY, window.innerHeight - 400) + 'px';
+
+            const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+            if (p) {
+                const rank = getRankByScore(p.combat_score || 0);
+                document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN").toUpperCase();
+                document.getElementById('pop-nick').style.color = rank.color;
+                document.getElementById('pop-rank').innerText = rank.name;
+                document.getElementById('pop-avatar').src = p.avatar_url || avatar;
+                // Заполни остальные поля (kills, msgs) по аналогии
             }
         };
-    }
 
-    s.appendChild(d);
-    s.scrollTo({ top: s.scrollHeight, behavior: 'smooth' });
+        d.querySelector('.avatar-wrapper').onclick = openPop;
+        d.querySelector('.msg-nick').onclick = openPop;
+
+        // УДАЛЕНИЕ (ПКМ)
+        if (isMy) {
+            d.oncontextmenu = async (e) => {
+                e.preventDefault();
+                const ok = await Core.CustomConfirm("TERMINATE_DATA_STREAM?");
+                if (ok) {
+                    const { error } = await Core.sb.from('comments').delete().eq('id', m.id);
+                    if (!error) d.remove();
+                }
+            };
+        }
+
+        s.appendChild(d);
+        s.scrollTop = s.scrollHeight;
+    }
 },
-}, // Запятая здесь важна!
 
 UI() {
     const todoIn = document.getElementById('todo-in');
@@ -1002,7 +999,12 @@ loop() {
     }
 };
 
-
+window.addEventListener('click', (e) => {
+    const pop = document.getElementById('user-popover');
+    if (pop && !pop.contains(e.target)) {
+        pop.style.display = 'none';
+    }
+});
 
 
 
