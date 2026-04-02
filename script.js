@@ -631,49 +631,50 @@ render(m) {
         </div>`;
 
     // 3. ЛОГИКА ИНФОРМАЦИОННОГО ПОП-АПА
-    const openPop = async (e) => {
-        e.stopPropagation();
-        const pop = document.getElementById('user-popover');
-        if (!pop) return;
+const openPop = async (e) => {
+    e.stopPropagation();
+    const pop = document.getElementById('user-popover');
+    if (!pop) return;
 
-        pop.style.display = 'block';
+    // 1. Сначала показываем, чтобы браузер мог рассчитать ширину/высоту (offsetWidth)
+    pop.style.display = 'block';
+    pop.style.position = 'fixed'; // Используем fixed для центровки относительно экрана
+
+    // 2. Расчет центра экрана минус половина размера самого окна профиля
+    const left = (window.innerWidth / 2) - (pop.offsetWidth / 2);
+    const top = (window.innerHeight / 2) - (pop.offsetHeight / 2);
+
+    // 3. Применяем координаты
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+
+    // 4. Загрузка данных (твой существующий код)
+    const { data: p } = await window.Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+    if (p) {
+        const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
         
-        let left = e.pageX - (pop.offsetWidth / 2);
-        let top = e.pageY - (pop.offsetHeight / 2);
-        left = Math.max(10, Math.min(left, window.innerWidth - pop.offsetWidth - 10));
-        top = Math.max(10, Math.min(top, window.innerHeight - pop.offsetHeight - 10));
+        const updates = {
+            'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
+            'pop-rank': rank.name,
+            'pop-kills': p.kills_astronauts || 0,
+            'pop-msgs': p.message_count || 0,
+            'pop-score': p.combat_score || 0
+        };
 
-        pop.style.left = `${left}px`;
-        pop.style.top = `${top}px`;
-
-        // Загружаем актуальную статистику пилота из профиля
-        const { data: p } = await window.Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
-        if (p) {
-            // Импортированная функция ранга (должна быть доступна глобально или в модуле)
-            const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
-            
-            const updates = {
-                'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
-                'pop-rank': rank.name,
-                'pop-kills': p.kills_astronauts || 0,
-                'pop-msgs': p.message_count || 0,
-                'pop-score': p.combat_score || 0
-            };
-
-            for (const [id, val] of Object.entries(updates)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.innerText = val;
-                    if (id === 'pop-nick') {
-                        el.style.color = rank.color;
-                        el.style.textShadow = `0 0 10px ${rank.color}`;
-                    }
+        for (const [id, val] of Object.entries(updates)) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = val;
+                if (id === 'pop-nick') {
+                    el.style.color = rank.color;
+                    el.style.textShadow = `0 0 10px ${rank.color}`;
                 }
             }
-            const popAva = document.getElementById('pop-avatar');
-            if (popAva) popAva.src = p.avatar_url || avatar;
         }
-    };
+        const popAva = document.getElementById('pop-avatar');
+        if (popAva) popAva.src = p.avatar_url || avatar;
+    }
+};
 
     // Назначаем события клика
     const avWrapper = d.querySelector('.avatar-wrapper');
