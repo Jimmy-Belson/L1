@@ -380,28 +380,30 @@ render(t) {
             list.dataset.dragHandler = "true";
         }
 
-        const d = document.createElement('div');
-        d.className = `task ${t.is_completed ? 'completed' : ''}`;
-        d.id = `task-${t.id}`;
-        d.draggable = true; 
+const d = document.createElement('div');
+d.className = `task ${t.is_completed ? 'completed' : ''}`;
+d.id = `task-${t.id}`;
+d.draggable = true; 
 
-        const dateStr = t.deadline ? 
-            <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span> : '';
+// ИСПРАВЛЕНО: Теперь это строка в обратных кавычках
+const dateStr = t.deadline ? 
+    `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
 
-        d.innerHTML = `
-            <div class="task-drag-handle" style="cursor: grab;">::</div>
-            <div class="task-content">
-                <span class="task-text">> ${t.task.toUpperCase()}</span>
-                ${dateStr}
-            </div>
-            <div class="task-status-icon"></div>
-        `;
-        
-        d.ondragstart = (e) => {
-            d.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', t.id);
-        };
-        d.ondragend = () => d.classList.remove('dragging');
+d.innerHTML = `
+    <div class="task-drag-handle" style="cursor: grab;">::</div>
+    <div class="task-content">
+        <span class="task-text">> ${t.task.toUpperCase()}</span>
+        ${dateStr}
+    </div>
+    <div class="task-status-icon"></div>
+`;
+
+// Логика Drag & Drop
+d.ondragstart = (e) => {
+    d.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', t.id);
+};
+d.ondragend = () => d.classList.remove('dragging');
 
         d.onclick = async (e) => {
             if (e.target.classList.contains('task-drag-handle')) return;
