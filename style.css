@@ -1609,9 +1609,12 @@ html, body {
     text-shadow: 0 0 10px #0ff;
 }
 
-/* Состояние перетаскивания */
 .task.dragging {
     opacity: 0.5;
-    background: rgba(0, 255, 255, 0.1);
     border: 1px dashed #0ff;
+    transform: scale(0.98);
+}
+
+#todo-list {
+    transition: all 0.3s ease;
 }

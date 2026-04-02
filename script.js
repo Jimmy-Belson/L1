@@ -20,12 +20,14 @@ const Core = {
     },
 
 getAvatar(user_id, current_avatar) {
-    // 1. Если передана реальная ссылка (не робот и не заглушка) — возвращаем её
+    // Если есть нормальная ссылка — берем её
     if (current_avatar && current_avatar.length > 15 && !current_avatar.includes('dicebear')) {
         return current_avatar;
     }
-    // 2. Иначе генерируем робота
-    return `https://api.dicebear.com/7.x/bottts/svg?seed=${user_id}&backgroundColor=001a2d`;
+    // Если нет — генерируем робота по ID (чтобы у каждого юзера был свой уникальный робот)
+    // Важно: используем fallback на случай если user_id пришел битый
+    const seed = user_id || Math.random().toString(36).substring(7);
+    return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
 },
 
 Msg(text, type = 'info') {
@@ -334,97 +336,38 @@ async UpdateCombatScore(newScore) {
 Todo: {
     items: [],
 
-async load() {
-    if (!window.Core.user) return;
-    
-    const { data, error } = await window.Core.sb.from('todo')
-        .select('*')
-        .eq('user_id', window.Core.user.id) 
-        .order('id', { ascending: false });
+    async load() {
+        if (!window.Core.user) return;
+        
+        const { data, error } = await window.Core.sb.from('todo')
+            .select('*')
+            .eq('user_id', window.Core.user.id) 
+            .order('id', { ascending: false });
 
-    if (error) return console.error("TODO_LOAD_ERR:", error);
-    
-    const list = document.getElementById('todo-list');
-    if (!list) return;
-
-    list.innerHTML = ''; 
-    this.items = data;
-
-    // Создаем "виртуальный" контейнер для мгновенной вставки
-    const fragment = document.createDocumentFragment();
-    data.forEach(t => {
-        fragment.appendChild(this.createTaskNode(t));
-    });
-
-    list.appendChild(fragment);
-},
-
-// Вспомогательный метод, который возвращает готовый HTML-элемент (Node)
-createTaskNode(t) {
-    const d = document.createElement('div');
-    d.className = `task ${t.is_completed ? 'completed' : ''}`;
-    d.id = `task-${t.id}`;
-    d.draggable = true; 
-
-    const dateStr = t.deadline ? 
-        `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
-
-    d.innerHTML = `
-        <div class="task-drag-handle" style="cursor: grab;">::</div>
-        <div class="task-content">
-            <span class="task-text">> ${t.task.toUpperCase()}</span>
-            ${dateStr}
-        </div>
-        <div class="task-status-icon"></div>
-    `;
-
-    // Логика Drag & Drop
-    d.ondragstart = (e) => {
-        d.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', t.id);
-    };
-    d.ondragend = () => d.classList.remove('dragging');
-
-    // Клик (выполнение)
-    d.onclick = async (e) => {
-        if (e.target.classList.contains('task-drag-handle')) return;
-        const newState = !d.classList.contains('completed');
-        d.classList.toggle('completed');
-        await window.Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
-    };
-
-    // ПКМ (удаление)
-    d.oncontextmenu = async (ev) => {
-        ev.preventDefault();
-        const confirmed = await window.Core.CustomConfirm("ERASE_OBJECTIVE?");
-        if (confirmed) {
-            d.classList.add('removing-task'); 
-            setTimeout(async () => {
-                const { error } = await window.Core.sb.from('todo').delete().eq('id', t.id);
-                if (!error) {
-                    d.remove();
-                    window.Core.Msg("OBJECTIVE_TERMINATED");
-                } else {
-                    d.classList.remove('removing-task');
-                }
-            }, 400);
-        }
-    };
-
-    return d;
-},
-
-    render(t) {
-        const list = document.getElementById('todo-list'); 
+        if (error) return console.error("TODO_LOAD_ERR:", error);
+        
+        const list = document.getElementById('todo-list');
         if (!list) return;
 
+        list.innerHTML = ''; 
+        this.items = data;
+
+        const fragment = document.createDocumentFragment();
+        data.forEach(t => fragment.appendChild(this.createTaskNode(t)));
+        list.appendChild(fragment);
+
+        // Инициализируем логику перемещения для контейнера
+        this.initDragLogic(list);
+    },
+
+    createTaskNode(t) {
         const d = document.createElement('div');
         d.className = `task ${t.is_completed ? 'completed' : ''}`;
         d.id = `task-${t.id}`;
         d.draggable = true; 
 
         const dateStr = t.deadline ? 
-            `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
+            <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span> : '';
 
         d.innerHTML = `
             <div class="task-drag-handle" style="cursor: grab;">::</div>
@@ -435,19 +378,20 @@ createTaskNode(t) {
             <div class="task-status-icon"></div>
         `;
 
-        // ВНЕДРЕНО: Улучшенные события Drag & Drop
+        // События Drag
         d.ondragstart = (e) => {
             d.classList.add('dragging');
             e.dataTransfer.setData('text/plain', t.id);
-            // Чтобы призрачный элемент при перетаскивании выглядел аккуратно
             e.dataTransfer.effectAllowed = 'move';
         };
 
         d.ondragend = () => {
             d.classList.remove('dragging');
-            // Здесь можно вызвать функцию сохранения нового порядка в Supabase, если нужно
+            // Здесь можно вызвать сохранение порядка в БД, если добавишь колонку position
+            window.Core.Msg("OBJECTIVE_REORDERED");
         };
 
+        // Клик (выполнение)
         d.onclick = async (e) => {
             if (e.target.classList.contains('task-drag-handle')) return;
             const newState = !d.classList.contains('completed');
@@ -455,6 +399,7 @@ createTaskNode(t) {
             await window.Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
         };
 
+        // ПКМ (удаление)
         d.oncontextmenu = async (ev) => {
             ev.preventDefault();
             const confirmed = await window.Core.CustomConfirm("ERASE_OBJECTIVE?");
@@ -472,7 +417,43 @@ createTaskNode(t) {
             }
         };
 
-        list.prepend(d); 
+        return d;
+    },
+
+    // Логика перемещения внутри списка
+    initDragLogic(list) {
+        list.addEventListener('dragover', e => {
+            e.preventDefault();
+            const afterElement = this.getDragAfterElement(list, e.clientY);
+            const dragging = document.querySelector('.dragging');
+            if (afterElement == null) {
+                list.appendChild(dragging);
+            } else {
+                list.insertBefore(dragging, afterElement);
+            }
+        });
+    },
+
+    // Вспомогательная функция для определения позиции вставки
+    getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    },
+
+    render(t) {
+        const list = document.getElementById('todo-list'); 
+        if (!list) return;
+        const node = this.createTaskNode(t);
+        list.prepend(node); // Новые задачи всегда в начало
     },
 
     async add(val, date) {
@@ -492,7 +473,6 @@ createTaskNode(t) {
             if (data && data[0]) {
                 this.render(data[0]);
                 core.Msg("MISSION_ESTABLISHED", "info");
-                // Скролл к новой задаче
                 const list = document.getElementById('todo-list');
                 list.scrollTo({ top: 0, behavior: 'smooth' });
             }
@@ -501,7 +481,6 @@ createTaskNode(t) {
         }
     }
 },
-
 
 
 
