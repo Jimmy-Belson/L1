@@ -154,11 +154,13 @@ async loadAppData() {
         this.SyncProfile(this.user);
     } catch (e) { console.warn("Load Fail"); }
 
-    if (document.getElementById('todo-list')) await this.Todo.load();
-    if (document.getElementById('chat-stream')) {
-        await this.Chat.load();
-        this.Chat.subscribe();
-    }
+    // ЗАПУСКАЕМ ПАРАЛЛЕЛЬНО (без await перед каждым)
+    Promise.all([
+        this.Todo.load(),
+        this.Chat.load()
+    ]).then(() => {
+        if (this.Chat.subscribe) this.Chat.subscribe();
+    });
 },
 
 // Добавь эту вспомогательную функцию внутри Core
@@ -339,39 +341,106 @@ async UpdateCombatScore(newScore) {
 Todo: {
     items: [],
 
-    async load() {
-        if (!window.Core.user) return;
-        const { data, error } = await window.Core.sb.from('todo')
-            .select('*')
-            .eq('user_id', window.Core.user.id) 
-            .order('id', { ascending: false });
+async load() {
+    if (!window.Core.user) return;
+    
+    // 1. Запрос к базе данных
+    const { data, error } = await window.Core.sb.from('todo')
+        .select('*')
+        .eq('user_id', window.Core.user.id) 
+        .order('id', { ascending: false });
 
-        if (error) return console.error("TODO_LOAD_ERR:", error);
+    if (error) return console.error("TODO_LOAD_ERR:", error);
+    
+    const list = document.getElementById('todo-list');
+    if (!list) return;
+
+    // 2. Очистка и подготовка
+    list.innerHTML = ''; 
+    this.items = data;
+
+    // Настройка Drag & Drop на контейнере (делаем один раз)
+    list.ondragover = (e) => {
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        const target = e.target.closest('.task');
         
-        const list = document.getElementById('todo-list');
-        if (list) { 
-            list.innerHTML = ''; 
-            this.items = data;
-
-            // ВНЕДРЕНО: Умный Drag & Drop на контейнер
-            list.ondragover = (e) => {
-                e.preventDefault();
-                const dragging = document.querySelector('.dragging');
-                const target = e.target.closest('.task');
-                
-                if (target && target !== dragging) {
-                    const rect = target.getBoundingClientRect();
-                    // Вычисляем, выше или ниже центра цели находится курсор
-                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-                    list.insertBefore(dragging, next ? target.nextSibling : target);
-                }
-            };
-
-            data.forEach((t, i) => {
-                setTimeout(() => this.render(t), i * 50);
-            });
+        if (target && target !== dragging) {
+            const rect = target.getBoundingClientRect();
+            const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+            list.insertBefore(dragging, next ? target.nextSibling : target);
         }
-    },
+    };
+
+    // 3. УСКОРЕННЫЙ РЕНДЕР: Используем Fragment
+    const fragment = document.createDocumentFragment();
+
+    data.forEach(t => {
+        // Создаем DOM-элемент задачи через отдельную функцию
+        const taskNode = this.createTaskNode(t);
+        fragment.appendChild(taskNode);
+    });
+
+    // Вставляем всё дерево задач за одну операцию
+    list.appendChild(fragment);
+    
+    console.log(`RENDER_COMPLETE: ${data.length} OBJECTIVES_LOADED`);
+},
+
+// Вспомогательный метод, который возвращает готовый HTML-элемент (Node)
+createTaskNode(t) {
+    const d = document.createElement('div');
+    d.className = `task ${t.is_completed ? 'completed' : ''}`;
+    d.id = `task-${t.id}`;
+    d.draggable = true; 
+
+    const dateStr = t.deadline ? 
+        `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
+
+    d.innerHTML = `
+        <div class="task-drag-handle" style="cursor: grab;">::</div>
+        <div class="task-content">
+            <span class="task-text">> ${t.task.toUpperCase()}</span>
+            ${dateStr}
+        </div>
+        <div class="task-status-icon"></div>
+    `;
+
+    // Логика Drag & Drop
+    d.ondragstart = (e) => {
+        d.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', t.id);
+    };
+    d.ondragend = () => d.classList.remove('dragging');
+
+    // Клик (выполнение)
+    d.onclick = async (e) => {
+        if (e.target.classList.contains('task-drag-handle')) return;
+        const newState = !d.classList.contains('completed');
+        d.classList.toggle('completed');
+        await window.Core.sb.from('todo').update({ is_completed: newState }).eq('id', t.id);
+    };
+
+    // ПКМ (удаление)
+    d.oncontextmenu = async (ev) => {
+        ev.preventDefault();
+        const confirmed = await window.Core.CustomConfirm("ERASE_OBJECTIVE?");
+        if (confirmed) {
+            d.classList.add('removing-task'); 
+            setTimeout(async () => {
+                const { error } = await window.Core.sb.from('todo').delete().eq('id', t.id);
+                if (!error) {
+                    d.remove();
+                    window.Core.Msg("OBJECTIVE_TERMINATED");
+                } else {
+                    d.classList.remove('removing-task');
+                }
+            }, 400);
+        }
+    };
+
+    return d;
+},
 
     render(t) {
         const list = document.getElementById('todo-list'); 
@@ -597,25 +666,54 @@ async send() {
             </div>`;
 
         // ЛОГИКА ПОП-АПА (ИНФО О ПИЛОТЕ)
-        const openPop = async (e) => {
-            e.stopPropagation();
-            const pop = document.getElementById('user-popover');
-            if (!pop) return;
+const openPop = async (e) => {
+    e.stopPropagation();
+    const pop = document.getElementById('user-popover');
+    if (!pop) return;
 
-            pop.style.display = 'block';
-            pop.style.left = Math.min(e.pageX, window.innerWidth - 300) + 'px';
-            pop.style.top = Math.min(e.pageY, window.innerHeight - 400) + 'px';
+    pop.style.display = 'block';
 
-            const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
-            if (p) {
-                const rank = getRankByScore(p.combat_score || 0);
-                document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN").toUpperCase();
-                document.getElementById('pop-nick').style.color = rank.color;
-                document.getElementById('pop-rank').innerText = rank.name;
-                document.getElementById('pop-avatar').src = p.avatar_url || avatar;
-                // Заполни остальные поля (kills, msgs) по аналогии
-            }
+    // 1. УМНАЯ ЦЕНТРОВКА
+    // Вычисляем координаты так, чтобы центр поп-апа был на курсоре
+    let left = e.pageX - (pop.offsetWidth / 2);
+    let top = e.pageY - (pop.offsetHeight / 2);
+
+    // Ограничиваем, чтобы не улетало за края экрана
+    left = Math.max(10, Math.min(left, window.innerWidth - pop.offsetWidth - 10));
+    top = Math.max(10, Math.min(top, window.innerHeight - pop.offsetHeight - 10));
+
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+
+    // 2. ЗАГРУЗКА СТАТИСТИКИ
+    const { data: p } = await Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+    if (p) {
+        const rank = getRankByScore(p.combat_score || 0);
+        
+        // Мапим данные на элементы (убедись, что ID в HTML совпадают)
+        const updates = {
+            'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
+            'pop-rank': rank.name,
+            'pop-kills': p.kills_astronauts || 0,
+            'pop-msgs': p.message_count || 0,
+            'pop-score': p.combat_score || 0
         };
+
+        for (const [id, val] of Object.entries(updates)) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = val;
+                if (id === 'pop-nick') {
+                    el.style.color = rank.color;
+                    el.style.textShadow = `0 0 10px ${rank.color}`;
+                }
+            }
+        }
+        
+        const popAva = document.getElementById('pop-avatar');
+        if (popAva) popAva.src = p.avatar_url || avatar;
+    }
+};
 
         d.querySelector('.avatar-wrapper').onclick = openPop;
         d.querySelector('.msg-nick').onclick = openPop;
