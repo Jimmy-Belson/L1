@@ -592,42 +592,48 @@ async send() {
     const val = i.value;
     i.value = ''; 
 
-    // Берем данные, которые мы сохранили в init()
-    const profile = core.userProfile || { 
-        nickname: core.user.email.split('@')[0], 
-        avatar_url: core.getAvatar(core.user.id) 
-    };
+    // ГАРАНТИРОВАННОЕ ПОЛУЧЕНИЕ ДАННЫХ
+    // Пытаемся взять из кэша профиля, если нет — из сессии, если нет — дефолт
+    const nickname = core.userProfile?.nickname || 
+                     (core.user.user_metadata?.nickname) || 
+                     core.user.email.split('@')[0];
+                     
+    const avatar = core.userProfile?.avatar_url || 
+                   core.getAvatar(core.user.id);
 
     try {
         const { data, error } = await core.sb.from('comments').insert([{
             message: val, 
-            nickname: profile.nickname, 
-            avatar_url: profile.avatar_url, 
+            nickname: nickname, 
+            avatar_url: avatar, 
             user_id: core.user.id
         }]).select();
 
         if (error) throw error;
 
         if (data && data[0]) {
-            core.Chat.render(data[0]);
+            // Рендерим свое сообщение сразу
+            this.render(data[0]);
             core.UpdateStat('message_count', 1);
         }
     } catch (err) {
         console.error("CHAT_SEND_ERROR:", err);
         core.Msg("SIGNAL_LOST", "error");
-        i.value = val; 
+        i.value = val; // Возвращаем текст в инпут при ошибке
     }
 },
 
 render(m) {
     const s = document.getElementById('chat-stream'); 
-    // Если чат не найден или сообщение уже отрисовано — выходим
     if (!s || document.getElementById(`msg-${m.id}`)) return;
 
-    // 1. ОПРЕДЕЛЯЕМ АВТОРСТВО (Важно: используем опциональную цепочку)
+    // 1. ОПРЕДЕЛЯЕМ ПАРАМЕТРЫ ПИЛОТА
+    // Берем данные из объекта сообщения (m), либо генерируем дефолтные
     const currentUserId = window.Core.user?.id;
     const isMy = m.user_id === currentUserId;
     
+    // Безопасное получение ника и аватара (если в базе NULL — ставим заглушки)
+    const displayNick = (m.nickname || "PILOT_UNKNOWN").toUpperCase();
     const avatar = window.Core.getAvatar(m.user_id, m.avatar_url);
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -635,7 +641,7 @@ render(m) {
     d.id = `msg-${m.id}`;
     d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
     
-    // 2. ВЕРСТКА СООБЩЕНИЯ
+    // 2. ГЕНЕРАЦИЯ ИНТЕРФЕЙСА СООБЩЕНИЯ
     d.innerHTML = `
         <div class="chat-row-layout">
             <div class="avatar-wrapper" style="cursor:pointer">
@@ -644,7 +650,7 @@ render(m) {
             <div class="chat-content-block">
                 <div class="msg-header">
                     <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">
-                        ${(m.nickname || 'UNKNOWN').toUpperCase()}
+                        ${displayNick}
                     </span>
                     <span class="msg-time">${time}</span>
                 </div>
@@ -652,7 +658,7 @@ render(m) {
             </div>
         </div>`;
 
-    // 3. ЛОГИКА ПОП-АПА (ИНФО О ПИЛОТЕ)
+    // 3. ЛОГИКА ИНФОРМАЦИОННОГО ПОП-АПА
     const openPop = async (e) => {
         e.stopPropagation();
         const pop = document.getElementById('user-popover');
@@ -660,7 +666,6 @@ render(m) {
 
         pop.style.display = 'block';
         
-        // Центрируем поп-ап относительно клика
         let left = e.pageX - (pop.offsetWidth / 2);
         let top = e.pageY - (pop.offsetHeight / 2);
         left = Math.max(10, Math.min(left, window.innerWidth - pop.offsetWidth - 10));
@@ -669,10 +674,12 @@ render(m) {
         pop.style.left = `${left}px`;
         pop.style.top = `${top}px`;
 
-        // Загрузка данных профиля из базы
+        // Загружаем актуальную статистику пилота из профиля
         const { data: p } = await window.Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
         if (p) {
-            const rank = getRankByScore(p.combat_score || 0);
+            // Импортированная функция ранга (должна быть доступна глобально или в модуле)
+            const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
+            
             const updates = {
                 'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
                 'pop-rank': rank.name,
@@ -696,21 +703,18 @@ render(m) {
         }
     };
 
-    // Навешиваем клики на аватар и ник
+    // Назначаем события клика
     const avWrapper = d.querySelector('.avatar-wrapper');
     const nickBtn = d.querySelector('.msg-nick');
     if (avWrapper) avWrapper.onclick = openPop;
     if (nickBtn) nickBtn.onclick = openPop;
 
-    // 4. УДАЛЕНИЕ (ПКМ) — ТОЛЬКО ДЛЯ СВОИХ СООБЩЕНИЙ
+    // 4. УДАЛЕНИЕ (ПКМ) — СТРОГО ДЛЯ ВЛАДЕЛЬЦА
     if (isMy) {
         d.oncontextmenu = async (e) => {
             e.preventDefault();
-            e.stopPropagation(); // Чтобы не срабатывали фоновые клики
-
             const ok = await window.Core.CustomConfirm("TERMINATE_DATA_STREAM?");
             if (ok) {
-                // Визуальный эффект удаления (прозрачность)
                 d.style.opacity = '0.3';
                 d.style.pointerEvents = 'none';
 
@@ -718,24 +722,25 @@ render(m) {
                     .from('comments')
                     .delete()
                     .eq('id', m.id)
-                    .eq('user_id', currentUserId); // Безопасность: удаляем только своё
+                    .eq('user_id', currentUserId); // Двойная проверка безопасности
 
                 if (!error) {
                     d.remove();
                     window.Core.Msg("SIGNAL_TERMINATED");
                 } else {
-                    console.error("DEL_ERR:", error);
                     d.style.opacity = '1';
                     d.style.pointerEvents = 'auto';
-                    window.Core.Msg("DELETION_FAILED", "error");
+                    window.Core.Msg("DELETION_ERROR", "error");
                 }
+            }
         };
     }
 
-    // Добавляем в поток и скроллим
+    // 5. ОПТИМИЗИРОВАННЫЙ ВЫВОД
     s.appendChild(d);
+    // Прокручиваем вниз, только если пользователь не читает историю (опционально)
     s.scrollTop = s.scrollHeight;
-    }
+
     }
 },
 
