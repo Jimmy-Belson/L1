@@ -19,13 +19,14 @@ const Core = {
         if (chatWindow) chatWindow.classList.toggle('minimized');
     },
 
-getAvatar(user_id, current_avatar) {
-    // Если нам пришла ссылка (из базы), возвращаем её
-    if (current_avatar && current_avatar.startsWith('http')) {
-        return current_avatar;
+getAvatar(user_id, avatar_url) {
+    // Проверяем, что avatar_url — это валидная строка со ссылкой
+    if (avatar_url && typeof avatar_url === 'string' && avatar_url.startsWith('http')) {
+        return avatar_url;
     }
-    // Если ссылки нет — генерируем робота
-    const seed = user_id || "guest";
+    
+    // Если в базе NULL или пустая строка, генерируем робота по ID
+    const seed = user_id || "guest_" + Math.floor(Math.random() * 1000);
     return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
 },
 
@@ -599,12 +600,10 @@ render(m) {
     const s = document.getElementById('chat-stream'); 
     if (!s || document.getElementById(`msg-${m.id}`)) return;
 
-    // 1. ОПРЕДЕЛЯЕМ ПАРАМЕТРЫ ПИЛОТА
-    // Берем данные из объекта сообщения (m), либо генерируем дефолтные
     const currentUserId = window.Core.user?.id;
     const isMy = m.user_id === currentUserId;
     
-    // Безопасное получение ника и аватара (если в базе NULL — ставим заглушки)
+    // Используем исправленный getAvatar, чтобы аватарки не пропадали
     const displayNick = (m.nickname || "PILOT_UNKNOWN").toUpperCase();
     const avatar = window.Core.getAvatar(m.user_id, m.avatar_url);
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -613,7 +612,6 @@ render(m) {
     d.id = `msg-${m.id}`;
     d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
     
-    // 2. ГЕНЕРАЦИЯ ИНТЕРФЕЙСА СООБЩЕНИЯ
     d.innerHTML = `
         <div class="chat-row-layout">
             <div class="avatar-wrapper" style="cursor:pointer">
@@ -630,59 +628,56 @@ render(m) {
             </div>
         </div>`;
 
-    // 3. ЛОГИКА ИНФОРМАЦИОННОГО ПОП-АПА
-const openPop = async (e) => {
-    e.stopPropagation();
-    const pop = document.getElementById('user-popover');
-    if (!pop) return;
+    // Функция открытия мини-профиля по центру
+    const openPop = async (e) => {
+        e.stopPropagation();
+        const pop = document.getElementById('user-popover');
+        if (!pop) return;
 
-    // 1. Сначала показываем, чтобы браузер мог рассчитать ширину/высоту (offsetWidth)
-    pop.style.display = 'block';
-    pop.style.position = 'fixed'; // Используем fixed для центровки относительно экрана
+        // 1. Показываем и центрируем (transform гарантирует центр независимо от размера окна)
+        pop.style.display = 'block';
+        pop.style.position = 'fixed';
+        pop.style.top = '50%';
+        pop.style.left = '50%';
+        pop.style.transform = 'translate(-50%, -50%)';
+        pop.style.margin = '0';
 
-    // 2. Расчет центра экрана минус половина размера самого окна профиля
-    const left = (window.innerWidth / 2) - (pop.offsetWidth / 2);
-    const top = (window.innerHeight / 2) - (pop.offsetHeight / 2);
+        // 2. Загрузка данных
+        const { data: p } = await window.Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
+        if (p) {
+            const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
+            
+            const updates = {
+                'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
+                'pop-rank': rank.name,
+                'pop-kills': p.kills_astronauts || 0,
+                'pop-msgs': p.message_count || 0,
+                'pop-score': p.combat_score || 0
+            };
 
-    // 3. Применяем координаты
-    pop.style.left = `${left}px`;
-    pop.style.top = `${top}px`;
-
-    // 4. Загрузка данных (твой существующий код)
-    const { data: p } = await window.Core.sb.from('profiles').select('*').eq('id', m.user_id).maybeSingle();
-    if (p) {
-        const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
-        
-        const updates = {
-            'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
-            'pop-rank': rank.name,
-            'pop-kills': p.kills_astronauts || 0,
-            'pop-msgs': p.message_count || 0,
-            'pop-score': p.combat_score || 0
-        };
-
-        for (const [id, val] of Object.entries(updates)) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerText = val;
-                if (id === 'pop-nick') {
-                    el.style.color = rank.color;
-                    el.style.textShadow = `0 0 10px ${rank.color}`;
+            for (const [id, val] of Object.entries(updates)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerText = val;
+                    if (id === 'pop-nick') {
+                        el.style.color = rank.color;
+                        el.style.textShadow = `0 0 10px ${rank.color}`;
+                    }
                 }
             }
+            const popAva = document.getElementById('pop-avatar');
+            // Если в профиле нет фото, используем робота
+            if (popAva) popAva.src = p.avatar_url || window.Core.getAvatar(m.user_id);
         }
-        const popAva = document.getElementById('pop-avatar');
-        if (popAva) popAva.src = p.avatar_url || avatar;
-    }
-};
+    };
 
-    // Назначаем события клика
+    // Назначаем события
     const avWrapper = d.querySelector('.avatar-wrapper');
     const nickBtn = d.querySelector('.msg-nick');
     if (avWrapper) avWrapper.onclick = openPop;
     if (nickBtn) nickBtn.onclick = openPop;
 
-    // 4. УДАЛЕНИЕ (ПКМ) — СТРОГО ДЛЯ ВЛАДЕЛЬЦА
+    // Удаление своего сообщения (ПКМ)
     if (isMy) {
         d.oncontextmenu = async (e) => {
             e.preventDefault();
@@ -695,7 +690,7 @@ const openPop = async (e) => {
                     .from('comments')
                     .delete()
                     .eq('id', m.id)
-                    .eq('user_id', currentUserId); // Двойная проверка безопасности
+                    .eq('user_id', currentUserId);
 
                 if (!error) {
                     d.remove();
@@ -709,12 +704,9 @@ const openPop = async (e) => {
         };
     }
 
-    // 5. ОПТИМИЗИРОВАННЫЙ ВЫВОД
     s.appendChild(d);
-    // Прокручиваем вниз, только если пользователь не читает историю (опционально)
     s.scrollTop = s.scrollHeight;
-
-    }
+}
 },
 
 UI() {
