@@ -572,7 +572,8 @@ async send() {
     const val = i.value;
     i.value = ''; 
 
-    // Берем ник и аватар из загруженного профиля (userProfile)
+    // ВАЖНО: Берем аватарку из профиля. Если ее там нет — ГЕНЕРИРУЕМ робота сразу, 
+    // чтобы в базу улетала готовая ссылка, а не пустота.
     const nickname = core.userProfile?.nickname || core.user.email.split('@')[0];
     const avatar = core.userProfile?.avatar_url || core.getAvatar(core.user.id);
 
@@ -580,7 +581,7 @@ async send() {
         const { data, error } = await core.sb.from('comments').insert([{
             message: val, 
             nickname: nickname, 
-            avatar_url: avatar, // ТЕПЕРЬ ТУТ БУДЕТ ССЫЛКА
+            avatar_url: avatar, // Теперь тут всегда будет либо ссылка, либо робот
             user_id: core.user.id
         }]).select();
 
