@@ -145,22 +145,15 @@ async init() {
 
 // Вынес загрузку данных в отдельный метод, чтобы не блокировать поток
 async loadAppData() {
-    try {
-        const { data: profile } = await this.sb.from('profiles').select('*').eq('id', this.user.id).maybeSingle();
-        this.userProfile = {
-            nickname: profile?.nickname || this.user.email.split('@')[0],
-            avatar_url: profile?.avatar_url || this.getAvatar(this.user.id)
-        };
-        this.SyncProfile(this.user);
-    } catch (e) { console.warn("Load Fail"); }
-
-    // ЗАПУСКАЕМ ПАРАЛЛЕЛЬНО (без await перед каждым)
+    // 1. Запускаем всё ПАРАЛЛЕЛЬНО. Не ждем профиль, чтобы загрузить чат.
     Promise.all([
+        this.SyncProfile(this.user),
         this.Todo.load(),
         this.Chat.load()
     ]).then(() => {
+        // Подписываемся на новые сообщения только когда старые уже отрисованы
         if (this.Chat.subscribe) this.Chat.subscribe();
-    });
+    }).catch(e => console.warn("DATA_LOAD_PARTIAL_FAILURE", e));
 },
 
 // Добавь эту вспомогательную функцию внутри Core
@@ -344,7 +337,6 @@ Todo: {
 async load() {
     if (!window.Core.user) return;
     
-    // 1. Запрос к базе данных
     const { data, error } = await window.Core.sb.from('todo')
         .select('*')
         .eq('user_id', window.Core.user.id) 
@@ -355,36 +347,16 @@ async load() {
     const list = document.getElementById('todo-list');
     if (!list) return;
 
-    // 2. Очистка и подготовка
     list.innerHTML = ''; 
     this.items = data;
 
-    // Настройка Drag & Drop на контейнере (делаем один раз)
-    list.ondragover = (e) => {
-        e.preventDefault();
-        const dragging = document.querySelector('.dragging');
-        const target = e.target.closest('.task');
-        
-        if (target && target !== dragging) {
-            const rect = target.getBoundingClientRect();
-            const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-            list.insertBefore(dragging, next ? target.nextSibling : target);
-        }
-    };
-
-    // 3. УСКОРЕННЫЙ РЕНДЕР: Используем Fragment
+    // Создаем "виртуальный" контейнер для мгновенной вставки
     const fragment = document.createDocumentFragment();
-
     data.forEach(t => {
-        // Создаем DOM-элемент задачи через отдельную функцию
-        const taskNode = this.createTaskNode(t);
-        fragment.appendChild(taskNode);
+        fragment.appendChild(this.createTaskNode(t));
     });
 
-    // Вставляем всё дерево задач за одну операцию
     list.appendChild(fragment);
-    
-    console.log(`RENDER_COMPLETE: ${data.length} OBJECTIVES_LOADED`);
 },
 
 // Вспомогательный метод, который возвращает готовый HTML-элемент (Node)
@@ -582,22 +554,32 @@ async subscribe() {
         });
 },
 
-    async load() { 
-    console.log("CHAT_LOADING_DATA...");
-    const { data, error } = await Core.sb.from('comments').select('*').order('created_at', {ascending: false}).limit(40); 
+async load() { 
+    const s = document.getElementById('chat-stream');
+    if (!s) return;
+
+    // Очищаем перед загрузкой, чтобы не дублировать
+    s.innerHTML = '<div style="opacity:0.5; padding:10px;">>> RECOVERING_ARCHIVES...</div>';
+
+    const { data, error } = await window.Core.sb
+        .from('comments')
+        .select('*')
+        .order('created_at', { ascending: false }) // Берем САМЫЕ НОВЫЕ
+        .limit(50); 
     
     if (error) {
         console.error("CHAT_LOAD_ERROR:", error);
         return;
     }
 
-    const s = document.getElementById('chat-stream');
-    if (s && data) { 
+    if (data) { 
         s.innerHTML = ''; 
-        // Переворачиваем, чтобы старые были сверху, новые снизу
+        // .reverse() ВАЖЕН: переворачиваем массив, чтобы 
+        // старые сообщения были вверху, а новые — внизу.
         data.reverse().forEach(m => this.render(m)); 
+        
+        // Мгновенная прокрутка в конец
         s.scrollTop = s.scrollHeight;
-        console.log(`CHAT_LOADED: ${data.length} сообщений`);
     } 
 },
 
