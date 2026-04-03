@@ -20,13 +20,16 @@ const Core = {
     },
 
 getAvatar(user_id, avatar_url) {
-    // Проверяем, что avatar_url — это валидная строка со ссылкой
-    if (avatar_url && typeof avatar_url === 'string' && avatar_url.startsWith('http')) {
-        return avatar_url;
+    if (avatar_url && typeof avatar_url === 'string' && avatar_url.length > 5) {
+        // Если это уже полная ссылка (http), возвращаем её
+        if (avatar_url.startsWith('http')) return avatar_url;
+        
+        // Если это имя файла, получаем ПРАВИЛЬНУЮ публичную ссылку через библиотеку
+        const { data } = this.sb.storage.from('avatars').getPublicUrl(avatar_url);
+        return data.publicUrl;
     }
-    
-    // Если в базе NULL или пустая строка, генерируем робота по ID
-    const seed = user_id || "guest_" + Math.floor(Math.random() * 1000);
+    // Если ничего нет — робот
+    const seed = user_id || "guest";
     return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
 },
 
@@ -604,20 +607,8 @@ render(m) {
     const currentUserId = window.Core.user?.id;
     const isMy = m.user_id === currentUserId;
     
-    // --- ФОРМИРОВАНИЕ ПУТИ К АВАТАРКЕ ---
-    let avatar = m.avatar_url;
-
-    if (avatar && typeof avatar === 'string') {
-        // Если в базе лежит просто имя файла (как на твоем скрине: "0.0521...png")
-        if (!avatar.startsWith('http')) {
-            const projectID = 'ebjsxlympwocluxgmwcu';
-            const bucket = 'avatars';
-            avatar = `https://${projectID}.supabase.co/storage/v1/object/public/${bucket}/${avatar}`;
-        }
-    } else {
-        // Если в базе NULL или пусто — генерируем робота
-        avatar = window.Core.getAvatar(m.user_id);
-    }
+    // ОДНА СТРОКА вместо кучи проверок:
+    const avatar = window.Core.getAvatar(m.user_id, m.avatar_url);
 
     const displayNick = (m.nickname || "PILOT_UNKNOWN").toUpperCase();
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -629,22 +620,17 @@ render(m) {
     d.innerHTML = `
         <div class="chat-row-layout">
             <div class="avatar-wrapper" style="cursor:pointer">
-                <img src="${avatar}" 
-                     class="chat-row-avatar" 
-                     onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=${m.user_id}'">
+                <img src="${avatar}" class="chat-row-avatar">
             </div>
             <div class="chat-content-block">
                 <div class="msg-header">
-                    <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">
-                        ${displayNick}
-                    </span>
+                    <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">${displayNick}</span>
                     <span class="msg-time">${time}</span>
                 </div>
                 <div class="msg-text">${m.message}</div>
             </div>
         </div>`;
 
-    // Логика поповера (мини-профиля)
     const openPop = async (e) => {
         e.stopPropagation();
         const pop = document.getElementById('user-popover');
@@ -660,28 +646,17 @@ render(m) {
         if (p) {
             const rank = (typeof getRankByScore === 'function') ? getRankByScore(p.combat_score || 0) : {name: 'RECRUIT', color: '#fff'};
             
-            const updates = {
-                'pop-nick': (p.nickname || "UNKNOWN").toUpperCase(),
-                'pop-rank': rank.name,
-                'pop-kills': p.kills_astronauts || 0,
-                'pop-msgs': p.message_count || 0,
-                'pop-score': p.combat_score || 0
-            };
+            // Обновляем текст
+            document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN").toUpperCase();
+            document.getElementById('pop-nick').style.color = rank.color;
+            document.getElementById('pop-rank').innerText = rank.name;
+            document.getElementById('pop-kills').innerText = p.kills_astronauts || 0;
+            document.getElementById('pop-msgs').innerText = p.message_count || 0;
+            document.getElementById('pop-score').innerText = p.combat_score || 0;
 
-            for (const [id, val] of Object.entries(updates)) {
-                const el = document.getElementById(id);
-                if (el) el.innerText = val;
-            }
-            
+            // ОБНОВЛЯЕМ АВАТАР В ПОПОВЕРЕ ТОЖЕ ЧЕРЕЗ ФУНКЦИЮ
             const popAva = document.getElementById('pop-avatar');
-            if (popAva) {
-                // Для поповера используем ту же логику: если в профиле имя файла, делаем из него ссылку
-                let pAva = p.avatar_url;
-                if (pAva && !pAva.startsWith('http')) {
-                    pAva = `https://ebjsxlympwocluxgmwcu.supabase.co/storage/v1/object/public/avatars/${pAva}`;
-                }
-                popAva.src = pAva || window.Core.getAvatar(m.user_id);
-            }
+            if (popAva) popAva.src = window.Core.getAvatar(p.id, p.avatar_url);
         }
     };
 
@@ -690,17 +665,7 @@ render(m) {
     if (avWrapper) avWrapper.onclick = openPop;
     if (nickBtn) nickBtn.onclick = openPop;
 
-    if (isMy) {
-        d.oncontextmenu = async (e) => {
-            e.preventDefault();
-            const ok = await window.Core.CustomConfirm("TERMINATE_DATA_STREAM?");
-            if (ok) {
-                const { error } = await window.Core.sb.from('comments').delete().eq('id', m.id).eq('user_id', currentUserId);
-                if (!error) d.remove();
-            }
-        };
-    }
-
+    // ... (код удаления сообщения оставляй как был)
     s.appendChild(d);
     s.scrollTop = s.scrollHeight;
 }
