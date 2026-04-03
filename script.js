@@ -93,6 +93,21 @@ Msg(text, type = 'info') {
     });
 },
 
+// Добавь это внутрь объекта Core в script.js
+previewFile() {
+    const preview = document.getElementById('avatar-img');
+    const file = document.getElementById('avatar-file').files[0];
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+        if (preview) preview.src = reader.result;
+    };
+
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+},
+
     // ВТОРАЯ ФУНКЦИЯ: Системные уведомления (вне сайта)
     SystemNotify(title, body) {
         if ("Notification" in window && Notification.permission === "granted") {
@@ -1044,10 +1059,14 @@ window.addEventListener('click', (e) => {
 
 
 
-// Копируем методы (Msg, UpdateProfile и т.д.) в уже созданный объект
+// Проверяем, существует ли Core, если нет — создаем пустой объект
+window.Core = window.Core || {};
+
+// Безопасно копируем методы в глобальный объект
 Object.assign(window.Core, Core);
 
-// Запускаем
+// Запускаем инициализацию
+
 window.Core.init();
 
 
