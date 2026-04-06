@@ -243,38 +243,21 @@ async UpdateProfile() {
         if (updateError) throw updateError;
 
         // Вместо this.Msg используем явный путь
-        window.Core.Msg("SYSTEM: DATA_SYNCED");
+    
+        // Используй локальную переменную Core, она надежнее внутри этого файла
+        Core.Msg("SYSTEM: DATA_SYNCED"); 
         
         setTimeout(() => { window.location.href = 'index.html'; }, 1000);
     } catch (e) {
         console.error(e);
-        window.Core.Msg("SYNC_ERROR: " + e.message, "error");
+        // Здесь тоже
+        Core.Msg("SYNC_ERROR: " + e.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerText = "[ SYNC_WITH_STATION ]";
     }
 },
 
-async Auth() {
-    const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
-    if(!emailEl || !passEl) return;
-
-    const { data, error } = await this.sb.auth.signInWithPassword({
-        email: emailEl.value, 
-        password: passEl.value
-    });
-
-    if(error) {
-        this.Msg("ACCESS_DENIED: " + error.message, "error");
-    } else {
-        this.Msg("ACCESS_GRANTED. WELCOME BACK.");
-        
-        // Моментальный переход после логина
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1000);
-    }
-},
 
 async Register() {
     const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
@@ -1057,16 +1040,20 @@ window.addEventListener('click', (e) => {
 
 
 
-// Проверяем, существует ли Core, если нет — создаем пустой объект
+// В самом конце script.js
+
+// 1. Создаем глобальный объект, если его нет
 window.Core = window.Core || {};
 
-// Безопасно копируем методы в глобальный объект
+// 2. Копируем все методы из нашего локального объекта Core в глобальный
 Object.assign(window.Core, Core);
 
-// Запускаем инициализацию
+// 3. Явно привязываем Msg, если вдруг что-то пошло не так
+window.Core.Msg = Core.Msg.bind(Core);
 
+// 4. Запускаем инициализацию
 window.Core.init();
 
-
+// 5. Сигнализируем, что всё готово
 window.dispatchEvent(new Event('core-ready'));
-console.log("CORE_SYSTEM: FULL_READY_SIGNAL_SENT");
+console.log("CORE_SYSTEM: ALL_METHODS_EXPORTED");
