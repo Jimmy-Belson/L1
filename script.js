@@ -20,40 +20,25 @@ const Core = {
     },
 
 getAvatar(user_id, avatar_url) {
-    if (avatar_url && typeof avatar_url === 'string' && avatar_url.length > 5) {
-        // Если это уже полная ссылка (http), возвращаем её
-        if (avatar_url.startsWith('http')) return avatar_url;
-        
-        // Если это имя файла, получаем ПРАВИЛЬНУЮ публичную ссылку через библиотеку
+    // 1. Если аватара нет вообще — даем робота
+    if (!avatar_url || avatar_url === "" || avatar_url === "null") {
+        const seed = user_id || "guest";
+return 'https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d';
+    }
+
+    // 2. Если это уже полная ссылка (начинается с http) — возвращаем её
+    if (avatar_url.startsWith('http')) {
+        return avatar_url;
+    }
+    
+    // 3. Если это имя файла (например "0.123.png"), получаем публичную ссылку из твоего бакета
+    try {
         const { data } = this.sb.storage.from('avatars').getPublicUrl(avatar_url);
         return data.publicUrl;
+    } catch (e) {
+        // Если что-то пошло не так со Storage — запасной вариант (робот)
+return 'https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d';
     }
-    // Если ничего нет — робот
-    const seed = user_id || "guest";
-    return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
-},
-
-Msg(text, type = 'info') {
-    const container = document.getElementById('notify-container');
-    if (!container) return;
-
-    const t = document.createElement('div');
-    // Класс 'toast' запустит анимацию slideInRight из твоего CSS
-    t.className = `toast ${type === 'error' ? 'error' : ''}`;
-    t.innerHTML = `<span style="opacity:0.5">>></span> ${text}`;
-    
-    container.prepend(t);
-    
-    setTimeout(() => {
-        // 1. Добавляем класс 'hide'. 
-        // CSS увидит это и запустит анимацию slideOutRight (улет вправо)
-        t.classList.add('hide'); 
-        
-        // 2. ВАЖНО: Ждем 500мс (время анимации в CSS), пока плашка улетит
-        setTimeout(() => {
-            t.remove(); // Только теперь удаляем из кода страницы
-        }, 500); 
-    }, 4000); // Плашка висит 4 секунды перед уходом
 },
 
     async CustomConfirm(text) {
@@ -219,47 +204,46 @@ async SyncProfile(user) {
 
 async UpdateProfile() {
     if (!this.user) return;
-
     const btn = document.getElementById('save-btn');
-    const nickInput = document.getElementById('nick-input'); 
-    const previewImg = document.getElementById('avatar-img');
+    const fileInput = document.getElementById('avatar-file');
+    const nickInput = document.getElementById('nick-input');
     
-    if (!nickInput || !btn) return;
-
-    btn.innerText = ">> SYNCING...";
     btn.disabled = true;
+    btn.innerText = ">> UPLOADING...";
 
     try {
-        const nick = nickInput.value.trim();
-        
-        // ЛОГИКА ОЧИСТКИ ИМЕНИ ФАЙЛА
-        let avaPath = null;
-        if (previewImg && previewImg.src) {
-            const s = previewImg.src;
-            if (s.includes('/avatars/')) {
-                avaPath = s.split('/avatars/').pop();
-            } else if (!s.startsWith('data:')) {
-                // Если это не загрузка нового файла (base64), оставляем как есть
-                avaPath = s;
-            }
+        let fileName = this.userProfile?.avatar_url || ""; 
+
+        // Если юзер выбрал новый файл
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const ext = file.name.split('.').pop();
+            fileName = `${this.user.id}-${Date.now()}.${ext}`; // Уникальное имя
+
+            // Грузим в бакет
+            const { error: uploadErr } = await this.sb.storage
+                .from('avatars')
+                .upload(fileName, file, { upsert: true });
+
+            if (uploadErr) throw uploadErr;
         }
 
-        const { error } = await this.sb
-            .from('profiles')
-            .upsert({ 
-                id: this.user.id, 
-                nickname: nick, 
-                avatar_url: avaPath, // Сохраняем "0.123.png"
-            });
+        // Обновляем таблицу
+        const { error: updateErr } = await this.sb.from('profiles').upsert({
+            id: this.user.id,
+            nickname: nickInput.value,
+            avatar_url: fileName // ТЕПЕРЬ ТУТ ВСЕГДА ЛИБО ПУСТО, ЛИБО ИМЯ ФАЙЛА
+        });
 
-        if (error) throw error;
-        this.Msg("SYSTEM: DATA_SYNCED");
-        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-    } catch (e) {
-        console.error(e);
-        this.Msg("SYNC_ERROR: " + e.message, "error");
+        if (updateErr) throw updateErr;
+
+        this.Msg("DATA_SYNCED");
+        setTimeout(() => location.href = 'index.html', 1000);
+    } catch (err) {
+        this.Msg("ERROR: " + err.message, "error");
     } finally {
         btn.disabled = false;
+        btn.innerText = "[ SYNC_WITH_STATION ]";
     }
 },
 
