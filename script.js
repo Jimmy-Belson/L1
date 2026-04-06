@@ -203,44 +203,52 @@ async SyncProfile(user) {
 },
 
 async UpdateProfile() {
-    if (!this.user) return;
+    if (!window.Core.user) return;
+
     const btn = document.getElementById('save-btn');
+    const nickInput = document.getElementById('nick-input'); 
     const fileInput = document.getElementById('avatar-file');
-    const nickInput = document.getElementById('nick-input');
     
+    if (!nickInput || !btn) return;
+
+    btn.innerText = ">> SYNCING...";
     btn.disabled = true;
-    btn.innerText = ">> UPLOADING...";
 
     try {
-        let fileName = this.userProfile?.avatar_url || ""; 
+        const nick = nickInput.value.trim();
+        let fileName = window.Core.userProfile?.avatar_url || "";
 
-        // Если юзер выбрал новый файл
-        if (fileInput.files && fileInput.files[0]) {
+        // 1. ЗАГРУЗКА ФАЙЛА
+        if (fileInput && fileInput.files[0]) {
             const file = fileInput.files[0];
-            const ext = file.name.split('.').pop();
-            fileName = `${this.user.id}-${Date.now()}.${ext}`; // Уникальное имя
+            const fileExt = file.name.split('.').pop();
+            fileName = `${window.Core.user.id}-${Date.now()}.${fileExt}`;
 
-            // Грузим в бакет
-            const { error: uploadErr } = await this.sb.storage
+            const { error: uploadError } = await window.Core.sb.storage
                 .from('avatars')
                 .upload(fileName, file, { upsert: true });
 
-            if (uploadErr) throw uploadErr;
+            if (uploadError) throw uploadError;
         }
 
-        // Обновляем таблицу
-        const { error: updateErr } = await this.sb.from('profiles').upsert({
-            id: this.user.id,
-            nickname: nickInput.value,
-            avatar_url: fileName // ТЕПЕРЬ ТУТ ВСЕГДА ЛИБО ПУСТО, ЛИБО ИМЯ ФАЙЛА
-        });
+        // 2. ОБНОВЛЕНИЕ ТАБЛИЦЫ
+        const { error: updateError } = await window.Core.sb
+            .from('profiles')
+            .upsert({ 
+                id: window.Core.user.id, 
+                nickname: nick, 
+                avatar_url: fileName, 
+            });
 
-        if (updateErr) throw updateErr;
+        if (updateError) throw updateError;
 
-        this.Msg("DATA_SYNCED");
-        setTimeout(() => location.href = 'index.html', 1000);
-    } catch (err) {
-        this.Msg("ERROR: " + err.message, "error");
+        // Вместо this.Msg используем явный путь
+        window.Core.Msg("SYSTEM: DATA_SYNCED");
+        
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+    } catch (e) {
+        console.error(e);
+        window.Core.Msg("SYNC_ERROR: " + e.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerText = "[ SYNC_WITH_STATION ]";
