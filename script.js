@@ -231,35 +231,36 @@ async UpdateProfile() {
 
     try {
         const nick = nickInput.value.trim();
-        const ava = previewImg ? previewImg.src : null;
+        
+        // ЛОГИКА ОЧИСТКИ ИМЕНИ ФАЙЛА
+        let avaPath = null;
+        if (previewImg && previewImg.src) {
+            const s = previewImg.src;
+            if (s.includes('/avatars/')) {
+                avaPath = s.split('/avatars/').pop();
+            } else if (!s.startsWith('data:')) {
+                // Если это не загрузка нового файла (base64), оставляем как есть
+                avaPath = s;
+            }
+        }
 
-        // .upsert — это "создай, если нет, или обнови, если есть"
         const { error } = await this.sb
             .from('profiles')
             .upsert({ 
                 id: this.user.id, 
                 nickname: nick, 
-                avatar_url: ava,
-                
+                avatar_url: avaPath, // Сохраняем "0.123.png"
             });
 
         if (error) throw error;
-
         this.Msg("SYSTEM: DATA_SYNCED");
-        
-        // Уходим на главную через секунду
         setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-
     } catch (e) {
         console.error(e);
         this.Msg("SYNC_ERROR: " + e.message, "error");
     } finally {
-        btn.innerText = "[ SYNC_WITH_STATION ]";
         btn.disabled = false;
     }
-    
-
-
 },
 
 async Auth() {
@@ -590,16 +591,21 @@ async send() {
     const val = i.value;
     i.value = ''; 
 
-    // ВАЖНО: Берем аватарку из профиля. Если ее там нет — ГЕНЕРИРУЕМ робота сразу, 
-    // чтобы в базу улетала готовая ссылка, а не пустота.
+    // ВАЖНО: Вытаскиваем только имя файла из профиля, а не всю ссылку!
+    let avatarName = core.userProfile?.avatar_url || null;
+    
+    // Если там вдруг затесалась полная ссылка, очищаем её до имени файла
+    if (avatarName && avatarName.includes('/avatars/')) {
+        avatarName = avatarName.split('/avatars/').pop();
+    }
+
     const nickname = core.userProfile?.nickname || core.user.email.split('@')[0];
-    const avatar = core.userProfile?.avatar_url || core.getAvatar(core.user.id);
 
     try {
         const { data, error } = await core.sb.from('comments').insert([{
             message: val, 
             nickname: nickname, 
-            avatar_url: avatar, // Теперь тут всегда будет либо ссылка, либо робот
+            avatar_url: avatarName, // ТЕПЕРЬ ТУТ ТОЛЬКО ИМЯ (напр. "0.0521.png")
             user_id: core.user.id
         }]).select();
 
