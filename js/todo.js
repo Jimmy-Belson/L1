@@ -31,7 +31,7 @@ export const TodoModule = {
         d.draggable = true; 
 
         const dateStr = t.deadline ? 
-            <span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span> : '';
+            `<span class="deadline-tag">[UNTIL: ${new Date(t.deadline).toLocaleDateString()}]</span>` : '';
 
         d.innerHTML = `
             <div class="task-drag-handle" style="cursor: grab;">::</div>
