@@ -1,6 +1,6 @@
 import { UI } from './ui.js';
 import { AvatarService } from './services.js';
-import { getRankByScore } from './js/ranks.js';
+import { getRankByScore } from './ranks.js';
 
 
 
