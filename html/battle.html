@@ -108,7 +108,7 @@
     <canvas id="game-canvas"></canvas>
 
     <div class="game-container">
-        <a href="index.html" class="back-btn">[ EXIT_TO_STATION ]</a>
+        <a href="../index.html" class="back-btn">[ EXIT_TO_STATION ]</a>
         <div class="tactical-log">
             <h3>Tactical Log</h3>
             <ul id="highscores-list">
@@ -149,7 +149,7 @@
                 
                 if (error || !session) {
                     console.error("AUTH_REQUIRED");
-                    window.location.replace('index.html');
+                    window.location.replace('../index.html');
                     return;
                 }
 
@@ -210,7 +210,7 @@ async function updateTacticalLog(Core) {
         bootstrap();
     </script>
 
-    <script type="module" src="./game.js"></script>
+    <script type="module" src="../js/game.js"></script>
 
 </body>
 
