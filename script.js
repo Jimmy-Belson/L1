@@ -1,3 +1,5 @@
+import { UI } from './ui.js';
+import { AvatarService } from './services.js';
 import { getRankByScore } from './ranks.js';
 
 
@@ -6,40 +8,27 @@ import { getRankByScore } from './ranks.js';
 
 
 const Core = {
-    // Инициализируем клиент один раз при обращении
+
     sb: (window.supabase) ? window.supabase.createClient(
         'https://ebjsxlympwocluxgmwcu.supabase.co', 
         'sb_publishable_8HhPj3Y8g5V7Np8Vy5xbzQ_2B7LjTkj'
     ) : null,
 
     user: null,
+    userProfile: null,
+
+    // НОВЫЕ ССЫЛКИ НА МОДУЛИ:
+    Msg: UI.Msg, 
+    getAvatar(uid, url) {
+        return AvatarService.getPublicUrl(this.sb, uid, url);
+    },
     
     toggleChat() {
         const chatWindow = document.getElementById('main-chat-window');
         if (chatWindow) chatWindow.classList.toggle('minimized');
     },
 
-getAvatar(user_id, avatar_url) {
-    // 1. Если аватара нет вообще — даем робота
-    if (!avatar_url || avatar_url === "" || avatar_url === "null") {
-        const seed = user_id || "guest";
-return 'https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d';
-    }
 
-    // 2. Если это уже полная ссылка (начинается с http) — возвращаем её
-    if (avatar_url.startsWith('http')) {
-        return avatar_url;
-    }
-    
-    // 3. Если это имя файла (например "0.123.png"), получаем публичную ссылку из твоего бакета
-    try {
-        const { data } = this.sb.storage.from('avatars').getPublicUrl(avatar_url);
-        return data.publicUrl;
-    } catch (e) {
-        // Если что-то пошло не так со Storage — запасной вариант (робот)
-return 'https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d';
-    }
-},
 
     async CustomConfirm(text) {
     let overlay = document.getElementById('custom-confirm');
@@ -195,7 +184,9 @@ async SyncProfile(user) {
                 nickEl.style.textShadow = `0 0 8px ${rank.color}`;
             }
             // Обновляем главную аватарку в шапке
-            if (avatarEl) avatarEl.src = data.avatar_url || this.getAvatar(user.id);
+           // Внутри SyncProfile(user) найди эту строку:
+if (avatarEl) avatarEl.src = this.getAvatar(user.id, data.avatar_url); 
+// Передаем ДВА аргумента: ID и имя файла
         }
     } catch (e) {
         console.warn("SYNC_PROFILE_WARNING:", e.message);
@@ -1036,24 +1027,9 @@ window.addEventListener('click', (e) => {
     }
 });
 
+// Просто одна строка:
+window.Core = Core;
+Core.init();
 
 
 
-
-// В самом конце script.js
-
-// 1. Создаем глобальный объект, если его нет
-window.Core = window.Core || {};
-
-// 2. Копируем все методы из нашего локального объекта Core в глобальный
-Object.assign(window.Core, Core);
-
-// 3. Явно привязываем Msg, если вдруг что-то пошло не так
-window.Core.Msg = Core.Msg.bind(Core);
-
-// 4. Запускаем инициализацию
-window.Core.init();
-
-// 5. Сигнализируем, что всё готово
-window.dispatchEvent(new Event('core-ready'));
-console.log("CORE_SYSTEM: ALL_METHODS_EXPORTED");
