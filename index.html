@@ -7,7 +7,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/css/style.css">
     
 
  
@@ -29,7 +29,7 @@
                 <div id="clock">00:00:00</div>
                 
                 <div class="nav-controls" style="display: flex; gap: 10px;">
-                    <button class="btn-profile" onclick="window.location.href='profile.html'">
+                    <button class="btn-profile" onclick="window.location.href='/html/profile.html'">
                         [ PROFILE ]
                     </button>
                     <button class="btn-logout" onclick="Core.Logout()">
@@ -82,7 +82,7 @@
 
     </div>
 
-    <a href="battle.html" id="scroll-to-game" class="scroll-arrow" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
+    <a href="/html/battle.html" id="scroll-to-game" class="scroll-arrow" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
         <span>[ INITIALIZE COMBAT PROTOCOL ]</span>
         <div class="arrow-down"></div>
     </a>
@@ -100,7 +100,7 @@
 
 
 
-    <div id="stats-link" onclick="window.location.href='stats.html'" 
+    <div id="stats-link" onclick="window.location.href='/html/stats.html'" 
         style="position:fixed; right:0; top:50%; transform:translateY(-50%); 
                 background:rgba(0,255,255,0.1); border:1px solid #0ff; 
                 padding:15px 5px; cursor:pointer; z-index:9999; border-radius:10px 0 0 10px;">
@@ -129,6 +129,6 @@
 
 <script src="/js/script.js" type="module"></script>
 
-<script src="game.js" type="module"></script>
+<script src="/js/game.js" type="module"></script>
 </body>
 </html>
