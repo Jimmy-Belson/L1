@@ -1,6 +1,6 @@
 import { UI } from './ui.js';
 import { AvatarService } from './services.js';
-import { getRankByScore } from './ranks.js';
+import { getRankByScore } from './js/ranks.js';
 
 
 
@@ -126,7 +126,7 @@ async init() {
 
     this.user = session.user;
     if (isStation) {
-        window.location.replace('index.html');
+        window.location.replace('../index.html');
     } else {
         // Подгружаем данные профиля в фоне
         this.loadAppData();
@@ -238,7 +238,7 @@ async UpdateProfile() {
         // Используй локальную переменную Core, она надежнее внутри этого файла
         Core.Msg("SYSTEM: DATA_SYNCED"); 
         
-        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+        setTimeout(() => { window.location.href = '../index.html'; }, 1000);
     } catch (e) {
         console.error(e);
         // Здесь тоже
@@ -271,7 +271,7 @@ async Register() {
         // ВАЖНО: Если регистрация прошла успешно, 
         // принудительно перекидываем пользователя на главную через секунду
         setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = '../index.html';
         }, 1500); 
     }
 },
