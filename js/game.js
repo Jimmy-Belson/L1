@@ -1,7 +1,7 @@
 // ==========================================
 // ORBITRON: TECH-CORE ENGINE v2.1 [STABLE]
 // ==========================================
-import { getRankByScore } from './ranks.js';
+import { getRankByScore } from '../js/ranks.js';
 
 let canvas, ctx;
 window.gameActive = true; 
@@ -207,7 +207,7 @@ class GameEngine {
         window.gameActive = false;
         if (window.Core?.UpdateCombatScore) window.Core.UpdateCombatScore(this.player.score);
         alert("STATION_DEFENSE_CRITICAL: FAILED");
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
     }
 
     loop() {
