@@ -6,14 +6,13 @@ import { Utils } from './utils.js';
 import { CanvasSystem } from './canvas.js';
 import { TodoModule } from './todo.js';
 import { ChatModule } from './chat.js';
-import { AuthModule } from './auth.js'; // НЕ ЗАБУДЬ ЭТОТ ИМПОРТ
+import { AuthModule } from './auth.js';
 
 const Core = {
     sb: supabase,
     user: null,
     userProfile: null,
 
-    // Ссылки на модули
     Chat: ChatModule,
     Todo: TodoModule,
     Canvas: CanvasSystem,
@@ -22,7 +21,6 @@ const Core = {
     SystemNotify: Utils.SystemNotify,
     Msg: UI.Msg,
 
-    // Быстрые методы-прослойки для связи с AuthModule
     async SyncProfile(u) { await this.Auth.SyncProfile(this, u); },
     async UpdateProfile() { await this.Auth.UpdateProfile(this); },
     async Register() { await this.Auth.Register(this); },
@@ -41,25 +39,43 @@ const Core = {
     async init() {
         if (this.Canvas) {
             this.Canvas.init();
-            this.Canvas.loop(); // Обязательно через this.Canvas
+            this.Canvas.loop();
         }
         
         this.UI();
         Utils.startClock();
 
-
         const { data: { session } } = await this.sb.auth.getSession();
-        const isStation = window.location.pathname.includes('../html/station.html');
+        
+        // Умное определение текущей страницы
+        const isSubPage = window.location.pathname.includes('/html/');
+        const isStation = window.location.pathname.endsWith('station.html');
 
         if (!session) {
-            if (!isStation) window.location.replace('../html/station.html');
+            if (!isStation) {
+                // Если мы в /html/, то станция рядом. Если в корне — она в html/
+                const redir = isSubPage ? 'station.html' : 'html/station.html';
+                window.location.replace(redir);
+            }
             return;
         }
 
         this.user = session.user;
-        isStation ? window.location.replace('../index.html') : this.loadAppData();
 
-        this.sb.auth.onAuthStateChange(ev => ev === 'SIGNED_OUT' && window.location.replace('../html/station.html'));
+        if (isStation) {
+            // Если залогинены, но попали на страницу входа — уходим на главную
+            const home = isSubPage ? '../index.html' : 'index.html';
+            window.location.replace(home);
+        } else {
+            this.loadAppData();
+        }
+
+        this.sb.auth.onAuthStateChange(ev => {
+            if (ev === 'SIGNED_OUT') {
+                const exitPath = isSubPage ? 'station.html' : 'html/station.html';
+                window.location.replace(exitPath);
+            }
+        });
     },
 
     async loadAppData() {
@@ -94,56 +110,34 @@ const Core = {
         }
     },
 
-Audio: {
+    Audio: {
         el: null,
         setup() {
             if (!this.el) {
-                // Проверяем, находимся ли мы в подпапке (например, /html/ или /pages/)
-                // Если в адресе есть слэш после домена, нам нужно выйти на уровень выше
-                const pathParts = window.location.pathname.split('/');
-                const isSubPage = pathParts.length > 2 && pathParts[pathParts.length - 2] !== "";
-                
+                const isSubPage = window.location.pathname.includes('/html/');
                 const trackPath = isSubPage ? '../track.mp3' : 'track.mp3';
                 
                 this.el = new Audio();
-                this.el.preload = 'none'; // ГЛАВНОЕ: не искать файл заранее!
                 this.el.src = trackPath;
+                this.el.preload = 'none';
                 this.el.loop = true;
                 this.el.volume = 0.1;
-
-                this.el.onerror = () => {
-                    console.log("AUDIO_INFO: track.mp3 not found at " + trackPath);
-                    this.el = null; 
-                };
             }
         },
         toggle() {
             this.setup();
+            const btn = document.getElementById('audio-btn'); 
             if (!this.el) return;
-
-            const btn = document.getElementById('audio-btn'); 
+            
             if (this.el.paused) {
-                this.el.play().catch(() => console.log("Music blocked by browser policy"));
+                this.el.play().catch(() => console.log("Audio blocked"));
                 btn?.classList.add('playing');
             } else {
                 this.el.pause();
                 btn?.classList.remove('playing');
             }
         }
-    },
-
-        toggle() {
-            this.setup();
-            const btn = document.getElementById('audio-btn'); 
-            if (this.el.paused) {
-                this.el.play().catch(() => {});
-                btn?.classList.add('playing');
-            } else {
-                this.el.pause();
-                btn?.classList.remove('playing');
-            }
-        }
-    
+    }
 };
 
 window.addEventListener('click', (e) => {
