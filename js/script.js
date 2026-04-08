@@ -49,17 +49,17 @@ const Core = {
 
 
         const { data: { session } } = await this.sb.auth.getSession();
-        const isStation = window.location.pathname.includes('station.html');
+        const isStation = window.location.pathname.includes('../html/station.html');
 
         if (!session) {
-            if (!isStation) window.location.replace('station.html');
+            if (!isStation) window.location.replace('../html/station.html');
             return;
         }
 
         this.user = session.user;
         isStation ? window.location.replace('../index.html') : this.loadAppData();
 
-        this.sb.auth.onAuthStateChange(ev => ev === 'SIGNED_OUT' && window.location.replace('station.html'));
+        this.sb.auth.onAuthStateChange(ev => ev === 'SIGNED_OUT' && window.location.replace('../html/station.html'));
     },
 
     async loadAppData() {
