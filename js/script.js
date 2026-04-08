@@ -94,15 +94,40 @@ const Core = {
         }
     },
 
-    Audio: {
+Audio: {
         el: null,
         setup() {
             if (!this.el) {
-                this.el = new Audio('track.mp3'); 
+                // Определяем путь: если мы в папке pages, нужно выйти на уровень выше
+                const isSubPage = window.location.pathname.includes('/pages/');
+                const trackPath = isSubPage ? '../track.mp3' : 'track.mp3';
+                
+                this.el = new Audio(trackPath); 
                 this.el.loop = true;
                 this.el.volume = 0.1;
+
+                // Обработка ошибки, чтобы консоль была чистой, если файла нет
+                this.el.onerror = () => {
+                    console.warn("AUDIO_SYSTEM: track.mp3 not found at " + trackPath);
+                    this.el = null;
+                };
             }
         },
+        toggle() {
+            this.setup();
+            if (!this.el) return; // Если файл не найден, ничего не делаем
+
+            const btn = document.getElementById('audio-btn'); 
+            if (this.el.paused) {
+                this.el.play().catch(e => console.warn("Playback blocked by browser"));
+                btn?.classList.add('playing');
+            } else {
+                this.el.pause();
+                btn?.classList.remove('playing');
+            }
+        }
+    },
+
         toggle() {
             this.setup();
             const btn = document.getElementById('audio-btn'); 
@@ -114,7 +139,7 @@ const Core = {
                 btn?.classList.remove('playing');
             }
         }
-    }
+    
 };
 
 window.addEventListener('click', (e) => {
