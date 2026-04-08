@@ -46,7 +46,7 @@ const Core = {
         
         this.UI();
         Utils.startClock();
-        if (this.Audio) this.Audio.setup();
+
 
         const { data: { session } } = await this.sb.auth.getSession();
         const isStation = window.location.pathname.includes('station.html');
@@ -98,28 +98,32 @@ Audio: {
         el: null,
         setup() {
             if (!this.el) {
-                // Определяем путь: если мы в папке pages, нужно выйти на уровень выше
-                const isSubPage = window.location.pathname.includes('/pages/');
+                // Проверяем, находимся ли мы в подпапке (например, /html/ или /pages/)
+                // Если в адресе есть слэш после домена, нам нужно выйти на уровень выше
+                const pathParts = window.location.pathname.split('/');
+                const isSubPage = pathParts.length > 2 && pathParts[pathParts.length - 2] !== "";
+                
                 const trackPath = isSubPage ? '../track.mp3' : 'track.mp3';
                 
-                this.el = new Audio(trackPath); 
+                this.el = new Audio();
+                this.el.preload = 'none'; // ГЛАВНОЕ: не искать файл заранее!
+                this.el.src = trackPath;
                 this.el.loop = true;
                 this.el.volume = 0.1;
 
-                // Обработка ошибки, чтобы консоль была чистой, если файла нет
                 this.el.onerror = () => {
-                    console.warn("AUDIO_SYSTEM: track.mp3 not found at " + trackPath);
-                    this.el = null;
+                    console.log("AUDIO_INFO: track.mp3 not found at " + trackPath);
+                    this.el = null; 
                 };
             }
         },
         toggle() {
             this.setup();
-            if (!this.el) return; // Если файл не найден, ничего не делаем
+            if (!this.el) return;
 
             const btn = document.getElementById('audio-btn'); 
             if (this.el.paused) {
-                this.el.play().catch(e => console.warn("Playback blocked by browser"));
+                this.el.play().catch(() => console.log("Music blocked by browser policy"));
                 btn?.classList.add('playing');
             } else {
                 this.el.pause();
