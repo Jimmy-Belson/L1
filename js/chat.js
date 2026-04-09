@@ -136,13 +136,14 @@ async openPop(uid, Core, event) {
                     ufoEl.innerText = p.nlo_clicks || 0; 
                 }
 
-                // РАНГ
-                const rankEl = document.getElementById('pop-rank');
-                if (rankEl && window.getRankByScore) {
-                    const rank = window.getRankByScore(p.combat_score || 0);
-                    rankEl.innerText = rank.name;
-                    rankEl.style.color = rank.color;
-                }
+            // РАНГ
+const rankEl = document.getElementById('pop-rank');
+// Убираем window. Проверяем просто наличие импортированной функции
+if (rankEl && getRankByScore) { 
+    const rank = getRankByScore(p.combat_score || 0);
+    rankEl.innerText = rank.name;
+    rankEl.style.color = rank.color;
+}
             }
         } catch (err) {
             console.error("POPOVER_SYNC_ERROR:", err.message);
