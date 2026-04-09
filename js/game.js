@@ -6,6 +6,9 @@ import { getRankByScore } from '../js/ranks.js';
 let canvas, ctx;
 window.gameActive = true; 
 
+
+
+
 const CONFIG = {
     FPS: 60,
     GAME_JUICE: { SHAKE_INTENSITY: 8, PARTICLE_COUNT: 15 },
@@ -92,7 +95,8 @@ class Player {
 class Enemy {
     constructor() {
         this.size = 30;
-        this.x = Math.random() * (window.innerWidth - 60) + 30;
+        // Используем ширину канваса (1100), а не окна
+        this.x = Math.random() * (canvas.width - 60) + 30;
         this.y = -50;
         this.speed = 3 + Math.random() * 2;
         this.color = '#ff00e5';
@@ -122,7 +126,11 @@ class GameEngine {
     }
 
     setupListeners() {
-        window.addEventListener('mousemove', (e) => this.player.targetX = e.clientX);
+    window.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    // Вычитаем отступ рамки от края экрана, чтобы игрок был точно под курсором
+    this.player.targetX = e.clientX - rect.left;
+});
         window.addEventListener('mousedown', () => {
             if (this.player.overheated) return;
             this.player.heat += 20;
@@ -160,7 +168,7 @@ class GameEngine {
                 }
             });
             // Пропуск или столкновение
-            if (e.y > window.innerHeight + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
+            if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
                 this.enemies.splice(i, 1);
                 this.player.lives--;
                 this.shake = 10;
@@ -228,10 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
     killBackgroundProcesses();
 
     // 2. Ресайз
-    const res = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
+const res = () => {
+    // Теперь холст всегда 1100x700, как в CSS
+    canvas.width = 1100;
+    canvas.height = 700;
+};
     window.addEventListener('resize', res);
     res();
 
