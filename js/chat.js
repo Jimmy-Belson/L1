@@ -107,33 +107,45 @@ export const ChatModule = {
     },
 
 async openPop(uid, Core, event) {
-        // Останавливаем всплытие, чтобы window.onclick не закрыл окно сразу
         if (event) event.stopPropagation();
 
         const pop = document.getElementById('user-popover');
         if (!pop) return;
 
-        // Показываем окно
         pop.style.display = 'block';
-        pop.classList.remove('popover-hidden'); // На всякий случай убираем класс
 
-        const { data: p } = await Core.sb.from('profiles').select('*').eq('id', uid).maybeSingle();
-        
-        if (p) {
-            document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN").toUpperCase();
-            document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
+        try {
+            const { data: p, error } = await Core.sb.from('profiles')
+                .select('*')
+                .eq('id', uid)
+                .maybeSingle();
             
-            // Заполняем остальные статы (проверь названия колонок в своей БД!)
-            document.getElementById('pop-kills').innerText = p.combat_score || 0;
-            document.getElementById('pop-msgs').innerText = p.message_count || 0;
-            
-            // Если есть система рангов
-            if (window.getRankByScore) {
-                const rank = window.getRankByScore(p.combat_score || 0);
+            if (error) throw error;
+
+            if (p) {
+                document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
+                document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
+                
+                // СТАТИСТИКА
+                document.getElementById('pop-kills').innerText = p.combat_score || 0;
+                document.getElementById('pop-msgs').innerText = p.message_count || 0;
+                
+                // ИСПРАВЛЕНО: берем данные из колонки nlo_clicks
+                const ufoEl = document.getElementById('pop-ufo');
+                if (ufoEl) {
+                    ufoEl.innerText = p.nlo_clicks || 0; 
+                }
+
+                // РАНГ
                 const rankEl = document.getElementById('pop-rank');
-                rankEl.innerText = rank.name;
-                rankEl.style.color = rank.color;
+                if (rankEl && window.getRankByScore) {
+                    const rank = window.getRankByScore(p.combat_score || 0);
+                    rankEl.innerText = rank.name;
+                    rankEl.style.color = rank.color;
+                }
             }
+        } catch (err) {
+            console.error("POPOVER_SYNC_ERROR:", err.message);
         }
     },
-}
+};
