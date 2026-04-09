@@ -1,7 +1,7 @@
 import { getRankByScore } from './ranks.js';
 
 export const AuthModule = {
-    async SyncProfile(Core, user) {
+async SyncProfile(Core, user) {
         if (!user) return;
         try {
             const { data, error } = await Core.sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
@@ -9,24 +9,18 @@ export const AuthModule = {
             
             if (data) {
                 Core.userProfile = data; 
-                const nickEl = document.getElementById('nick-display');
                 const avatarEl = document.getElementById('avatar-display');
 
-                if (nickEl) {
-                    const rank = getRankByScore(data.combat_score || 0);
-                    nickEl.innerText = data.nickname || user.email.split('@')[0];
-                    nickEl.style.color = rank.color;
-                    nickEl.style.textShadow =` 0 0 8px ${rank.color}`;
-                }
+                // Остальной код (ники, ранги) оставляем...
 
-                // УЛУЧШЕННАЯ ЛОГИКА АВАТАРА
                 if (avatarEl) {
-                    // Передаем данные в сервис. Если в базе пусто, сервис сам вернет робота.
+                    // Получаем чистую ссылку из нашего нового сервиса
                     const newSrc = Core.getAvatar(user.id, data.avatar_url);
                     
-                    if (avatarEl.src !== newSrc) {
+                    // Сравниваем только чистые строки без лишних параметров
+                    if (avatarEl.getAttribute('src') !== newSrc) {
                         avatarEl.onerror = () => {
-                            console.warn("AVATAR_LOAD_FAILED, using fallback.");
+                            console.warn("AVATAR_LOAD_FAILED. Check Storage Policies.");
                             avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}&backgroundColor=001a2d`;
                             avatarEl.onerror = null; 
                         };
@@ -37,6 +31,7 @@ export const AuthModule = {
         } catch (e) { console.warn("SYNC_PROFILE_WARNING:", e.message); }
     },
 
+    
     async UpdateProfile(Core) {
         if (!Core.user) return;
         const btn = document.getElementById('save-btn');
