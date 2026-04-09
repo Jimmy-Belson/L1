@@ -1618,3 +1618,6 @@ html, body {
 #todo-list {
     transition: all 0.3s ease;
 }
+.popover-hidden {
+    display: none;
+}

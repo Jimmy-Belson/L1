@@ -142,7 +142,10 @@ const Core = {
 
 window.addEventListener('click', (e) => {
     const pop = document.getElementById('user-popover');
-    if (pop && !pop.contains(e.target)) pop.style.display = 'none';
+    // Если поповер открыт И клик был НЕ по поповеру И НЕ по нику в чате
+    if (pop && pop.style.display === 'block' && !pop.contains(e.target)) {
+        pop.style.display = 'none';
+    }
 });
 
 window.Core = Core;

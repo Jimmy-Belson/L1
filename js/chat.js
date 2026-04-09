@@ -99,23 +99,41 @@ export const ChatModule = {
                 </div>
             </div>`;
 
-        d.querySelector('.avatar-wrapper').onclick = () => this.openPop(m.user_id, Core);
-        d.querySelector('.msg-nick').onclick = () => this.openPop(m.user_id, Core);
+ d.querySelector('.avatar-wrapper').onclick = (e) => this.openPop(m.user_id, Core, e);
+    d.querySelector('.msg-nick').onclick = (e) => this.openPop(m.user_id, Core, e);
 
         s.appendChild(d);
         s.scrollTop = s.scrollHeight;
     },
 
-    async openPop(uid, Core) {
+async openPop(uid, Core, event) {
+        // Останавливаем всплытие, чтобы window.onclick не закрыл окно сразу
+        if (event) event.stopPropagation();
+
         const pop = document.getElementById('user-popover');
         if (!pop) return;
+
+        // Показываем окно
         pop.style.display = 'block';
+        pop.classList.remove('popover-hidden'); // На всякий случай убираем класс
 
         const { data: p } = await Core.sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+        
         if (p) {
             document.getElementById('pop-nick').innerText = (p.nickname || "UNKNOWN").toUpperCase();
             document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
-            // Остальные поля (kills, msgs и т.д.) заполняются аналогично
+            
+            // Заполняем остальные статы (проверь названия колонок в своей БД!)
+            document.getElementById('pop-kills').innerText = p.combat_score || 0;
+            document.getElementById('pop-msgs').innerText = p.message_count || 0;
+            
+            // Если есть система рангов
+            if (window.getRankByScore) {
+                const rank = window.getRankByScore(p.combat_score || 0);
+                const rankEl = document.getElementById('pop-rank');
+                rankEl.innerText = rank.name;
+                rankEl.style.color = rank.color;
+            }
         }
-    }
-};
+    },
+}
