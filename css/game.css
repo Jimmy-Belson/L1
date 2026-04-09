@@ -69,12 +69,19 @@ body::before {
     height: 100%;
 }
 
-/* Контейнер интерфейса (теперь просто обертка) */
 .game-container {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
+    position: fixed; /* Оставляем фиксированным, чтобы перекрыть экран */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 10;
     pointer-events: none;
+
+    /* ДОБАВЛЯЕМ ЭТИ СТРОКИ ДЛЯ ЦЕНТРИРОВАНИЯ ВНУТРЕННОСТЕЙ */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Разрешаем клики по элементам интерфейса */
