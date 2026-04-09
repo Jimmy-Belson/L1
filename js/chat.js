@@ -138,15 +138,23 @@ async openPop(uid, Core, event) {
 
             // РАНГ
 // РАНГ
-const rankEl = document.getElementById('pop-rank');
-// Проверяем локальную функцию (без window)
-if (rankEl && getRankByScore) { 
-    const rank = getRankByScore(p.combat_score || 0);
-    rankEl.innerText = rank.name;
-    rankEl.style.color = rank.color;
-} else {
-    console.error("RANK_SYSTEM_OFFLINE: getRankByScore is undefined");
-}
+            const rankEl = document.getElementById('pop-rank');
+            
+            // Пробуем найти функцию в глобальном окне (window), так как ranks.js подключен в index.html
+            const rankCalculator = window.getRankByScore;
+
+            if (rankEl && rankCalculator) { 
+                const rank = rankCalculator(p.combat_score || 0);
+                rankEl.innerText = rank.name.toUpperCase();
+                rankEl.style.color = rank.color;
+            } else {
+                // Если функция не найдена, ставим дефолт
+                if (rankEl) {
+                    rankEl.innerText = "PILOT";
+                    rankEl.style.color = "#0ff";
+                }
+                console.warn("RANK_SYSTEM_OFFLINE: getRankByScore not found in window");
+            }
             }
         } catch (err) {
             console.error("POPOVER_SYNC_ERROR:", err.message);

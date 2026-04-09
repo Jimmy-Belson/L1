@@ -48,3 +48,6 @@ export function getRankByScore(score) {
         animated: currentRank.animated || false
     };
 }
+
+
+window.getRankByScore = getRankByScore;
