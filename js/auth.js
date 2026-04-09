@@ -16,22 +16,20 @@ export const AuthModule = {
                     const rank = getRankByScore(data.combat_score || 0);
                     nickEl.innerText = data.nickname || user.email.split('@')[0];
                     nickEl.style.color = rank.color;
-                    nickEl.style.textShadow = `0 0 8px ${rank.color}`;
+                    nickEl.style.textShadow =` 0 0 8px ${rank.color}`;
                 }
 
                 // УЛУЧШЕННАЯ ЛОГИКА АВАТАРА
-                if (avatarEl && data.avatar_url) {
+                if (avatarEl) {
+                    // Передаем данные в сервис. Если в базе пусто, сервис сам вернет робота.
                     const newSrc = Core.getAvatar(user.id, data.avatar_url);
                     
-                    // Обновляем src только если он реально отличается от текущего
-                    if (avatarEl.getAttribute('src') !== newSrc) {
-                        // Сначала вешаем обработчик ошибки (защита от битых ссылок)
+                    if (avatarEl.src !== newSrc) {
                         avatarEl.onerror = () => {
                             console.warn("AVATAR_LOAD_FAILED, using fallback.");
                             avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}&backgroundColor=001a2d`;
                             avatarEl.onerror = null; 
                         };
-                        // Затем ставим источник
                         avatarEl.src = newSrc;
                     }
                 }
@@ -56,7 +54,6 @@ export const AuthModule = {
             if (fileInput?.files[0]) {
                 const file = fileInput.files[0];
                 const fileExt = file.name.split('.').pop();
-                // Используем шаблонные строки через ` `
                 fileName = `${Core.user.id}-${Date.now()}.${fileExt}`;
                 
                 const { error: uploadError } = await Core.sb.storage
@@ -75,8 +72,10 @@ export const AuthModule = {
             if (updateError) throw updateError;
 
             Core.Msg("SYSTEM: DATA_SYNCED"); 
-            // Используем replace для чистого перехода
-            setTimeout(() => { window.location.replace('../index.html'); }, 1200);
+            setTimeout(() => { 
+                const isSubPage = window.location.pathname.includes('/html/');
+                window.location.replace(isSubPage ? '../index.html' : 'index.html');
+            }, 1200);
         } catch (e) {
             Core.Msg("SYNC_ERROR: " + e.message, "error");
         } finally {
@@ -104,7 +103,6 @@ export const AuthModule = {
 
             Core.Msg("IDENTITY_CONFIRMED. WELCOME, PILOT.");
             
-            // Ждем чуть-чуть, чтобы пользователь увидел сообщение, и кидаем на главную
             setTimeout(() => { 
                 const isSubPage = window.location.pathname.includes('/html/');
                 window.location.replace(isSubPage ? '../index.html' : 'index.html');
@@ -126,13 +124,17 @@ export const AuthModule = {
             Core.Msg("REG_ERROR: " + error.message, "error"); 
         } else {
             Core.Msg("PILOT_REGISTERED. INITIATING SESSION...");
-            setTimeout(() => { window.location.replace('../index.html'); }, 1500); 
+            setTimeout(() => { 
+                const isSubPage = window.location.pathname.includes('/html/');
+                window.location.replace(isSubPage ? '../index.html' : 'index.html');
+            }, 1500); 
         }
     },
 
     async Logout(Core) { 
         await Core.sb.auth.signOut(); 
-        window.location.replace('station.html'); 
+        const isSubPage = window.location.pathname.includes('/html/');
+        window.location.replace(isSubPage ? 'station.html' : 'html/station.html'); 
     },
 
     async UpdateStat(Core, field, value = 1) {
