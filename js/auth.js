@@ -85,6 +85,36 @@ export const AuthModule = {
         }
     },
 
+    async Login(Core) {
+        const emailEl = document.getElementById('email');
+        const passEl = document.getElementById('pass');
+        
+        if (!emailEl || !passEl || !emailEl.value || !passEl.value) {
+            Core.Msg("ACCESS_DENIED: MISSING_CREDENTIALS", "error");
+            return;
+        }
+
+        try {
+            const { error } = await Core.sb.auth.signInWithPassword({
+                email: emailEl.value.trim(),
+                password: passEl.value
+            });
+
+            if (error) throw error;
+
+            Core.Msg("IDENTITY_CONFIRMED. WELCOME, PILOT.");
+            
+            // Ждем чуть-чуть, чтобы пользователь увидел сообщение, и кидаем на главную
+            setTimeout(() => { 
+                const isSubPage = window.location.pathname.includes('/html/');
+                window.location.replace(isSubPage ? '../index.html' : 'index.html');
+            }, 1000);
+
+        } catch (e) {
+            Core.Msg("AUTH_ERR: " + e.message, "error");
+        }
+    },
+    
     async Register(Core) {
         const emailEl = document.getElementById('email'), passEl = document.getElementById('pass');
         if(!emailEl || !passEl) return;
