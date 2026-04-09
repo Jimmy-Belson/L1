@@ -137,12 +137,15 @@ async openPop(uid, Core, event) {
                 }
 
             // РАНГ
+// РАНГ
 const rankEl = document.getElementById('pop-rank');
-// Убираем window. Проверяем просто наличие импортированной функции
+// Проверяем локальную функцию (без window)
 if (rankEl && getRankByScore) { 
     const rank = getRankByScore(p.combat_score || 0);
     rankEl.innerText = rank.name;
     rankEl.style.color = rank.color;
+} else {
+    console.error("RANK_SYSTEM_OFFLINE: getRankByScore is undefined");
 }
             }
         } catch (err) {
