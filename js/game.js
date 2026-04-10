@@ -12,7 +12,7 @@ window.gameActive = true;
 const CONFIG = {
     FPS: 60,
     GAME_JUICE: { SHAKE_INTENSITY: 8, PARTICLE_COUNT: 15 },
-    BALANCE: { LIVES: 3, SPAWN_INTERVAL: 45 }
+    BALANCE: { LIVES: 3, SPAWN_INTERVAL: 80 }
 };
 
 // --- СИСТЕМА ПРЕДОТВРАЩЕНИЯ КОНФЛИКТОВ ---
