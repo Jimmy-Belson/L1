@@ -49,6 +49,7 @@ body::before {
     z-index: 5;
     overflow: hidden;
     border-radius: 4px;
+    cursor: none;
 }
 
 /* Эффект сканирующих линий поверх игры */

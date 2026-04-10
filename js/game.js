@@ -136,8 +136,18 @@ setupListeners() {
 
         // 3. Отправляем кораблю правильную координату
         this.player.targetX = mouseXInCanvas;
+
+        // --- ГРАНИЦЫ ---
+        // Не даем целевой точке выйти за пределы ширины холста
+        // Оставляем отступ в 30 пикселей (половина ширины корабля)
+        const margin = 30;
+        if (mouseX < margin) mouseX = margin;
+        if (mouseX > canvas.width - margin) mouseX = canvas.width - margin;
+
+        this.player.targetX = mouseX;
     });
 
+    
     window.addEventListener('mousedown', () => {
         if (this.player.overheated) return;
         this.player.heat += 20;
