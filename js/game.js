@@ -254,8 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Ресайз
 const res = () => {
     // Теперь холст всегда 900x600, как в CSS
-    canvas.width = 800;
-    canvas.height = 500;
+    canvas.width = 900;
+    canvas.height = 600;
 };
     window.addEventListener('resize', res);
     res();
