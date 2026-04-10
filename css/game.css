@@ -6,8 +6,8 @@
     --bg-black: #01050a;
     --panel-bg: rgba(0, 10, 20, 0.85);
     /* Размеры игровой зоны */
-    --game-width: 1100px;
-    --game-height: 700px;
+    --game-width: 900px;
+    --game-height: 600px;
 }
 
 body {
@@ -130,8 +130,8 @@ body::before {
 .tactical-log {
     position: absolute;
     top: 20px;
-    right: 20px;
-    width: 280px;
+    right: 10px;
+    width: 220px;
     max-height: 85vh;
     background: var(--panel-bg);
     border: 1px solid rgba(0, 242, 255, 0.3);
@@ -144,7 +144,7 @@ body::before {
 
 .tactical-log h3 {
     font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
+    font-size: 11px;
     color: var(--neon-blue);
     margin: 0 0 15px 0;
     letter-spacing: 2px;

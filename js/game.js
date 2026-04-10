@@ -95,7 +95,7 @@ class Player {
 class Enemy {
     constructor() {
         this.size = 30;
-        // Используем ширину канваса (1100), а не окна
+        // Используем ширину канваса (900), а не окна
         this.x = Math.random() * (canvas.width - 60) + 30;
         this.y = -50;
         this.speed = 3 + Math.random() * 2;
@@ -125,20 +125,26 @@ class GameEngine {
         this.setupListeners();
     }
 
-    setupListeners() {
+setupListeners() {
     window.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    // Вычитаем отступ рамки от края экрана, чтобы игрок был точно под курсором
-    this.player.targetX = e.clientX - rect.left;
-});
-        window.addEventListener('mousedown', () => {
-            if (this.player.overheated) return;
-            this.player.heat += 20;
-            if (this.player.heat >= 100) this.player.overheated = true;
-            this.projectiles.push({x: this.player.x, y: this.player.y - 20});
-        });
-    }
+        // 1. Получаем положение рамки (канваса) на экране
+        const rect = canvas.getBoundingClientRect();
+        
+        // 2. Вычитаем из координаты мыши (e.clientX) 
+        // расстояние от края экрана до начала рамки (rect.left)
+        const mouseXInCanvas = e.clientX - rect.left;
 
+        // 3. Отправляем кораблю правильную координату
+        this.player.targetX = mouseXInCanvas;
+    });
+
+    window.addEventListener('mousedown', () => {
+        if (this.player.overheated) return;
+        this.player.heat += 20;
+        if (this.player.heat >= 100) this.player.overheated = true;
+        this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+    });
+}
     update() {
         if (!window.gameActive) return;
         this.player.update();
@@ -237,9 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Ресайз
 const res = () => {
-    // Теперь холст всегда 1100x700, как в CSS
-    canvas.width = 1100;
-    canvas.height = 700;
+    // Теперь холст всегда 900x600, как в CSS
+    canvas.width = 900;
+    canvas.height = 600;
 };
     window.addEventListener('resize', res);
     res();
