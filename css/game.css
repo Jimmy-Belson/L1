@@ -6,8 +6,8 @@
     --bg-black: #01050a;
     --panel-bg: rgba(0, 10, 20, 0.85);
     /* Размеры игровой зоны */
-    --game-width: 800px;
-    --game-height: 500px;
+    --game-width: 900px;
+    --game-height: 600px;
 }
 
 body {
