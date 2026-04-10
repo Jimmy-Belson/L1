@@ -147,18 +147,39 @@ async SyncProfile(Core, user) {
         } catch (e) { console.error("STAT_UPDATE_ERROR:", e.message); }
     },
 
-    async UpdateCombatScore(Core, newScore) {
-        if (!Core.user) return;
-        try {
-            const { data: profile } = await Core.sb.from('profiles')
-                .select('combat_score')
-                .eq('id', Core.user.id)
-                .single();
-            if (newScore > (profile?.combat_score || 0)) {
-                await Core.sb.from('profiles').update({ combat_score: newScore }).eq('id', Core.user.id);
-            }
-        } catch(e) { console.error(e); }
-    },
+async UpdateCombatScore(Core, newScore) {
+    if (!Core.user) return;
+    try {
+        // 1. Сначала проверяем текущий рекорд в базе
+        const { data: profile, error: selectError } = await Core.sb.from('profiles')
+            .select('combat_score')
+            .eq('id', Core.user.id)
+            .single();
+
+        if (selectError) throw selectError;
+
+        // 2. Если новый счет больше старого — обновляем
+        if (newScore > (profile?.combat_score || 0)) {
+            const { error: updateError } = await Core.sb
+                .from('profiles')
+                .update({ combat_score: newScore })
+                .eq('id', Core.user.id);
+
+            if (updateError) throw updateError;
+
+            // ВАЖНО: Обновляем данные в текущей сессии, чтобы ранг пересчитался мгновенно
+            Core.user.combat_score = newScore;
+            console.log("SYSTEM: RECORD_UPDATED_LOCALLY");
+        }
+        
+        // Возвращаем true, чтобы игра знала, что всё ок
+        return true; 
+
+    } catch(e) { 
+        console.error("CRITICAL_SYNC_ERROR:", e); 
+        return false;
+    }
+},
 
     previewFile() {
         const preview = document.getElementById('avatar-img');

@@ -279,12 +279,22 @@ setupListeners() {
         ctx.fillText(`RANK: ${rank.name}`, 20, 65);
     }
 
-    gameOver() {
-        window.gameActive = false;
-        if (window.Core?.UpdateCombatScore) window.Core.UpdateCombatScore(this.player.score);
-        alert("STATION_DEFENSE_CRITICAL: FAILED");
-        window.location.href = '../index.html';
+async gameOver() { // Добавили async
+    window.gameActive = false;
+    
+    // Показываем игроку, что идет сохранение
+    console.log("SYSTEM: SYNCING_COMBAT_DATA...");
+
+    if (window.Core?.UpdateCombatScore) {
+        // ЖДЕМ, пока данные реально запишутся в Supabase
+        await window.Core.UpdateCombatScore(this.player.score); 
     }
+
+    alert(`STATION_DEFENSE_CRITICAL: FAILED\nFINAL SCORE: ${this.player.score}`);
+    
+    // Только ПОСЛЕ этого переходим на главную
+    window.location.href = '../index.html';
+}
 
     loop() {
         this.update();
