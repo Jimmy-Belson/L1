@@ -61,11 +61,20 @@ class Particle {
 
 class Player {
     constructor() {
-        this.x = window.innerWidth / 2;
-        this.y = window.innerHeight - 80;
+        // Заменяем window.innerWidth на canvas.width
+        // Это поставит корабль ровно по центру игровой зоны (450px)
+        this.x = canvas.width / 2;
+
+        // Заменяем window.innerHeight на canvas.height
+        // Это гарантирует, что корабль будет внизу рамки, а не улетит под экран
+        this.y = canvas.height - 60; 
+
         this.score = 0;
         this.lives = CONFIG.BALANCE.LIVES;
+
+        // Целевая точка для мыши тоже должна быть привязана к центру канваса
         this.targetX = this.x;
+
         this.heat = 0;
         this.overheated = false;
     }
