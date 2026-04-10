@@ -259,34 +259,53 @@ setupListeners() {
         });
     }
 
-    draw() {
-        ctx.fillStyle = '#01050a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+draw() {
+    // 1. Чистим холст
+    ctx.fillStyle = '#01050a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.save();
-        if (this.shake > 0) {
-            ctx.translate(Math.random()*this.shake, Math.random()*this.shake);
-            this.shake *= 0.9;
-        }
-
-        this.particles.forEach(p => p.draw(ctx));
-        this.enemies.forEach(e => e.draw(ctx));
-        this.player.draw(ctx);
-        
-        this.projectiles.forEach(p => {
-            ctx.fillStyle = '#ff00e5';
-            ctx.fillRect(p.x-2, p.y, 4, 15);
-        });
-        ctx.restore();
-
-        // UI
-        const rank = getRankByScore(this.player.score);
-        ctx.fillStyle = '#0ff';
-        ctx.font = '16px Orbitron';
-        ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
-        ctx.fillStyle = rank.color;
-        ctx.fillText(`RANK: ${rank.name}`, 20, 65);
+    ctx.save();
+    // 2. Эффект тряски экрана (Screen Shake)
+    if (this.shake > 0) {
+        ctx.translate(Math.random() * this.shake - this.shake / 2, Math.random() * this.shake - this.shake / 2);
+        this.shake *= 0.9;
+        if (this.shake < 0.1) this.shake = 0;
     }
+
+    // 3. Отрисовка игровых объектов
+    this.particles.forEach(p => p.draw(ctx));
+    this.enemies.forEach(e => e.draw(ctx));
+    
+    // Рисуем игрока (теперь он точно будет внутри после фикса в конструкторе)
+    this.player.draw(ctx);
+    
+    // 4. Отрисовка снарядов с неоновым свечением
+    this.projectiles.forEach(p => {
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff00e5';
+        ctx.fillStyle = '#ff00e5';
+        ctx.fillRect(p.x - 2, p.y, 4, 15);
+        ctx.restore();
+    });
+    
+    ctx.restore(); // Закрываем область тряски
+
+    // 5. Отрисовка UI (всегда поверх всего и не трясется)
+    const rank = getRankByScore(this.player.score);
+    
+    ctx.save();
+    ctx.font = '16px Orbitron';
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = '#0ff';
+    ctx.fillStyle = '#0ff';
+    ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
+    
+    ctx.fillStyle = rank.color;
+    ctx.shadowColor = rank.color;
+    ctx.fillText(`RANK: ${rank.name}`, 20, 65);
+    ctx.restore();
+}
 
 async gameOver() { // Добавили async
     window.gameActive = false;
