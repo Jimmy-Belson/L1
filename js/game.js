@@ -153,6 +153,9 @@ class Enemy {
         }
         ctx.restore();
     }
+    update() {
+        this.y += this.speed;
+    }
 }
 
 // ==========================================
@@ -172,27 +175,18 @@ class GameEngine {
 
 setupListeners() {
     window.addEventListener('mousemove', (e) => {
-        // 1. Получаем положение рамки (канваса) на экране
         const rect = canvas.getBoundingClientRect();
-        
-        // 2. Вычитаем из координаты мыши (e.clientX) 
-        // расстояние от края экрана до начала рамки (rect.left)
-        const mouseXInCanvas = e.clientX - rect.left;
+        // Рассчитываем позицию мыши относительно канваса
+        let mX = e.clientX - rect.left;
 
-        // 3. Отправляем кораблю правильную координату
-        this.player.targetX = mouseXInCanvas;
-
-        // --- ГРАНИЦЫ ---
-        // Не даем целевой точке выйти за пределы ширины холста
-        // Оставляем отступ в 30 пикселей (половина ширины корабля)
+        // Ограничиваем движение рамками холста (30px от краев)
         const margin = 30;
-        if (mouseX < margin) mouseX = margin;
-        if (mouseX > canvas.width - margin) mouseX = canvas.width - margin;
+        if (mX < margin) mX = margin;
+        if (mX > canvas.width - margin) mX = canvas.width - margin;
 
-        this.player.targetX = mouseX;
+        this.player.targetX = mX;
     });
 
-    
     window.addEventListener('mousedown', () => {
         if (this.player.overheated) return;
         this.player.heat += 20;
@@ -249,7 +243,7 @@ setupListeners() {
                 if (this.player.lives <= 0) this.gameOver();
             }
         });
-        
+
         this.particles.forEach((p, i) => {
             p.update();
             if (p.life <= 0) this.particles.splice(i, 1);
