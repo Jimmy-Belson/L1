@@ -94,18 +94,63 @@ class Player {
 
 class Enemy {
     constructor() {
-        this.size = 30;
-        // Используем ширину канваса (900), а не окна
-        this.x = Math.random() * (canvas.width - 60) + 30;
-        this.y = -50;
-        this.speed = 3 + Math.random() * 2;
-        this.color = '#ff00e5';
+        const rand = Math.random();
+        
+        if (rand < 0.15) { 
+            // ТАНК (15% шанс)
+            this.type = 'tank';
+            this.size = 50;
+            this.hp = 5; // Нужно 5 попаданий
+            this.speed = 1 + Math.random() * 0.5;
+            this.color = '#ffea00'; // Желтый неоновый
+            this.scoreValue = 50;
+        } else if (rand < 0.35) { 
+            // СПРИНТЕР (20% шанс)
+            this.type = 'sprinter';
+            this.size = 15;
+            this.hp = 1;
+            this.speed = 5 + Math.random() * 2;
+            this.color = '#00ff44'; // Ярко-зеленый
+            this.scoreValue = 30;
+        } else { 
+            // ОБЫЧНЫЙ (65% шанс)
+            this.type = 'normal';
+            this.size = 30;
+            this.hp = 1;
+            this.speed = 2 + Math.random() * 2;
+            this.color = '#ff00e5'; // Твой стандартный розовый
+            this.scoreValue = 10;
+        }
+
+        this.x = Math.random() * (canvas.width - this.size * 2) + this.size;
+        this.y = -this.size;
     }
-    update() { this.y += this.speed; }
+
     draw(ctx) {
         ctx.save();
-        ctx.strokeStyle = this.color;
-        ctx.strokeRect(this.x - 15, this.y - 15, 30, 30);
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        
+        // Отрисовка формы в зависимости от типа
+        if (this.type === 'tank') {
+            ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+            // Добавим полоску брони сверху
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        } else if (this.type === 'sprinter') {
+            // Треугольник для шустрого врага
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + this.size);
+            ctx.lineTo(this.x - this.size, this.y - this.size);
+            ctx.lineTo(this.x + this.size, this.y - this.size);
+            ctx.fill();
+        } else {
+            // Обычный ромб или круг
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     }
 }
@@ -172,18 +217,31 @@ setupListeners() {
         });
 
         // Враги
+    // Враги
         this.enemies.forEach((e, i) => {
             e.update();
+            
             // Коллизия с пулей
             this.projectiles.forEach((p, pi) => {
-                if (Math.hypot(p.x - e.x, p.y - e.y) < 25) {
-                    this.player.score += 10;
-                    for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
-                    this.enemies.splice(i, 1);
-                    this.projectiles.splice(pi, 1);
+                // Дистанция коллизии зависит от размера врага
+                if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
+                    
+                    e.hp -= 1; // УМЕНЬШАЕМ HP
+                    this.projectiles.splice(pi, 1); // Пуля исчезает
+
+                    if (e.hp <= 0) {
+                        // Если HP кончились — уничтожаем
+                        this.player.score += e.scoreValue; // Очки за конкретный тип
+                        for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
+                        this.enemies.splice(i, 1);
+                    } else {
+                        // Эффект попадания (мини-взрыв) без уничтожения
+                        for(let j=0; j<3; j++) this.particles.push(new Particle(p.x, p.y, '#fff'));
+                    }
                 }
             });
-            // Пропуск или столкновение
+
+            // Пропуск или столкновение с игроком
             if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
                 this.enemies.splice(i, 1);
                 this.player.lives--;
@@ -191,7 +249,7 @@ setupListeners() {
                 if (this.player.lives <= 0) this.gameOver();
             }
         });
-
+        
         this.particles.forEach((p, i) => {
             p.update();
             if (p.life <= 0) this.particles.splice(i, 1);
