@@ -1,11 +1,10 @@
-/* game.css — Advanced Battle Sector UI */
+/* game.css — Advanced Battle Sector UI (Optimized) */
 
 :root {
     --neon-blue: #00f2ff;
     --neon-pink: #ff00e5;
     --bg-black: #01050a;
     --panel-bg: rgba(0, 10, 20, 0.85);
-    /* Размеры игровой зоны */
     --game-width: 900px;
     --game-height: 600px;
 }
@@ -19,80 +18,79 @@ body {
     overflow: hidden;
     width: 100vw;
     height: 100vh;
-    /* Центрируем всё содержимое по центру экрана */
     display: flex;
     justify-content: center;
     align-items: center;
+    /* Ультимативное скрытие курсора */
+    cursor: none !important;
 }
 
-/* Сетка на фоне */
+/* Эффект виньетки и сетка */
 body::before {
     content: "";
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background-image: 
+    background: 
+        radial-gradient(circle, transparent 30%, rgba(0, 0, 0, 0.8) 100%),
         linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
-    background-size: 50px 50px;
+    background-size: 100% 100%, 50px 50px, 50px 50px;
     z-index: 0;
     pointer-events: none;
 }
 
-/* --- НОВАЯ ЦЕНТРАЛЬНАЯ РАМКА --- */
+/* --- ЦЕНТРАЛЬНАЯ РАМКА С АНИМАЦИЕЙ --- */
 .game-viewport {
     position: relative;
     width: var(--game-width);
     height: var(--game-height);
-    border: 2px solid rgba(0, 242, 255, 0.3);
+    border: 2px solid rgba(0, 242, 255, 0.4);
     background: #000;
-    box-shadow: 0 0 40px rgba(0, 242, 255, 0.15), inset 0 0 20px rgba(0, 242, 255, 0.1);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.1), inset 0 0 30px rgba(0, 242, 255, 0.05);
     z-index: 5;
     overflow: hidden;
     border-radius: 4px;
-    cursor: none;
+    animation: frame-glow 4s infinite alternate;
 }
 
-/* Эффект сканирующих линий поверх игры */
+@keyframes frame-glow {
+    from { border-color: rgba(0, 242, 255, 0.3); box-shadow: 0 0 20px rgba(0, 242, 255, 0.1); }
+    to { border-color: rgba(0, 242, 255, 0.6); box-shadow: 0 0 40px rgba(0, 242, 255, 0.2); }
+}
+
 .game-viewport::after {
     content: "";
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.08) 50%);
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 6;
-    cursor: none;
 }
 
-/* Холст теперь внутри рамки, а не на весь экран */
 #game-canvas {
     display: block;
     width: 100%;
     height: 100%;
-    cursor: none;
 }
 
 .game-container {
-    position: fixed; /* Оставляем фиксированным, чтобы перекрыть экран */
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
     z-index: 10;
     pointer-events: none;
-cursor: none;
-    /* ДОБАВЛЯЕМ ЭТИ СТРОКИ ДЛЯ ЦЕНТРИРОВАНИЯ ВНУТРЕННОСТЕЙ */
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Разрешаем клики по элементам интерфейса */
-.tactical-log, .back-btn, .side-panel {
+/* --- ИНТЕРАКТИВНЫЕ ЭЛЕМЕНТЫ (ВОЗВРАЩАЕМ КУРСОР) --- */
+.tactical-log, .back-btn, .left-status-panel {
     pointer-events: auto;
+    cursor: crosshair !important; /* Делаем курсор стилизованным под прицел */
 }
 
-/* Кнопка выхода (слева сверху) */
 .back-btn {
     position: absolute;
     top: 20px;
@@ -103,74 +101,81 @@ cursor: none;
     font-family: 'Orbitron', sans-serif;
     border: 1px solid rgba(0, 242, 255, 0.3);
     padding: 8px 20px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
     transition: 0.3s;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 
 .back-btn:hover {
     background: var(--neon-blue);
     color: #000;
-    box-shadow: 0 0 15px var(--neon-blue);
+    box-shadow: 0 0 20px var(--neon-blue);
+    transform: skewX(-5deg); /* Небольшой динамический эффект */
 }
 
-/* Левая панель статуса (Новая) */
 .left-status-panel {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    margin-top: 70px; /* Чтобы не перекрывала кнопку выхода */
-    width: 200px;
+    top: 20px; left: 20px;
+    margin-top: 75px;
+    width: 180px;
     background: var(--panel-bg);
-    border: 1px solid rgba(0, 242, 255, 0.2);
+    border: 1px solid rgba(0, 242, 255, 0.1);
     padding: 15px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--neon-blue);
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
 }
 
-/* Tactical Log (Твоя правая панель) */
 .tactical-log {
     position: absolute;
     top: 20px;
-    right: 8px;
-    width: 170px; /* Уменьшили с 280px */
+    right: 20px;
+    width: 180px;
     max-height: 80vh;
-    background: rgba(0, 5, 10, 0.7); /* Более прозрачный фон */
+    background: rgba(0, 8, 15, 0.9);
     border: 1px solid rgba(0, 242, 255, 0.2);
     padding: 15px;
-    backdrop-filter: blur(5px);
-    pointer-events: auto;
+    backdrop-filter: blur(10px);
     z-index: 20;
+    box-shadow: -5px 5px 20px rgba(0,0,0,0.5);
 }
-
 
 .tactical-log h3 {
     font-family: 'Orbitron', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--neon-blue);
     margin: 0 0 15px 0;
     letter-spacing: 2px;
     text-transform: uppercase;
     border-bottom: 1px solid rgba(0, 242, 255, 0.2);
-    padding-bottom: 10px;
+    padding-bottom: 8px;
+    opacity: 0.8;
 }
 
 .log-entry {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
-    padding: 10px 5px;
+    font-size: 11px;
+    padding: 8px 0;
     border-bottom: 1px solid rgba(0, 242, 255, 0.05);
+    transition: 0.2s;
 }
 
-/* Адаптация под малые экраны */
+.log-entry:hover {
+    background: rgba(0, 242, 255, 0.05);
+    padding-left: 5px;
+}
+
 @media (max-width: 1400px) {
     :root {
-        --game-width: 900px;
-        --game-height: 600px;
+        --game-width: 800px;
+        --game-height: 500px;
     }
 }
+
+
+
 
 
 
