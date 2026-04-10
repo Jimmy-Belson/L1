@@ -131,7 +131,7 @@ body::before {
     position: absolute;
     top: 20px;
     right: 8px;
-    width: 200px; /* Уменьшили с 280px */
+    width: 170px; /* Уменьшили с 280px */
     max-height: 80vh;
     background: rgba(0, 5, 10, 0.7); /* Более прозрачный фон */
     border: 1px solid rgba(0, 242, 255, 0.2);
