@@ -61,6 +61,7 @@ body::before {
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 6;
+    cursor: none;
 }
 
 /* Холст теперь внутри рамки, а не на весь экран */
@@ -78,7 +79,7 @@ body::before {
     height: 100vh;
     z-index: 10;
     pointer-events: none;
-
+cursor: none;
     /* ДОБАВЛЯЕМ ЭТИ СТРОКИ ДЛЯ ЦЕНТРИРОВАНИЯ ВНУТРЕННОСТЕЙ */
     display: flex;
     justify-content: center;
