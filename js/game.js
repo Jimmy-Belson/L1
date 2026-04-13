@@ -181,42 +181,53 @@ class GameEngine {
         this.shake = 0;
         this.setupListeners();
     }
+    requestLock() {
+    const canvas = document.getElementById('game-canvas');
+    // Запрашиваем захват курсора
+    canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+    canvas.requestPointerLock();
+}
 
 setupListeners() {
-    // Прячем курсор в зоне канваса
-    canvas.style.cursor = 'none'; 
+    const canvas = document.getElementById('game-canvas');
 
+    // 1. Активируем захват при клике по полю боя
+    canvas.addEventListener('mousedown', (e) => {
+        if (window.gameActive && document.pointerLockElement !== canvas) {
+            this.requestLock();
+        }
+        
+        // Обычная логика стрельбы
+        if (!window.gameActive || this.player.overheated) return;
+        this.player.heat += 20;
+        if (this.player.heat >= 100) this.player.overheated = true;
+        this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+    });
+
+    // 2. Слушаем движение мыши (даже если она "заперта")
     window.addEventListener('mousemove', (e) => {
         if (!window.gameActive) return;
 
-        const rect = canvas.getBoundingClientRect();
-        
-        // Получаем позицию курсора относительно КАНВАСА
-        let mX = e.clientX - rect.left;
-        let mY = e.clientY - rect.top;
+        if (document.pointerLockElement === canvas) {
+            // Если курсор заблокирован, используем дельту движения
+            this.player.targetX += e.movementX;
+        } else {
+            // Если не заблокирован (обычный режим), используем старую логику
+            const rect = canvas.getBoundingClientRect();
+            this.player.targetX = e.clientX - rect.left;
+        }
 
-        // --- МАГИЯ ОГРАНИЧЕНИЯ ---
-        // Если мышь вышла за пределы рамки (900x600), 
-        // мы принудительно "приклеиваем" её координаты к краям
-        const margin = 20; // Отступ от краев корабля
-        
-        if (mX < margin) mX = margin;
-        if (mX > canvas.width - margin) mX = canvas.width - margin;
-        
-        // Даже если мышь ушла на второй монитор или вбок, 
-        // цель игрока (targetX) не выйдет за рамки 900px
-        this.player.targetX = mX;
+        // Ограничиваем игрока рамками холста
+        const margin = 30;
+        if (this.player.targetX < margin) this.player.targetX = margin;
+        if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
     });
 
-    // Стрельба
-    window.addEventListener('mousedown', (e) => {
-        if (!window.gameActive || this.player.overheated) return;
-        
-        // Проверяем, что клик был именно по игровому полю, а не по кнопке выхода
-        if (e.target === canvas) {
-            this.player.heat += 20;
-            if (this.player.heat >= 100) this.player.overheated = true;
-            this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+    // 3. Выход из боя (Esc) — автоматически освобождает мышь
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement !== canvas && window.gameActive) {
+            console.log("MOUSE_RELEASED");
+            // Тут можно поставить игру на паузу, если захочешь
         }
     });
 }
