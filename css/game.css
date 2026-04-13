@@ -224,23 +224,45 @@ cursor: none;
     padding-bottom: 5px;
 }
 
+* Общие стили для обеих кнопок */
 #retry-btn, #exit-btn {
     background: transparent;
     border: 1px solid var(--neon-blue);
     color: var(--neon-blue);
     padding: 10px 20px;
-    margin-top: 20px;
-    cursor: pointer;
+    margin-top: 15px;
+    cursor: pointer !important;
     font-family: 'Share Tech Mono', monospace;
-    transition: 0.3s;
+    transition: all 0.3s ease;
     width: 100%;
+    position: relative;
+    z-index: 10002 !important; /* Убеждаемся, что обе кнопки на самом верху */
+    pointer-events: auto !important;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
-#retry-btn:hover {
+/* Эффект свечения и отклика для ОБЕИХ кнопок при наведении */
+#retry-btn:hover, #exit-btn:hover {
     background: var(--neon-blue);
     color: #000;
-    box-shadow: 0 0 15px var(--neon-blue);
+    box-shadow: 0 0 20px var(--neon-blue);
+    transform: scale(1.02); /* Легкий отклик (увеличение) */
 }
+
+/* Добавим отдельный цвет для кнопки выхода, чтобы она отличалась по смыслу (опционально) */
+#exit-btn {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    margin-top: 10px; /* Небольшой отступ между кнопками */
+}
+
+#exit-btn:hover {
+    background: var(--neon-pink);
+    color: #000;
+    box-shadow: 0 0 20px var(--neon-pink);
+}
+
 .game-over-visible button {
     pointer-events: auto !important;
     cursor: pointer !important; /* На маках это критично для отклика */
