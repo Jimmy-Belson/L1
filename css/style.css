@@ -1632,3 +1632,36 @@ html, body {
     text-shadow: 0 0 10px var(--neon-pink);
     transform: scale(1.2);
 }
+/* Кнопка удаления сообщения */
+.del-msg-trigger {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    padding: 0 4px;
+}
+
+/* Эффект при наведении */
+.del-msg-trigger:hover {
+    opacity: 1 !important; /* Отменяем прозрачность 0.5 из JS */
+    color: #ff0055 !important; /* Делаем цвет ярче */
+    text-shadow: 0 0 8px var(--neon-pink), 0 0 15px var(--neon-pink);
+    transform: scale(1.3) rotate(90deg); /* Кнопка увеличивается и чуть поворачивается */
+}
+
+/* Анимация при нажатии (фидбек) */
+.del-msg-trigger:active {
+    transform: scale(0.9);
+    filter: brightness(1.5);
+}
+
+/* Контейнер сообщения, чтобы крестик не вылетал */
+.msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
