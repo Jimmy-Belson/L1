@@ -273,3 +273,12 @@ cursor: none;
     color: #000 !important;
     box-shadow: 0 0 25px var(--neon-pink), inset 0 0 10px rgba(255, 255, 255, 0.5);
 }
+/* Полная блокировка курсора для всего документа во время игры */
+body:not(:has(.game-over-visible)) {
+    cursor: none !important;
+}
+
+/* Исключение для кнопки выхода [ EXIT_TO_STATION ] */
+.back-btn {
+    cursor: pointer !important;
+}

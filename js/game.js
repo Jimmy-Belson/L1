@@ -183,9 +183,12 @@ class GameEngine {
     }
 
 setupListeners() {
+    // Прячем курсор сразу при инициализации слушателей
+    canvas.style.cursor = 'none'; 
+
     window.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
-        // Рассчитываем позицию мыши относительно канваса
+
         let mX = e.clientX - rect.left;
 
         // Ограничиваем движение рамками холста (30px от краев)
@@ -310,7 +313,10 @@ draw() {
 async gameOver() {
     window.gameActive = false;
     
-    // Получаем элементы нашего нового окна
+    // ВОЗВРАЩАЕМ КУРСОР
+    canvas.style.cursor = 'default';
+    document.body.style.cursor = 'default';
+    
     const overlay = document.getElementById('game-over-overlay');
     const scoreDisplay = document.getElementById('final-score-value');
     const rankDisplay = document.getElementById('final-rank-value');
@@ -336,14 +342,21 @@ async gameOver() {
 
 
 
-    
+
 }
 
-    loop() {
-        this.update();
-        this.draw();
-        requestAnimationFrame(() => this.loop());
+loop() {
+    this.update();
+    this.draw();
+    
+    // Страховка: если игра активна, курсор должен быть скрыт
+    if (window.gameActive) {
+        canvas.style.cursor = 'none';
+        document.body.style.cursor = 'none';
     }
+
+    requestAnimationFrame(() => this.loop());
+}
 }
 
 // --- СТАРТ ---
