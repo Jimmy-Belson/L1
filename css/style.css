@@ -1621,3 +1621,14 @@ html, body {
 .popover-hidden {
     display: none;
 }
+.del-msg-trigger {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.del-msg-trigger:hover {
+    opacity: 1 !important;
+    text-shadow: 0 0 10px var(--neon-pink);
+    transform: scale(1.2);
+}

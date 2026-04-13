@@ -76,35 +76,66 @@ export const ChatModule = {
         }
     },
 
-    render(m, Core) {
-        const s = document.getElementById('chat-stream'); 
-        if (!s || document.getElementById(`msg-${m.id}`)) return;
+    async deleteMessage(id, Core) {
+    // Используем confirm (или твой Core.Confirm, если он есть в confirm.js)
+    if (!confirm("DATA_PURGE: Удалить сообщение из архива?")) return;
 
-        const isMy = m.user_id === Core.user?.id;
-        const avatar = Core.getAvatar(m.user_id, m.avatar_url);
-        const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    try {
+        const { error } = await Core.sb
+            .from('comments')
+            .delete()
+            .eq('id', id);
 
-        const d = document.createElement('div'); 
-        d.id = `msg-${m.id}`;
-        d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
-        d.innerHTML = `
-            <div class="chat-row-layout">
-                <div class="avatar-wrapper" style="cursor:pointer"><img src="${avatar}" class="chat-row-avatar"></div>
-                <div class="chat-content-block">
-                    <div class="msg-header">
-                        <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">${(m.nickname || "PILOT").toUpperCase()}</span>
-                        <span class="msg-time">${time}</span>
-                    </div>
-                    <div class="msg-text">${m.message}</div>
+        if (error) throw error;
+        
+        // Нам не нужно удалять элемент вручную здесь, 
+        // так как .on('postgres_changes', { event: 'DELETE' ... }) в subscribe сделает это за нас!
+        console.log("SIGNAL_TERMINATED:", id);
+    } catch (err) {
+        console.error("PURGE_ERROR:", err.message);
+        Core.Msg("PURGE_FAILED", "error");
+    }
+},
+
+render(m, Core) {
+    const s = document.getElementById('chat-stream'); 
+    if (!s || document.getElementById(`msg-${m.id}`)) return;
+
+    const isMy = m.user_id === Core.user?.id;
+    const avatar = Core.getAvatar(m.user_id, m.avatar_url);
+    const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    const d = document.createElement('div'); 
+    d.id = `msg-${m.id}`;
+    d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
+    
+    // Добавляем кнопку удаления (del-btn), если сообщение наше
+    d.innerHTML = `
+        <div class="chat-row-layout">
+            <div class="avatar-wrapper" style="cursor:pointer"><img src="${avatar}" class="chat-row-avatar"></div>
+            <div class="chat-content-block">
+                <div class="msg-header">
+                    <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">${(m.nickname || "PILOT").toUpperCase()}</span>
+                    <span class="msg-time">${time}</span>
+                    ${isMy ? <span class="del-msg-trigger" data-id="${m.id}" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span> : ''}
                 </div>
-            </div>`;
+                <div class="msg-text">${m.message}</div>
+            </div>
+        </div>`;
 
- d.querySelector('.avatar-wrapper').onclick = (e) => this.openPop(m.user_id, Core, e);
+    // Привязываем открытие профиля
+    d.querySelector('.avatar-wrapper').onclick = (e) => this.openPop(m.user_id, Core, e);
     d.querySelector('.msg-nick').onclick = (e) => this.openPop(m.user_id, Core, e);
 
-        s.appendChild(d);
-        s.scrollTop = s.scrollHeight;
-    },
+    // Привязываем удаление (если кнопка есть)
+    const delBtn = d.querySelector('.del-msg-trigger');
+    if (delBtn) {
+        delBtn.onclick = () => this.deleteMessage(m.id, Core);
+    }
+
+    s.appendChild(d);
+    s.scrollTop = s.scrollHeight;
+},
 
 async openPop(uid, Core, event) {
         if (event) event.stopPropagation();
