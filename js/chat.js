@@ -140,13 +140,16 @@ const deleteBtnHtml = isMy
     d.querySelector('.msg-nick').onclick = (e) => this.openPop(m.user_id, Core, e);
 
     // 4. Привязываем удаление
-    const delTrigger = d.querySelector('.del-msg-trigger');
-    if (delTrigger) {
-        delTrigger.onclick = (e) => {
-            e.stopPropagation(); // Чтобы не открывался профиль при клике на крестик
-            this.deleteMessage(m.id, Core);
-        };
-    }
+// В методе render (chat.js)
+// В методе render (chat.js)
+const delTrigger = d.querySelector('.del-msg-trigger');
+if (delTrigger) {
+    delTrigger.onclick = (e) => {
+        e.stopPropagation(); 
+        // Безопасный вызов через имя объекта модуля
+        ChatModule.deleteMessage(m.id, Core); 
+    };
+}
 
     s.appendChild(d);
     s.scrollTop = s.scrollHeight;

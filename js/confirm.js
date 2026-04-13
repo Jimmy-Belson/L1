@@ -32,3 +32,5 @@ export async function CustomConfirm(text) {
         noBtn.onclick = () => { overlay.style.display = 'none'; resolve(false); };
     });
 }
+
+window.CustomConfirm = CustomConfirm;
