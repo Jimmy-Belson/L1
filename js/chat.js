@@ -76,24 +76,32 @@ export const ChatModule = {
         }
     },
 
-    async deleteMessage(id, Core) {
-    // Используем confirm (или твой Core.Confirm, если он есть в confirm.js)
-    if (!confirm("DATA_PURGE: Удалить сообщение из архива?")) return;
+async deleteMessage(id, Core) {
+    // 1. Вызываем твой CustomConfirm из confirm.js
+    // Если функция в глобальной видимости, вызываем так:
+    const confirmed = await CustomConfirm("ВНИМАНИЕ: УДАЛИТЬ ДАННОЕ СООБЩЕНИЕ ИЗ СЕТИ?");
+
+    // Если нажали [ ABORT ], выходим из функции
+    if (!confirmed) {
+        console.log("PURGE_ABORTED");
+        return;
+    }
 
     try {
+        // 2. Если нажали [ CONFIRM ], отправляем запрос в Supabase
         const { error } = await Core.sb
-            .from('comments')
+            .from('comments') // Твоя таблица
             .delete()
             .eq('id', id);
 
         if (error) throw error;
         
-        // Нам не нужно удалять элемент вручную здесь, 
-        // так как .on('postgres_changes', { event: 'DELETE' ... }) в subscribe сделает это за нас!
-        console.log("SIGNAL_TERMINATED:", id);
+        // Уведомление через твою систему Core
+        if (Core.Msg) Core.Msg("SIGNAL_TERMINATED", "success");
+        
     } catch (err) {
         console.error("PURGE_ERROR:", err.message);
-        Core.Msg("PURGE_FAILED", "error");
+        if (Core.Msg) Core.Msg("PURGE_FAILED", "error");
     }
 },
 

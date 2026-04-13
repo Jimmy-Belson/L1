@@ -1665,3 +1665,12 @@ html, body {
     align-items: center;
     gap: 8px;
 }
+#confirm-yes:hover {
+    background: rgba(0, 255, 255, 0.3) !important;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+#confirm-no:hover {
+    background: rgba(255, 0, 0, 0.3) !important;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+}
