@@ -105,11 +105,16 @@ render(m, Core) {
     const avatar = Core.getAvatar(m.user_id, m.avatar_url);
     const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
+    // 1. Сначала подготавливаем HTML кнопки удаления, если сообщение наше
+    const deleteBtnHtml = isMy 
+        ? <span class="del-msg-trigger" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span> 
+        : '';
+
     const d = document.createElement('div'); 
     d.id = `msg-${m.id}`;
     d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
     
-    // Добавляем кнопку удаления (del-btn), если сообщение наше
+    // 2. Теперь вставляем переменную deleteBtnHtml в общую строку
     d.innerHTML = `
         <div class="chat-row-layout">
             <div class="avatar-wrapper" style="cursor:pointer"><img src="${avatar}" class="chat-row-avatar"></div>
@@ -117,20 +122,23 @@ render(m, Core) {
                 <div class="msg-header">
                     <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">${(m.nickname || "PILOT").toUpperCase()}</span>
                     <span class="msg-time">${time}</span>
-                    ${isMy ? <span class="del-msg-trigger" data-id="${m.id}" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span> : ''}
+                    ${deleteBtnHtml}
                 </div>
                 <div class="msg-text">${m.message}</div>
             </div>
         </div>`;
 
-    // Привязываем открытие профиля
+    // 3. Привязываем события (профиль)
     d.querySelector('.avatar-wrapper').onclick = (e) => this.openPop(m.user_id, Core, e);
     d.querySelector('.msg-nick').onclick = (e) => this.openPop(m.user_id, Core, e);
 
-    // Привязываем удаление (если кнопка есть)
-    const delBtn = d.querySelector('.del-msg-trigger');
-    if (delBtn) {
-        delBtn.onclick = () => this.deleteMessage(m.id, Core);
+    // 4. Привязываем удаление
+    const delTrigger = d.querySelector('.del-msg-trigger');
+    if (delTrigger) {
+        delTrigger.onclick = (e) => {
+            e.stopPropagation(); // Чтобы не открывался профиль при клике на крестик
+            this.deleteMessage(m.id, Core);
+        };
     }
 
     s.appendChild(d);
