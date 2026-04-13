@@ -79,7 +79,7 @@ export const ChatModule = {
 async deleteMessage(id, Core) {
     // 1. Вызываем твой CustomConfirm из confirm.js
     // Если функция в глобальной видимости, вызываем так:
-    const confirmed = await CustomConfirm("ВНИМАНИЕ: УДАЛИТЬ ДАННОЕ СООБЩЕНИЕ ИЗ СЕТИ?");
+    const confirmed = await CustomConfirm(" DO YOU WANT TO REMOVE THIS MESSAGE FROM THE NETWORK?");
 
     // Если нажали [ ABORT ], выходим из функции
     if (!confirmed) {
