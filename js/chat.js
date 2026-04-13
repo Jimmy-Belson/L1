@@ -107,7 +107,7 @@ render(m, Core) {
 
    // 1. Сначала подготавливаем HTML кнопки удаления, если сообщение наше
 const deleteBtnHtml = isMy 
-    ? <span class="del-msg-trigger" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span> 
+    ? `<span class="del-msg-trigger" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span>` 
     : '';
     const d = document.createElement('div'); 
     d.id = `msg-${m.id}`;
