@@ -173,107 +173,89 @@ class Enemy {
 
 class GameEngine {
     constructor() {
+        // Сначала определяем холст внутри класса
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        
         this.player = new Player();
         this.enemies = [];
         this.projectiles = [];
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
+        
         this.setupListeners();
     }
+
     requestLock() {
-    const canvas = document.getElementById('game-canvas');
-    // Запрашиваем захват курсора
-    canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
-    canvas.requestPointerLock();
-}
+        // Запрашиваем захват курсора
+        const req = this.canvas.requestPointerLock || this.canvas.mozRequestPointerLock;
+        if (req) req.call(this.canvas);
+    }
 
-setupListeners() {
-    const canvas = document.getElementById('game-canvas');
+    setupListeners() {
+        // 1. Активируем захват при клике
+        this.canvas.addEventListener('mousedown', (e) => {
+            if (window.gameActive && document.pointerLockElement !== this.canvas) {
+                this.requestLock();
+            }
+            
+            if (!window.gameActive || this.player.overheated) return;
+            this.player.heat += 20;
+            if (this.player.heat >= 100) this.player.overheated = true;
+            this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+        });
 
-    // 1. Активируем захват при клике по полю боя
-    canvas.addEventListener('mousedown', (e) => {
-        if (window.gameActive && document.pointerLockElement !== canvas) {
-            this.requestLock();
-        }
-        
-        // Обычная логика стрельбы
-        if (!window.gameActive || this.player.overheated) return;
-        this.player.heat += 20;
-        if (this.player.heat >= 100) this.player.overheated = true;
-        this.projectiles.push({x: this.player.x, y: this.player.y - 20});
-    });
+        // 2. Движение
+        window.addEventListener('mousemove', (e) => {
+            if (!window.gameActive) return;
 
-    // 2. Слушаем движение мыши (даже если она "заперта")
-    window.addEventListener('mousemove', (e) => {
-        if (!window.gameActive) return;
+            if (document.pointerLockElement === this.canvas) {
+                // Плавное движение при захвате (делим на 1.5 для комфорта)
+                this.player.targetX += e.movementX / 1.5;
+            } else {
+                const rect = this.canvas.getBoundingClientRect();
+                this.player.targetX = e.clientX - rect.left;
+            }
 
-        if (document.pointerLockElement === canvas) {
-            // Если курсор заблокирован, используем дельту движения
-            this.player.targetX += e.movementX;
-        } else {
-            // Если не заблокирован (обычный режим), используем старую логику
-            const rect = canvas.getBoundingClientRect();
-            this.player.targetX = e.clientX - rect.left;
-        }
+            // Ограничения
+            const margin = 30;
+            if (this.player.targetX < margin) this.player.targetX = margin;
+            if (this.player.targetX > this.canvas.width - margin) this.player.targetX = this.canvas.width - margin;
+        });
+    }
 
-        // Ограничиваем игрока рамками холста
-        const margin = 30;
-        if (this.player.targetX < margin) this.player.targetX = margin;
-        if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
-    });
-
-    // 3. Выход из боя (Esc) — автоматически освобождает мышь
-    document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement !== canvas && window.gameActive) {
-            console.log("MOUSE_RELEASED");
-            // Тут можно поставить игру на паузу, если захочешь
-        }
-    });
-}
     update() {
         if (!window.gameActive) return;
         this.player.update();
         
-        // Спавн
         if (++this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
             this.enemies.push(new Enemy());
             this.spawnTimer = 0;
         }
 
-        // Пули
         this.projectiles.forEach((p, i) => {
             p.y -= 10;
             if (p.y < -20) this.projectiles.splice(i, 1);
         });
 
-        // Враги
-    // Враги
         this.enemies.forEach((e, i) => {
             e.update();
-            
-            // Коллизия с пулей
             this.projectiles.forEach((p, pi) => {
-                // Дистанция коллизии зависит от размера врага
                 if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
-                    
-                    e.hp -= 1; // УМЕНЬШАЕМ HP
-                    this.projectiles.splice(pi, 1); // Пуля исчезает
-
+                    e.hp -= 1;
+                    this.projectiles.splice(pi, 1);
                     if (e.hp <= 0) {
-                        // Если HP кончились — уничтожаем
-                        this.player.score += e.scoreValue; // Очки за конкретный тип
+                        this.player.score += e.scoreValue;
                         for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
                         this.enemies.splice(i, 1);
                     } else {
-                        // Эффект попадания (мини-взрыв) без уничтожения
                         for(let j=0; j<3; j++) this.particles.push(new Particle(p.x, p.y, '#fff'));
                     }
                 }
             });
 
-            // Пропуск или столкновение с игроком
-            if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
+            if (e.y > this.canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
                 this.enemies.splice(i, 1);
                 this.player.lives--;
                 this.shake = 10;
@@ -287,123 +269,88 @@ setupListeners() {
         });
     }
 
-draw() {
-    // 1. Чистим холст
-    ctx.fillStyle = '#01050a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    draw() {
+        this.ctx.fillStyle = '#01050a';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    ctx.save();
-    // 2. Эффект тряски экрана (Screen Shake)
-    if (this.shake > 0) {
-        ctx.translate(Math.random() * this.shake - this.shake / 2, Math.random() * this.shake - this.shake / 2);
-        this.shake *= 0.9;
-        if (this.shake < 0.1) this.shake = 0;
+        this.ctx.save();
+        if (this.shake > 0) {
+            this.ctx.translate(Math.random() * this.shake - this.shake / 2, Math.random() * this.shake - this.shake / 2);
+            this.shake *= 0.9;
+        }
+
+        this.particles.forEach(p => p.draw(this.ctx));
+        this.enemies.forEach(e => e.draw(this.ctx));
+        this.player.draw(this.ctx);
+        
+        this.projectiles.forEach(p => {
+            this.ctx.save();
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = '#ff00e5';
+            this.ctx.fillStyle = '#ff00e5';
+            this.ctx.fillRect(p.x - 2, p.y, 4, 15);
+            this.ctx.restore();
+        });
+        
+        this.ctx.restore();
+
+        const rank = getRankByScore(this.player.score);
+        this.ctx.save();
+        this.ctx.font = '16px Orbitron';
+        this.ctx.fillStyle = '#0ff';
+        this.ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
+        this.ctx.fillStyle = rank.color;
+        this.ctx.fillText(`RANK: ${rank.name}`, 20, 65);
+        this.ctx.restore();
     }
 
-    // 3. Отрисовка игровых объектов
-    this.particles.forEach(p => p.draw(ctx));
-    this.enemies.forEach(e => e.draw(ctx));
-    
-    // Рисуем игрока (теперь он точно будет внутри после фикса в конструкторе)
-    this.player.draw(ctx);
-    
-    // 4. Отрисовка снарядов с неоновым свечением
-    this.projectiles.forEach(p => {
-        ctx.save();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#ff00e5';
-        ctx.fillStyle = '#ff00e5';
-        ctx.fillRect(p.x - 2, p.y, 4, 15);
-        ctx.restore();
-    });
-    
-    ctx.restore(); // Закрываем область тряски
+    async gameOver() {
+        window.gameActive = false;
+        
+        // Освобождаем курсор
+        if (document.exitPointerLock) document.exitPointerLock();
+        this.canvas.style.cursor = 'default';
+        document.body.style.cursor = 'default';
+        
+        const overlay = document.getElementById('game-over-overlay');
+        const scoreDisplay = document.getElementById('final-score-value');
+        const rankDisplay = document.getElementById('final-rank-value');
 
-    // 5. Отрисовка UI (всегда поверх всего и не трясется)
-    const rank = getRankByScore(this.player.score);
-    
-    ctx.save();
-    ctx.font = '16px Orbitron';
-    ctx.shadowBlur = 5;
-    ctx.shadowColor = '#0ff';
-    ctx.fillStyle = '#0ff';
-    ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
-    
-    ctx.fillStyle = rank.color;
-    ctx.shadowColor = rank.color;
-    ctx.fillText(`RANK: ${rank.name}`, 20, 65);
-    ctx.restore();
-}
+        const rank = getRankByScore(this.player.score);
+        scoreDisplay.innerText = this.player.score;
+        rankDisplay.innerText = rank.name;
+        rankDisplay.style.color = rank.color;
 
-async gameOver() {
-    window.gameActive = false;
-    
-    // ВОЗВРАЩАЕМ КУРСОР
-    canvas.style.cursor = 'default';
-    document.body.style.cursor = 'default';
-    
-    const overlay = document.getElementById('game-over-overlay');
-    const scoreDisplay = document.getElementById('final-score-value');
-    const rankDisplay = document.getElementById('final-rank-value');
+        overlay.classList.add('game-over-visible');
 
-    // Заполняем данные
-    const rank = getRankByScore(this.player.score);
-    scoreDisplay.innerText = this.player.score;
-    rankDisplay.innerText = rank.name;
-    rankDisplay.style.color = rank.color;
-
-    // Показываем окно
-    overlay.classList.add('game-over-visible');
-
-    // Синхронизация с БД (делаем в фоне)
-    if (window.Core?.UpdateCombatScore) {
-        await window.Core.UpdateCombatScore(this.player.score);
-        console.log("Data synced successfully");
+        if (window.Core?.UpdateCombatScore) {
+            await window.Core.UpdateCombatScore(this.player.score);
+        }
     }
 
+    loop() {
+        this.update();
+        this.draw();
+        
+        if (window.gameActive && document.pointerLockElement === this.canvas) {
+            this.canvas.style.cursor = 'none';
+        }
 
-
-
-
-
-
-
-}
-
-loop() {
-    this.update();
-    this.draw();
-    
-    // Страховка: если игра активна, курсор должен быть скрыт
-    if (window.gameActive) {
-        canvas.style.cursor = 'none';
-        document.body.style.cursor = 'none';
+        requestAnimationFrame(() => this.loop());
     }
-
-    requestAnimationFrame(() => this.loop());
-}
 }
 
-// --- СТАРТ ---
+// Запуск (теперь чистый)
 document.addEventListener('DOMContentLoaded', () => {
-    canvas = document.getElementById('game-canvas');
-    if (!canvas) return;
-
-    ctx = canvas.getContext('2d');
-    
-    // 1. Убиваем фон из script.js
     killBackgroundProcesses();
-
-    // 2. Ресайз
-const res = () => {
-    // Теперь холст всегда 900x600, как в CSS
-    canvas.width = 900;
-    canvas.height = 600;
-};
+    const engine = new GameEngine();
+    
+    const res = () => {
+        engine.canvas.width = 900;
+        engine.canvas.height = 600;
+    };
     window.addEventListener('resize', res);
     res();
-
-    // 3. Запуск
-    const engine = new GameEngine();
+    
     engine.loop();
 });
