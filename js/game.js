@@ -183,27 +183,41 @@ class GameEngine {
     }
 
 setupListeners() {
-    // Прячем курсор сразу при инициализации слушателей
+    // Прячем курсор в зоне канваса
     canvas.style.cursor = 'none'; 
 
     window.addEventListener('mousemove', (e) => {
+        if (!window.gameActive) return;
+
         const rect = canvas.getBoundingClientRect();
-
+        
+        // Получаем позицию курсора относительно КАНВАСА
         let mX = e.clientX - rect.left;
+        let mY = e.clientY - rect.top;
 
-        // Ограничиваем движение рамками холста (30px от краев)
-        const margin = 30;
+        // --- МАГИЯ ОГРАНИЧЕНИЯ ---
+        // Если мышь вышла за пределы рамки (900x600), 
+        // мы принудительно "приклеиваем" её координаты к краям
+        const margin = 20; // Отступ от краев корабля
+        
         if (mX < margin) mX = margin;
         if (mX > canvas.width - margin) mX = canvas.width - margin;
-
+        
+        // Даже если мышь ушла на второй монитор или вбок, 
+        // цель игрока (targetX) не выйдет за рамки 900px
         this.player.targetX = mX;
     });
 
-    window.addEventListener('mousedown', () => {
-        if (this.player.overheated) return;
-        this.player.heat += 20;
-        if (this.player.heat >= 100) this.player.overheated = true;
-        this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+    // Стрельба
+    window.addEventListener('mousedown', (e) => {
+        if (!window.gameActive || this.player.overheated) return;
+        
+        // Проверяем, что клик был именно по игровому полю, а не по кнопке выхода
+        if (e.target === canvas) {
+            this.player.heat += 20;
+            if (this.player.heat >= 100) this.player.overheated = true;
+            this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+        }
     });
 }
     update() {
