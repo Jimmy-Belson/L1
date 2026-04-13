@@ -46,7 +46,7 @@ body::before {
     border: 2px solid rgba(0, 242, 255, 0.3);
     background: #000;
     box-shadow: 0 0 40px rgba(0, 242, 255, 0.15), inset 0 0 20px rgba(0, 242, 255, 0.1);
-    z-index: 5;
+    z-index: 100;
     overflow: hidden;
     border-radius: 4px;
     cursor: none;
@@ -87,9 +87,14 @@ cursor: none;
     align-items: center;
 }
 
-/* Разрешаем клики по элементам интерфейса */
-.tactical-log, .back-btn, .side-panel {
-    pointer-events: auto;
+/* Разрешаем клики по оверлею в общем списке */
+.tactical-log, .back-btn, .side-panel, #game-over-overlay {
+    pointer-events: auto !important;
+}
+
+/* Убираем блокировку курсора при проигрыше */
+.game-viewport:has(.game-over-visible) {
+    cursor: default !important;
 }
 
 /* Кнопка выхода (слева сверху) */
@@ -176,14 +181,18 @@ cursor: none;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 400px;
-    background: rgba(1, 5, 10, 0.95);
+    background: rgba(1, 5, 10, 0.98); /* Сделаем чуть плотнее */
     border: 2px solid var(--neon-pink);
-    box-shadow: 0 0 30px rgba(255, 0, 229, 0.3);
-    z-index: 100;
+    box-shadow: 0 0 50px rgba(255, 0, 229, 0.5);
+    
+    /* КРИТИЧЕСКИЕ ПРАВКИ: */
+    z-index: 10000 !important; 
+    pointer-events: auto !important; 
+    display: none; 
+    
     padding: 30px;
     text-align: center;
     backdrop-filter: blur(10px);
-    display: none; /* Скрыто по умолчанию */
 }
 
 .game-over-visible { display: block !important; animation: fadeIn 0.5s; }
@@ -232,7 +241,22 @@ cursor: none;
     color: #000;
     box-shadow: 0 0 15px var(--neon-blue);
 }
+.game-over-visible button {
+    pointer-events: auto !important;
+    cursor: pointer !important; /* На маках это критично для отклика */
+    position: relative;
+    z-index: 10001 !important;
+}
+/* Прячем курсор везде в зоне контейнера, пока нет проигрыша */
+.game-container {
+    cursor: none !important;
+}
 
+/* Возвращаем курсор всему контейнеру, когда оверлей виден */
+.game-container:has(.game-over-visible) {
+    cursor: default !important;
+    pointer-events: auto !important; /* На всякий случай разрешаем контейнеру ловить мышь */
+}
 
 
 
