@@ -171,7 +171,67 @@ cursor: none;
         --game-height: 600px;
     }
 }
+#game-over-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background: rgba(1, 5, 10, 0.95);
+    border: 2px solid var(--neon-pink);
+    box-shadow: 0 0 30px rgba(255, 0, 229, 0.3);
+    z-index: 100;
+    padding: 30px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    display: none; /* Скрыто по умолчанию */
+}
 
+.game-over-visible { display: block !important; animation: fadeIn 0.5s; }
+
+.terminal-header {
+    position: absolute;
+    top: -12px; left: 20px;
+    background: var(--bg-black);
+    padding: 0 10px;
+    color: var(--neon-pink);
+    font-size: 10px;
+    letter-spacing: 2px;
+}
+
+.glitch {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 40px;
+    color: #fff;
+    text-shadow: 2px 2px var(--neon-pink), -2px -2px var(--neon-blue);
+    margin-bottom: 30px;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    font-size: 14px;
+    border-bottom: 1px dashed rgba(0, 242, 255, 0.2);
+    padding-bottom: 5px;
+}
+
+#retry-btn, #exit-btn {
+    background: transparent;
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    padding: 10px 20px;
+    margin-top: 20px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: 0.3s;
+    width: 100%;
+}
+
+#retry-btn:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon-blue);
+}
 
 
 

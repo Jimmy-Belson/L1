@@ -307,21 +307,36 @@ draw() {
     ctx.restore();
 }
 
-async gameOver() { // Добавили async
+async gameOver() {
     window.gameActive = false;
     
-    // Показываем игроку, что идет сохранение
-    console.log("SYSTEM: SYNCING_COMBAT_DATA...");
+    // Получаем элементы нашего нового окна
+    const overlay = document.getElementById('game-over-overlay');
+    const scoreDisplay = document.getElementById('final-score-value');
+    const rankDisplay = document.getElementById('final-rank-value');
 
+    // Заполняем данные
+    const rank = getRankByScore(this.player.score);
+    scoreDisplay.innerText = this.player.score;
+    rankDisplay.innerText = rank.name;
+    rankDisplay.style.color = rank.color;
+
+    // Показываем окно
+    overlay.classList.add('game-over-visible');
+
+    // Синхронизация с БД (делаем в фоне)
     if (window.Core?.UpdateCombatScore) {
-        // ЖДЕМ, пока данные реально запишутся в Supabase
-        await window.Core.UpdateCombatScore(this.player.score); 
+        await window.Core.UpdateCombatScore(this.player.score);
+        console.log("Data synced successfully");
     }
 
-    alert(`STATION_DEFENSE_CRITICAL: FAILED\nFINAL SCORE: ${this.player.score}`);
+
+
+
+
+
+
     
-    // Только ПОСЛЕ этого переходим на главную
-    window.location.href = '../index.html';
 }
 
     loop() {

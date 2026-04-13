@@ -64,10 +64,27 @@
         <div style="font-size: 9px; opacity: 0.8;">> SHIELDS: 100%</div>
     </div>
     
-    <div class="game-viewport">
-        <canvas id="game-canvas"></canvas>
-    </div>
+<div class="game-viewport">
+    <canvas id="game-canvas"></canvas>
 
+    <div id="game-over-overlay">
+        <div class="terminal-header">SYSTEM_FAILURE</div>
+        <div class="game-over-content">
+            <h1 class="glitch" data-text="TERMINATED">TERMINATED</h1>
+            <div class="stats-row">
+                <span>FINAL_SCORE:</span>
+                <span id="final-score-value">0</span>
+            </div>
+            <div class="stats-row">
+                <span>RANK_ACHIEVED:</span>
+                <span id="final-rank-value" style="color: #0ff;">RECRUIT</span>
+            </div>
+            <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
+            <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
+        </div>
+    </div>
+    </div>
+    
     <div class="tactical-log">
         <h3>Tactical Log</h3>
         <ul id="highscores-list">
