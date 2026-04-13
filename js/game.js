@@ -173,89 +173,97 @@ class Enemy {
 
 class GameEngine {
     constructor() {
-        // Сначала определяем холст внутри класса
-        this.canvas = document.getElementById('game-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        
         this.player = new Player();
         this.enemies = [];
         this.projectiles = [];
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
-        
         this.setupListeners();
     }
+    
 
-    requestLock() {
-        // Запрашиваем захват курсора
-        const req = this.canvas.requestPointerLock || this.canvas.mozRequestPointerLock;
-        if (req) req.call(this.canvas);
-    }
+setupListeners() {
+    // Прячем курсор в зоне канваса
+    canvas.style.cursor = 'none'; 
 
-    setupListeners() {
-        // 1. Активируем захват при клике
-        this.canvas.addEventListener('mousedown', (e) => {
-            if (window.gameActive && document.pointerLockElement !== this.canvas) {
-                this.requestLock();
-            }
-            
-            if (!window.gameActive || this.player.overheated) return;
+    window.addEventListener('mousemove', (e) => {
+        if (!window.gameActive) return;
+
+        const rect = canvas.getBoundingClientRect();
+        
+        // Получаем позицию курсора относительно КАНВАСА
+        let mX = e.clientX - rect.left;
+        let mY = e.clientY - rect.top;
+
+        // --- МАГИЯ ОГРАНИЧЕНИЯ ---
+        // Если мышь вышла за пределы рамки (900x600), 
+        // мы принудительно "приклеиваем" её координаты к краям
+        const margin = 20; // Отступ от краев корабля
+        
+        if (mX < margin) mX = margin;
+        if (mX > canvas.width - margin) mX = canvas.width - margin;
+        
+        // Даже если мышь ушла на второй монитор или вбок, 
+        // цель игрока (targetX) не выйдет за рамки 900px
+        this.player.targetX = mX;
+    });
+
+    // Стрельба
+    window.addEventListener('mousedown', (e) => {
+        if (!window.gameActive || this.player.overheated) return;
+        
+        // Проверяем, что клик был именно по игровому полю, а не по кнопке выхода
+        if (e.target === canvas) {
             this.player.heat += 20;
             if (this.player.heat >= 100) this.player.overheated = true;
             this.projectiles.push({x: this.player.x, y: this.player.y - 20});
-        });
-
-        // 2. Движение
-        window.addEventListener('mousemove', (e) => {
-            if (!window.gameActive) return;
-
-            if (document.pointerLockElement === this.canvas) {
-                // Плавное движение при захвате (делим на 1.5 для комфорта)
-                this.player.targetX += e.movementX / 1.5;
-            } else {
-                const rect = this.canvas.getBoundingClientRect();
-                this.player.targetX = e.clientX - rect.left;
-            }
-
-            // Ограничения
-            const margin = 30;
-            if (this.player.targetX < margin) this.player.targetX = margin;
-            if (this.player.targetX > this.canvas.width - margin) this.player.targetX = this.canvas.width - margin;
-        });
-    }
-
+        }
+    });
+}
     update() {
         if (!window.gameActive) return;
         this.player.update();
         
+        // Спавн
         if (++this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
             this.enemies.push(new Enemy());
             this.spawnTimer = 0;
         }
 
+        // Пули
         this.projectiles.forEach((p, i) => {
             p.y -= 10;
             if (p.y < -20) this.projectiles.splice(i, 1);
         });
 
+        // Враги
+    // Враги
         this.enemies.forEach((e, i) => {
             e.update();
+            
+            // Коллизия с пулей
             this.projectiles.forEach((p, pi) => {
+                // Дистанция коллизии зависит от размера врага
                 if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
-                    e.hp -= 1;
-                    this.projectiles.splice(pi, 1);
+                    
+                    e.hp -= 1; // УМЕНЬШАЕМ HP
+                    this.projectiles.splice(pi, 1); // Пуля исчезает
+
                     if (e.hp <= 0) {
-                        this.player.score += e.scoreValue;
+                        // Если HP кончились — уничтожаем
+                        this.player.score += e.scoreValue; // Очки за конкретный тип
                         for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
                         this.enemies.splice(i, 1);
                     } else {
+                        // Эффект попадания (мини-взрыв) без уничтожения
                         for(let j=0; j<3; j++) this.particles.push(new Particle(p.x, p.y, '#fff'));
                     }
                 }
             });
 
-            if (e.y > this.canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
+            // Пропуск или столкновение с игроком
+            if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
                 this.enemies.splice(i, 1);
                 this.player.lives--;
                 this.shake = 10;
@@ -269,88 +277,123 @@ class GameEngine {
         });
     }
 
-    draw() {
-        this.ctx.fillStyle = '#01050a';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+draw() {
+    // 1. Чистим холст
+    ctx.fillStyle = '#01050a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        this.ctx.save();
-        if (this.shake > 0) {
-            this.ctx.translate(Math.random() * this.shake - this.shake / 2, Math.random() * this.shake - this.shake / 2);
-            this.shake *= 0.9;
-        }
-
-        this.particles.forEach(p => p.draw(this.ctx));
-        this.enemies.forEach(e => e.draw(this.ctx));
-        this.player.draw(this.ctx);
-        
-        this.projectiles.forEach(p => {
-            this.ctx.save();
-            this.ctx.shadowBlur = 10;
-            this.ctx.shadowColor = '#ff00e5';
-            this.ctx.fillStyle = '#ff00e5';
-            this.ctx.fillRect(p.x - 2, p.y, 4, 15);
-            this.ctx.restore();
-        });
-        
-        this.ctx.restore();
-
-        const rank = getRankByScore(this.player.score);
-        this.ctx.save();
-        this.ctx.font = '16px Orbitron';
-        this.ctx.fillStyle = '#0ff';
-        this.ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
-        this.ctx.fillStyle = rank.color;
-        this.ctx.fillText(`RANK: ${rank.name}`, 20, 65);
-        this.ctx.restore();
+    ctx.save();
+    // 2. Эффект тряски экрана (Screen Shake)
+    if (this.shake > 0) {
+        ctx.translate(Math.random() * this.shake - this.shake / 2, Math.random() * this.shake - this.shake / 2);
+        this.shake *= 0.9;
+        if (this.shake < 0.1) this.shake = 0;
     }
 
-    async gameOver() {
-        window.gameActive = false;
-        
-        // Освобождаем курсор
-        if (document.exitPointerLock) document.exitPointerLock();
-        this.canvas.style.cursor = 'default';
-        document.body.style.cursor = 'default';
-        
-        const overlay = document.getElementById('game-over-overlay');
-        const scoreDisplay = document.getElementById('final-score-value');
-        const rankDisplay = document.getElementById('final-rank-value');
+    // 3. Отрисовка игровых объектов
+    this.particles.forEach(p => p.draw(ctx));
+    this.enemies.forEach(e => e.draw(ctx));
+    
+    // Рисуем игрока (теперь он точно будет внутри после фикса в конструкторе)
+    this.player.draw(ctx);
+    
+    // 4. Отрисовка снарядов с неоновым свечением
+    this.projectiles.forEach(p => {
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff00e5';
+        ctx.fillStyle = '#ff00e5';
+        ctx.fillRect(p.x - 2, p.y, 4, 15);
+        ctx.restore();
+    });
+    
+    ctx.restore(); // Закрываем область тряски
 
-        const rank = getRankByScore(this.player.score);
-        scoreDisplay.innerText = this.player.score;
-        rankDisplay.innerText = rank.name;
-        rankDisplay.style.color = rank.color;
-
-        overlay.classList.add('game-over-visible');
-
-        if (window.Core?.UpdateCombatScore) {
-            await window.Core.UpdateCombatScore(this.player.score);
-        }
-    }
-
-    loop() {
-        this.update();
-        this.draw();
-        
-        if (window.gameActive && document.pointerLockElement === this.canvas) {
-            this.canvas.style.cursor = 'none';
-        }
-
-        requestAnimationFrame(() => this.loop());
-    }
+    // 5. Отрисовка UI (всегда поверх всего и не трясется)
+    const rank = getRankByScore(this.player.score);
+    
+    ctx.save();
+    ctx.font = '16px Orbitron';
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = '#0ff';
+    ctx.fillStyle = '#0ff';
+    ctx.fillText(`SCORE: ${this.player.score} | LIVES: ${this.player.lives}`, 20, 40);
+    
+    ctx.fillStyle = rank.color;
+    ctx.shadowColor = rank.color;
+    ctx.fillText(`RANK: ${rank.name}`, 20, 65);
+    ctx.restore();
 }
 
-// Запуск (теперь чистый)
-document.addEventListener('DOMContentLoaded', () => {
-    killBackgroundProcesses();
-    const engine = new GameEngine();
+async gameOver() {
+    window.gameActive = false;
     
-    const res = () => {
-        engine.canvas.width = 900;
-        engine.canvas.height = 600;
-    };
+    // ВОЗВРАЩАЕМ КУРСОР
+    canvas.style.cursor = 'default';
+    document.body.style.cursor = 'default';
+    
+    const overlay = document.getElementById('game-over-overlay');
+    const scoreDisplay = document.getElementById('final-score-value');
+    const rankDisplay = document.getElementById('final-rank-value');
+
+    // Заполняем данные
+    const rank = getRankByScore(this.player.score);
+    scoreDisplay.innerText = this.player.score;
+    rankDisplay.innerText = rank.name;
+    rankDisplay.style.color = rank.color;
+
+    // Показываем окно
+    overlay.classList.add('game-over-visible');
+
+    // Синхронизация с БД (делаем в фоне)
+    if (window.Core?.UpdateCombatScore) {
+        await window.Core.UpdateCombatScore(this.player.score);
+        console.log("Data synced successfully");
+    }
+
+
+
+
+
+
+
+
+}
+
+loop() {
+    this.update();
+    this.draw();
+    
+    // Страховка: если игра активна, курсор должен быть скрыт
+    if (window.gameActive) {
+        canvas.style.cursor = 'none';
+        document.body.style.cursor = 'none';
+    }
+
+    requestAnimationFrame(() => this.loop());
+}
+}
+
+// --- СТАРТ ---
+document.addEventListener('DOMContentLoaded', () => {
+    canvas = document.getElementById('game-canvas');
+    if (!canvas) return;
+
+    ctx = canvas.getContext('2d');
+    
+    // 1. Убиваем фон из script.js
+    killBackgroundProcesses();
+
+    // 2. Ресайз
+const res = () => {
+    // Теперь холст всегда 900x600, как в CSS
+    canvas.width = 900;
+    canvas.height = 600;
+};
     window.addEventListener('resize', res);
     res();
-    
+
+    // 3. Запуск
+    const engine = new GameEngine();
     engine.loop();
 });
