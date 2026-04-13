@@ -224,7 +224,10 @@ cursor: none;
     padding-bottom: 5px;
 }
 
-* Общие стили для обеих кнопок */
+/* --- GAME OVER BUTTONS --- */
+
+/* Исправленный комментарий (с косой чертой в начале) */
+/* Общие стили для обеих кнопок */
 #retry-btn, #exit-btn {
     background: transparent;
     border: 1px solid var(--neon-blue);
@@ -236,7 +239,7 @@ cursor: none;
     transition: all 0.3s ease;
     width: 100%;
     position: relative;
-    z-index: 10002 !important; /* Убеждаемся, что обе кнопки на самом верху */
+    z-index: 10005 !important; /* Чуть выше оверлея */
     pointer-events: auto !important;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -245,42 +248,35 @@ cursor: none;
 /* Эффект свечения и отклика для ОБЕИХ кнопок при наведении */
 #retry-btn:hover, #exit-btn:hover {
     background: var(--neon-blue);
-    color: #000;
+    color: #000 !important; /* Важно, чтобы текст стал черным при наведении */
     box-shadow: 0 0 20px var(--neon-blue);
-    transform: scale(1.02); /* Легкий отклик (увеличение) */
+    transform: scale(1.02);
 }
 
-/* Добавим отдельный цвет для кнопки выхода, чтобы она отличалась по смыслу (опционально) */
+/* Кнопка выхода — розовый стиль */
 #exit-btn {
     border-color: var(--neon-pink);
     color: var(--neon-pink);
-    margin-top: 10px; /* Небольшой отступ между кнопками */
+    margin-top: 10px;
 }
 
 #exit-btn:hover {
-    background: var(--neon-pink);
-    color: #000;
+    background: var(--neon-pink) !important;
+    color: #000 !important;
     box-shadow: 0 0 20px var(--neon-pink);
 }
 
-.game-over-visible button {
-    pointer-events: auto !important;
-    cursor: pointer !important; /* На маках это критично для отклика */
-    position: relative;
-    z-index: 10001 !important;
-}
 /* Прячем курсор везде в зоне контейнера, пока нет проигрыша */
 .game-container {
     cursor: none !important;
 }
 
-/* Возвращаем курсор всему контейнеру, когда оверлей виден */
-.game-container:has(.game-over-visible) {
+/* Возвращаем курсор всему контейнеру и вьюпорту, когда оверлей виден */
+.game-container:has(.game-over-visible), 
+.game-viewport:has(.game-over-visible) {
     cursor: default !important;
-    pointer-events: auto !important; /* На всякий случай разрешаем контейнеру ловить мышь */
+    pointer-events: auto !important;
 }
-
-
 
 
 
