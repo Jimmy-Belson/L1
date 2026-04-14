@@ -121,7 +121,7 @@ export const CommModule = {
 
         // Добавляем кнопку удаления, если сообщение наше
         const delBtnHtml = isMy 
-            ? <span class="del-priv-trigger" style="cursor:pointer; color:var(--neon-pink); opacity:0.5; margin-left:10px; font-size:14px;">×</span> 
+            ? `<span class="del-priv-trigger" style="cursor:pointer; color:var(--neon-pink); opacity:0.5; margin-left:10px; font-size:14px;">×</span>` 
             : '';
 
         msgEl.innerHTML = `
