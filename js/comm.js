@@ -1,23 +1,17 @@
 export const CommModule = {
     activeTarget: null,
 
-    async openPanel(uid, nickname) {
+async openPanel(uid, nickname) {
     this.activeTarget = uid;
     const panel = document.getElementById('private-panel');
-    if (!panel) return;
+    if (!panel) {
+        console.error("PANEL_NOT_FOUND: Проверь ID в HTML");
+        return;
+    }
 
-    // Если окно было перемещено, оно может быть вне поля зрения. 
-    // Если хочешь, чтобы оно всегда открывалось в дефолтном месте, раскомментируй это:
-    /*
-    panel.style.top = "auto";
-    panel.style.left = "auto";
-    panel.style.right = "20px";
-    panel.style.bottom = "20px";
-    */
-
-    document.getElementById('private-target-name').innerText = `SECURE_LINE: ${nickname.toUpperCase()}`;
-    
-    panel.classList.remove('private-panel-hidden'); // Теперь это просто display: flex
+    // Принудительно включаем видимость
+    panel.style.display = 'flex'; 
+    panel.classList.remove('private-panel-hidden');
     await this.loadPrivateHistory(uid);
 
     const input = document.getElementById('private-in');
@@ -30,16 +24,17 @@ export const CommModule = {
 },
 
 closePanel(event) {
-    if (event) event.stopPropagation(); // Важно! Чтобы клик не улетел на элементы под кнопкой
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     
     const panel = document.getElementById('private-panel');
     if (panel) {
+        panel.style.display = 'none'; // Прячем полностью
         panel.classList.add('private-panel-hidden');
     }
-    
     this.activeTarget = null;
-    const container = document.getElementById('private-messages');
-    if (container) container.innerHTML = '';
 },
 
     // 3. Загрузка истории

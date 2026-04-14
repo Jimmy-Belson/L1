@@ -222,7 +222,7 @@ async openPop(uid, Core, event) {
                 const commBtn = document.createElement('button');
                 commBtn.innerText = "[ ESTABLISH_COMM ]";
                 commBtn.style.cssText = btnStyle;
-                commBtn.onclick = () => {
+                commBtn.onclick = (e) => {
                     if (window.CommModule) {
                         window.CommModule.openPanel(p.id, p.nickname || "PILOT");
                         pop.style.display = 'none'; // Закрываем поповер после открытия панели
