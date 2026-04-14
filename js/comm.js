@@ -2,30 +2,74 @@ export const CommModule = {
     activeTarget: null,
 
 // Внутри CommModule в comm.js
+
 async openPanel(uid, nickname) {
     this.activeTarget = uid;
     const panel = document.getElementById('private-panel');
     if (!panel) return;
 
-    // 1. Убираем класс скрытия
     panel.classList.remove('private-panel-hidden');
-    
-    // 2. ПРИНУДИТЕЛЬНО возвращаем видимость через style
-    panel.style.display = 'flex'; 
-    panel.style.opacity = '1';
-    panel.style.visibility = 'visible';
+    panel.style.display = 'flex';
 
     const titleEl = document.getElementById('private-target-name');
     if (titleEl) titleEl.innerText = `SECURE_LINE: ${nickname.toUpperCase()}`;
     
+    // 1. Загружаем историю (прошлые сообщения)
     await this.loadPrivateHistory(uid);
 
+    // 2. ВКЛЮЧАЕМ ЖИВОЙ ЧАТ (Realtime)
+    this.subscribeToPrivate(uid);
+
     const input = document.getElementById('private-in');
-    if (input) {
-        input.onkeypress = (e) => {
-            if (e.key === 'Enter') this.sendPrivate();
-        };
-        input.focus();
+    if (input) input.focus();
+},
+
+subscribeToPrivate(targetUid) {
+    // Если уже есть активный канал — закрываем его перед созданием нового
+    if (this.privateChannel) {
+        window.Core.sb.removeChannel(this.privateChannel);
+    }
+
+    // Создаем уникальное имя канала для текущей пары пользователей
+    const myId = window.Core.user.id;
+    
+    this.privateChannel = window.Core.sb
+        .channel(`private-comm-${targetUid}`)
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'comments',
+            filter: `recipient_id=eq.${myId}` // Слушаем сообщения, присланные МНЕ
+        }, payload => {
+            const m = payload.new;
+            // Рендерим только если сообщение пришло от того, кто сейчас открыт
+            if (m.user_id === targetUid) {
+                this.renderPrivateMsg(m);
+            } else {
+                // Если пришло от другого — можно показать системное уведомление
+                if (window.Core.Msg) window.Core.Msg(`NEW SIGNAL FROM ${m.nickname.toUpperCase()}`, "info");
+            }
+        })
+        .subscribe();
+},
+
+// Не забудь обновить метод отправки, чтобы он тоже рендерил сообщение локально
+async sendPrivate() {
+    const input = document.getElementById('private-in');
+    if (!input || !input.value.trim() || !this.activeTarget) return;
+
+    const val = input.value;
+    input.value = '';
+
+    const { data, error } = await window.Core.sb.from('comments').insert([{
+        message: val,
+        user_id: window.Core.user.id,
+        recipient_id: this.activeTarget,
+        nickname: window.Core.userProfile?.nickname || "PILOT"
+    }]).select();
+
+    if (data && data[0]) {
+        this.renderPrivateMsg(data[0]); // Рендерим свое сообщение сразу
     }
 },
 
