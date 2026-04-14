@@ -9,19 +9,31 @@ export const VoiceModule = {
     },
 
     // --- INTERFACE MANAGEMENT ---
-    showOverlay(nickname) {
+    showOverlay(nickname, avatarUrl = null) {
         const overlay = document.getElementById('voice-overlay');
+        const avatarImg = document.getElementById('voice-target-avatar');
         if (!overlay) return;
+
         overlay.style.display = 'flex';
         document.getElementById('voice-target-nick').innerText = nickname.toUpperCase();
         document.getElementById('voice-status').innerText = "ESTABLISHING_LINK...";
         
+        // Установка аватара
+        if (avatarImg) {
+            avatarImg.src = avatarUrl || 'assets/default-avatar.png';
+        }
+
         // Reset mute state visually
         this.isMuted = false;
         const muteBtn = document.getElementById('mute-btn');
+        const muteIcon = document.getElementById('mute-icon');
         if (muteBtn) {
             muteBtn.classList.remove('muted');
-            document.getElementById('mute-icon').innerText = "[ MIC_ON ]";
+            if (muteIcon) {
+                // Поддержка иконок FontAwesome или текста
+                if (muteIcon.tagName === 'I') muteIcon.className = 'fas fa-microphone';
+                else muteIcon.innerText = "[ MIC_ON ]";
+            }
         }
     },
 
@@ -49,11 +61,13 @@ export const VoiceModule = {
         
         if (this.isMuted) {
             btn.classList.add('muted');
-            icon.innerText = "[ MIC_OFF ]";
+            if (icon.tagName === 'I') icon.className = 'fas fa-microphone-slash';
+            else icon.innerText = "[ MIC_OFF ]";
             if (window.Core.Msg) window.Core.Msg("MICROPHONE_MUTED", "warning");
         } else {
             btn.classList.remove('muted');
-            icon.innerText = "[ MIC_ON ]";
+            if (icon.tagName === 'I') icon.className = 'fas fa-microphone';
+            else icon.innerText = "[ MIC_ON ]";
             if (window.Core.Msg) window.Core.Msg("MICROPHONE_ACTIVE", "success");
         }
     },
@@ -63,9 +77,12 @@ export const VoiceModule = {
         const targetId = window.CommModule.activeTarget;
         if (!targetId) return;
 
-        // Get nickname from private panel header
         const nick = document.getElementById('private-target-name')?.innerText.replace('SECURE_LINE: ', '') || "PILOT";
-        this.showOverlay(nick);
+        
+        // Пробуем достать аватарку из уже открытого поповера или чата
+        const currentAvatar = document.getElementById('pop-avatar')?.src || 'assets/default-avatar.png';
+        
+        this.showOverlay(nick, currentAvatar);
 
         this.pc = new RTCPeerConnection(this.config);
         
@@ -108,7 +125,24 @@ export const VoiceModule = {
 
     async acceptCall(callData) {
         this.currentCallId = callData.id;
-        this.showOverlay("PILOT SIGNAL"); // Simplified for incoming
+        
+        // 1. Показываем оверлей (сначала заглушку)
+        this.showOverlay("INCOMING SIGNAL", 'assets/default-avatar.png');
+
+        // 2. Фоновый запрос на получение данных профиля звонящего
+        try {
+            const { data: p } = await window.Core.sb.from('profiles')
+                .select('nickname, avatar_url')
+                .eq('id', callData.caller_id)
+                .maybeSingle();
+            
+            if (p) {
+                const nick = (p.nickname || "PILOT").toUpperCase();
+                const avatar = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+                document.getElementById('voice-target-nick').innerText = nick;
+                document.getElementById('voice-target-avatar').src = avatar;
+            }
+        } catch (err) { console.error("Profile sync error", err); }
 
         this.pc = new RTCPeerConnection(this.config);
 
@@ -166,7 +200,6 @@ export const VoiceModule = {
                     await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                 }
 
-                // Handle incoming candidates from the other side
                 const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
                 const remoteCandidates = myRole === 'caller' ? data.ice_candidates_receiver : data.ice_candidates_caller;
                 
