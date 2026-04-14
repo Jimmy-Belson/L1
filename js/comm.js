@@ -23,14 +23,18 @@ export const CommModule = {
     },
 
     // 2. Закрыть панель
-    closePanel() {
-        const panel = document.getElementById('private-panel');
-        if (panel) panel.classList.add('private-panel-hidden');
-        this.activeTarget = null;
-        
-        const container = document.getElementById('private-messages');
-        if (container) container.innerHTML = '';
-    },
+   closePanel(event) {
+    if (event) event.stopPropagation(); // Останавливаем передачу клика дальше
+    
+    const panel = document.getElementById('private-panel');
+    if (panel) {
+        panel.classList.add('private-panel-hidden');
+    }
+    this.activeTarget = null;
+    
+    const container = document.getElementById('private-messages');
+    if (container) container.innerHTML = '';
+},
 
     // 3. Загрузка истории
     async loadPrivateHistory(uid) {
@@ -172,18 +176,19 @@ function makeDraggable(el, handle) {
         document.onmousemove = elementDrag;
     }
 
-    function elementDrag(e) {
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        el.style.top = (el.offsetTop - pos2) + "px";
-        el.style.left = (el.offsetLeft - pos1) + "px";
-        el.style.bottom = "auto"; // Отключаем bottom/right после начала перетаскивания
-        el.style.right = "auto";
-    }
-
+function elementDrag(e) {
+    e.preventDefault();
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    
+    el.style.transform = "none"; // УБИРАЕМ ТРАНСФОРМАЦИЮ ПРИ ПЕРЕТАСКИВАНИИ
+    el.style.top = (el.offsetTop - pos2) + "px";
+    el.style.left = (el.offsetLeft - pos1) + "px";
+    el.style.bottom = "auto";
+    el.style.right = "auto";
+}
     function closeDragElement() {
         document.onmouseup = null;
         document.onmousemove = null;

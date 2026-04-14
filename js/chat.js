@@ -35,11 +35,13 @@ export const ChatModule = {
         if (!s) return;
         s.innerHTML = '<div style="opacity:0.5; padding:10px;">>> RECOVERING_ARCHIVES...</div>';
 
-        const { data, error } = await Core.sb
-            .from('comments')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(50); 
+       // В chat.js (в методе загрузки истории сообщений)
+const { data, error } = await Core.sb
+    .from('comments')
+    .select('*')
+    .is('recipient_id', null) // ЗАГРУЖАТЬ ТОЛЬКО ПУБЛИЧНЫЕ (где получатель пуст)
+    .order('created_at', { ascending: false })
+    .limit(50);
         
         if (data) { 
             s.innerHTML = ''; 
