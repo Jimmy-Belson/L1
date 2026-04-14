@@ -122,21 +122,22 @@
         </div>
     </div>
 
-    <div id="private-panel" class="private-panel-hidden">
-    <div class="private-header">
+    <div id="private-panel" class="private-panel-hidden" style="min-width: 250px; min-height: 300px;">
+    <div class="private-header" id="private-drag-handle" style="cursor: move;">
         <div class="status-indicator"></div>
-        <span id="private-target-name">SECURE_CHANNEL</span>
+        <span id="private-target-name">SECURE_LINE</span>
         <button onclick="CommModule.closePanel()" class="close-comm-btn">[ X ]</button>
     </div>
     
-    <div id="private-messages">
-        </div>
+    <div id="private-messages"></div>
 
     <div class="private-actions">
-        <input type="text" id="private-in" placeholder="TYPE_ENCRYPTED_MSG...">
+        <input type="text" id="private-in" placeholder="TYPE_SIGNAL...">
         <button onclick="CommModule.sendPrivate()" id="private-send-btn">SEND</button>
         <button onclick="VoiceModule.startCall()" id="private-call-btn">CALL</button>
     </div>
+    
+    <div id="private-resizer" style="width: 10px; height: 10px; background: var(--neon-pink); position: absolute; right: 0; bottom: 0; cursor: nwse-resize; opacity: 0.5;"></div>
 </div>
 
     

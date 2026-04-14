@@ -46,7 +46,7 @@ export const CommModule = {
             const { data, error } = await window.Core.sb
                 .from('comments')
                 .select('*')
-                .or(`user_id.eq.${myId},recipient_id.eq.${uid}`, `user_id.eq.${uid},recipient_id.eq.${myId}`)
+                .or(`and(user_id.eq.${myId},recipient_id.eq.${uid}),and(user_id.eq.${uid},recipient_id.eq.${myId})`)
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
@@ -158,5 +158,62 @@ export const CommModule = {
         container.scrollTop = container.scrollHeight;
     }
 };
+
+// Добавь это в CommModule или просто в файл comm.js
+function makeDraggable(el, handle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+        el.style.bottom = "auto"; // Отключаем bottom/right после начала перетаскивания
+        el.style.right = "auto";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+function makeResizable(el, resizer) {
+    resizer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.addEventListener('mousemove', resize);
+        window.addEventListener('mouseup', stopResize);
+    });
+
+    function resize(e) {
+        el.style.width = (e.pageX - el.getBoundingClientRect().left) + 'px';
+        el.style.height = (e.pageY - el.getBoundingClientRect().top) + 'px';
+    }
+
+    function stopResize() {
+        window.removeEventListener('mousemove', resize);
+    }
+}
+
+// Инициализация (вызвать в конце файла или при загрузке)
+setTimeout(() => {
+    const panel = document.getElementById('private-panel');
+    const handle = document.getElementById('private-drag-handle');
+    const resizer = document.getElementById('private-resizer');
+    if (panel && handle) makeDraggable(panel, handle);
+    if (panel && resizer) makeResizable(panel, resizer);
+}, 1000);
 
 window.CommModule = CommModule;
