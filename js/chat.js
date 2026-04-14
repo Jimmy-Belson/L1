@@ -13,10 +13,14 @@ export const ChatModule = {
                     Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
                 }
             })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, payload => {
-                const el = document.getElementById(`msg-${payload.old.id}`);
-                if (el) el.remove();
-            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
+    const m = payload.new;
+    // ДОБАВЛЯЕМ УСЛОВИЕ: только если нет получателя (публичное)
+    if (!m.recipient_id && m.user_id !== Core.user?.id) {
+        this.render(m, Core);
+        Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
+    }
+})
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') this.isSubscribed = true;
                 if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {

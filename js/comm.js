@@ -12,6 +12,14 @@ export const CommModule = {
         
         panel.classList.remove('private-panel-hidden');
         await this.loadPrivateHistory(uid);
+
+        const input = document.getElementById('private-in');
+        if (input) {
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter') this.sendPrivate();
+            };
+            input.focus(); // Сразу ставим фокус для печати
+        }
     },
 
     // 2. Закрыть панель
@@ -38,7 +46,7 @@ export const CommModule = {
             const { data, error } = await window.Core.sb
                 .from('comments')
                 .select('*')
-                .or(`and(user_id.eq.${myId},recipient_id.eq.${uid}),and(user_id.eq.${uid},recipient_id.eq.${myId})`)
+                .or(`user_id.eq.${myId},recipient_id.eq.${uid}`, `user_id.eq.${uid},recipient_id.eq.${myId}`)
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
@@ -91,30 +99,64 @@ export const CommModule = {
         if (!container) return;
 
         const isMy = m.user_id === window.Core.user?.id;
-        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Формат 24 часа
+        const time = new Date(m.created_at).toLocaleTimeString('ru-RU', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+        });
+
+        const displayName = isMy ? "YOU" : (m.nickname || "PILOT").toUpperCase();
 
         const msgEl = document.createElement('div');
+        msgEl.id = `priv-msg-${m.id}`;
         msgEl.style.cssText = `
             margin-bottom: 12px;
             padding: 8px;
             background: ${isMy ? 'rgba(255,0,85,0.05)' : 'rgba(0,255,255,0.05)'};
             border-left: 2px solid ${isMy ? 'var(--neon-pink)' : '#0ff'};
+            position: relative;
         `;
+
+        // Добавляем кнопку удаления, если сообщение наше
+        const delBtnHtml = isMy 
+            ? <span class="del-priv-trigger" style="cursor:pointer; color:var(--neon-pink); opacity:0.5; margin-left:10px; font-size:14px;">×</span> 
+            : '';
 
         msgEl.innerHTML = `
             <div style="display:flex; justify-content:space-between; font-size:9px; margin-bottom:4px; opacity:0.7; font-family:'Orbitron';">
-                <span style="color:${isMy ? 'var(--neon-pink)' : '#0ff'}">${isMy ? 'LOG_OUT' : 'LOG_IN'}</span>
-                <span>${time}</span>
+                <span style="color:${isMy ? 'var(--neon-pink)' : '#0ff'}">${displayName}</span>
+                <span>${time} ${delBtnHtml}</span>
             </div>
             <div style="color:#fff; font-family:'Share Tech Mono'; font-size:13px; line-height:1.4; word-break:break-all;">
                 ${m.message}
             </div>
         `;
 
+        // Привязка удаления
+        const delTrigger = msgEl.querySelector('.del-priv-trigger');
+        if (delTrigger) {
+            delTrigger.onclick = async () => {
+                // Используем твой CustomConfirm
+                const confirmed = await window.CustomConfirm("УДАЛИТЬ ДАННЫЙ СИГНАЛ ИЗ ПРИВАТНОГО КАНАЛА?");
+                if (confirmed) {
+                    try {
+                        const { error } = await window.Core.sb.from('comments').delete().eq('id', m.id);
+                        if (!error) {
+                            msgEl.remove();
+                            if (window.Core.Msg) window.Core.Msg("SIGNAL_PURGED", "success");
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            };
+        }
+
         container.appendChild(msgEl);
         container.scrollTop = container.scrollHeight;
     }
 };
 
-// Чтобы onclick в HTML продолжал работать с модулем
 window.CommModule = CommModule;
