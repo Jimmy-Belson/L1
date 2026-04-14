@@ -188,6 +188,12 @@ function makeDraggable(el, handle) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     handle.onmousedown = dragMouseDown;
 
+    handle.onmousedown = (e) => {
+    // Если кликнули по кнопке закрытия или ресайзеру - не тащим
+    if (e.target.closest('.close-comm-btn') || e.target.id === 'private-resizer') return;
+    dragMouseDown(e);
+};
+
     function dragMouseDown(e) {
         e.preventDefault();
         pos3 = e.clientX;
@@ -218,17 +224,26 @@ function elementDrag(e) {
 function makeResizable(el, resizer) {
     resizer.addEventListener('mousedown', function(e) {
         e.preventDefault();
+        e.stopPropagation(); // Чтобы не сработало перетаскивание при попытке ресайза
+        
         window.addEventListener('mousemove', resize);
         window.addEventListener('mouseup', stopResize);
     });
 
     function resize(e) {
-        el.style.width = (e.pageX - el.getBoundingClientRect().left) + 'px';
-        el.style.height = (e.pageY - el.getBoundingClientRect().top) + 'px';
+        // Вычисляем новую ширину и высоту относительно положения элемента
+        const rect = el.getBoundingClientRect();
+        const newWidth = e.clientX - rect.left;
+        const newHeight = e.clientY - rect.top;
+
+        // Устанавливаем минимальные границы, чтобы окно не схлопнулось
+        if (newWidth > 250) el.style.width = newWidth + 'px';
+        if (newHeight > 200) el.style.height = newHeight + 'px';
     }
 
     function stopResize() {
         window.removeEventListener('mousemove', resize);
+        window.removeEventListener('mouseup', stopResize);
     }
 }
 

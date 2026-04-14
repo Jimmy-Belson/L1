@@ -1778,16 +1778,23 @@ html, body {
 }
 
 
-/* Уголок для ресайза */
 #private-resizer {
-    width: 15px;
-    height: 15px;
+    width: 20px; /* Увеличили зону захвата */
+    height: 20px;
     position: absolute;
     right: 0;
     bottom: 0;
     cursor: nwse-resize;
-    background: linear-gradient(135deg, transparent 50%, var(--neon-pink) 50%);
-    opacity: 0.6;
+    /* Рисуем три диагональные полоски в углу (стиль терминала) */
+    background: linear-gradient(135deg, 
+        transparent 50%, 
+        rgba(255, 0, 85, 0.3) 50%, 
+        rgba(255, 0, 85, 0.3) 60%, 
+        transparent 60%, 
+        transparent 70%, 
+        var(--neon-pink) 70%
+    );
+    z-index: 10005; /* Поверх сообщений */
 }
 
 .close-comm-btn {
