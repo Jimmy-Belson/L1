@@ -163,7 +163,7 @@ closePanel(event) {
         if (delTrigger) {
             delTrigger.onclick = async () => {
                 // Используем твой CustomConfirm
-                const confirmed = await window.CustomConfirm("УДАЛИТЬ ДАННЫЙ СИГНАЛ ИЗ ПРИВАТНОГО КАНАЛА?");
+                const confirmed = await window.CustomConfirm("Are you sure lil bro?");
                 if (confirmed) {
                     try {
                         const { error } = await window.Core.sb.from('comments').delete().eq('id', m.id);
