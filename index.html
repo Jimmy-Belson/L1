@@ -140,8 +140,33 @@
     <div id="private-resizer" style="width: 10px; height: 10px; background: var(--neon-pink); position: absolute; right: 0; bottom: 0; cursor: nwse-resize; opacity: 0.5;"></div>
 </div>
 
+<div id="voice-overlay" class="voice-hidden" style="display:none;">
+    <div class="voice-card">
+        <div class="voice-header">SECURE_VOICE_LINK</div>
+        <div class="voice-body">
+            <div class="voice-avatar-ring">
+                <img id="voice-target-avatar" src="assets/default-avatar.png">
+                <div class="pulse-ring"></div>
+            </div>
+            <div id="voice-status">ESTABLISHING_CONNECTION...</div>
+            <div id="voice-target-nick">UNKNOWN_PILOT</div>
+        </div>
+        <div class="voice-footer">
+    <button id="mute-btn" onclick="VoiceModule.toggleMute()">
+        <span id="mute-icon">[ MIC_ON ]</span>
+    </button>
+    <button id="hangup-btn" onclick="VoiceModule.endCall()">[ TERMINATE ]</button>
+</div>
+    </div>
+</div>
+
 
 <audio id="remote-audio" autoplay style="display:none"></audio>
+
+
+<audio id="remote-audio" autoplay style="display:none"></audio>
+
+
     
 
 <script src="js/init-core.js"></script>

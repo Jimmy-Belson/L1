@@ -1826,3 +1826,63 @@ html, body {
 #private-send-btn:hover, #private-call-btn:hover {
     animation: neon-flicker 1.5s infinite;
 }
+#voice-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 20000;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.voice-card {
+    width: 300px; padding: 30px;
+    background: #050505;
+    border: 1px solid var(--neon-pink);
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+    text-align: center;
+}
+
+.voice-avatar-ring {
+    position: relative; width: 120px; height: 120px; margin: 20px auto;
+}
+
+#voice-target-avatar {
+    width: 100%; height: 100%; border-radius: 50%;
+    border: 2px solid var(--neon-pink);
+}
+
+.pulse-ring {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    border: 2px solid var(--neon-pink); border-radius: 50%;
+    animation: voice-pulse 2s infinite;
+}
+
+@keyframes voice-pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+#hangup-btn {
+    margin-top: 20px; width: 100%; padding: 10px;
+    background: rgba(255, 0, 85, 0.1); border: 1px solid var(--neon-pink);
+    color: var(--neon-pink); cursor: pointer; transition: 0.3s;
+}
+
+#hangup-btn:hover { background: var(--neon-pink); color: #000; 
+}
+#mute-btn {
+    width: 100%; padding: 10px; margin-bottom: 10px;
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid #0ff;
+    color: #0ff;
+    font-family: 'Orbitron';
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#mute-btn.muted {
+    background: rgba(255, 0, 85, 0.2);
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+}
