@@ -1676,23 +1676,23 @@ html, body {
 }
 #private-panel {
     position: fixed;
-    /* Убираем жесткие right/bottom, чтобы JS мог ими управлять */
+    right: 20px;
+    bottom: 20px;
     width: 350px;
     height: 500px;
-    background: rgba(0, 10, 20, 0.98);
+    background: rgba(0, 5, 15, 0.95);
     border: 1px solid var(--neon-pink);
-    box-shadow: 0 0 25px rgba(255, 0, 85, 0.4);
-    display: flex; /* По умолчанию flex */
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.3);
+    display: flex; /* Важно: по умолчанию flex, но мы скроем классом */
     flex-direction: column;
-    z-index: 10000;
-    min-width: 280px;
-    min-height: 200px;
-    overflow: hidden;
+    z-index: 10001; /* Выше всех */
 }
 
-/* Состояние "Скрыто" — теперь через display */
+/* Скрытое состояние: теперь просто исчезновение */
 .private-panel-hidden {
-    display: none !important; 
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Шапка (Зона для перетаскивания) */

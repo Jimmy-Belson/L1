@@ -1,17 +1,23 @@
 export const CommModule = {
     activeTarget: null,
 
+// Внутри CommModule в comm.js
 async openPanel(uid, nickname) {
     this.activeTarget = uid;
     const panel = document.getElementById('private-panel');
-    if (!panel) {
-        console.error("PANEL_NOT_FOUND: Проверь ID в HTML");
-        return;
-    }
+    if (!panel) return;
 
-    // Принудительно включаем видимость
-    panel.style.display = 'flex'; 
+    // 1. Убираем класс скрытия
     panel.classList.remove('private-panel-hidden');
+    
+    // 2. ПРИНУДИТЕЛЬНО возвращаем видимость через style
+    panel.style.display = 'flex'; 
+    panel.style.opacity = '1';
+    panel.style.visibility = 'visible';
+
+    const titleEl = document.getElementById('private-target-name');
+    if (titleEl) titleEl.innerText = `SECURE_LINE: ${nickname.toUpperCase()}`;
+    
     await this.loadPrivateHistory(uid);
 
     const input = document.getElementById('private-in');
@@ -21,6 +27,19 @@ async openPanel(uid, nickname) {
         };
         input.focus();
     }
+},
+
+closePanel(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const panel = document.getElementById('private-panel');
+    if (panel) {
+        panel.style.display = 'none'; // Прячем через стиль (это надежнее)
+        panel.classList.add('private-panel-hidden');
+    }
+    this.activeTarget = null;
 },
 
 closePanel(event) {

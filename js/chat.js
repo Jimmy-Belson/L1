@@ -222,14 +222,18 @@ async openPop(uid, Core, event) {
                 const commBtn = document.createElement('button');
                 commBtn.innerText = "[ ESTABLISH_COMM ]";
                 commBtn.style.cssText = btnStyle;
-                commBtn.onclick = (e) => {
-                    if (window.CommModule) {
-                        window.CommModule.openPanel(p.id, p.nickname || "PILOT");
-                        pop.style.display = 'none'; // Закрываем поповер после открытия панели
-                    } else {
-                        console.error("CommModule_OFFLINE");
-                    }
-                };
+commBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.CommModule) {
+        window.CommModule.openPanel(p.id, p.nickname || "PILOT");
+        // Закрываем поповер профиля
+        const pop = document.getElementById('user-popover');
+        if(pop) pop.classList.add('popover-hidden');
+    } else {
+        console.error("CommModule еще не загружен!");
+    }
+};
 
                 actionsCont.appendChild(commBtn);
             }
