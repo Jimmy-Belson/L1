@@ -107,7 +107,7 @@ export const ChatModule = {
         const time = new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
         const deleteBtnHtml = isMy 
-            ? <span class="del-msg-trigger" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span> 
+            ? `<span class="del-msg-trigger" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span>` 
             : '';
 
         const d = document.createElement('div'); 
