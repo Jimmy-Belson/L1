@@ -140,23 +140,27 @@
     <div id="private-resizer" style="width: 10px; height: 10px; background: var(--neon-pink); position: absolute; right: 0; bottom: 0; cursor: nwse-resize; opacity: 0.5;"></div>
 </div>
 
-<div id="voice-overlay" class="voice-hidden" style="display:none;">
-    <div class="voice-card">
-        <div class="voice-header">SECURE_VOICE_LINK</div>
-        <div class="voice-body">
-            <div class="voice-avatar-ring">
+<div id="voice-overlay" style="display:none;">
+    <div class="voice-window">
+        <div class="voice-status-tag">SECURE CONNECTION</div>
+        
+        <div class="voice-user-info">
+            <div class="avatar-ring">
                 <img id="voice-target-avatar" src="assets/default-avatar.png">
                 <div class="pulse-ring"></div>
             </div>
-            <div id="voice-status">ESTABLISHING_CONNECTION...</div>
-            <div id="voice-target-nick">UNKNOWN_PILOT</div>
+            <h2 id="voice-target-nick">UNKNOWN PILOT</h2>
+            <p id="voice-status">Connecting...</p>
         </div>
-        <div class="voice-footer">
-    <button id="mute-btn" onclick="VoiceModule.toggleMute()">
-        <span id="mute-icon">[ MIC_ON ]</span>
-    </button>
-    <button id="hangup-btn" onclick="VoiceModule.endCall()">[ TERMINATE ]</button>
-</div>
+        
+        <div class="voice-actions">
+            <button id="mute-btn" class="v-btn" onclick="VoiceModule.toggleMute()">
+                <svg id="mute-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </button>
+            <button id="hangup-btn" class="v-btn hangup" onclick="VoiceModule.endCall()">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" transform="rotate(135 12 12)"/></svg>
+            </button>
+        </div>
     </div>
 </div>
 
