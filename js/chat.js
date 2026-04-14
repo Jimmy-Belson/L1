@@ -13,11 +13,8 @@ export const ChatModule = {
             }, payload => {
                 const m = payload.new;
 
-                // КРИТИЧЕСКИЙ ФИКС: Игнорируем сообщение, если:
-                // 1. Это личное сообщение (есть recipient_id)
-                // 2. Это наше собственное сообщение (оно рендерится локально при отправке)
-                if (m.recipient_id) return; 
-                if (m.user_id === Core.user?.id) return;
+                // FILTER: Ignore if private or sent by me (already rendered)
+                if (m.recipient_id || m.user_id === Core.user?.id) return; 
 
                 this.render(m, Core);
                 if (Core.SystemNotify) {
@@ -41,7 +38,7 @@ export const ChatModule = {
         const { data, error } = await Core.sb
             .from('comments')
             .select('*')
-            .is('recipient_id', null) // Загружаем только публичные
+            .is('recipient_id', null) 
             .order('created_at', { ascending: false })
             .limit(50);
         
@@ -72,7 +69,7 @@ export const ChatModule = {
                 nickname: nickname, 
                 avatar_url: avatarName,
                 user_id: Core.user.id,
-                recipient_id: null // Явно указываем, что это публичное
+                recipient_id: null 
             }]).select();
 
             if (data && data[0]) {
@@ -85,44 +82,82 @@ export const ChatModule = {
         }
     },
 
-    // ... методы deleteMessage и render остаются без изменений ...
+    async deleteMessage(id, Core) {
+        if (!window.CustomConfirm) return;
+        const confirmed = await window.CustomConfirm("REMOVE THIS SIGNAL FROM THE NETWORK?");
+        if (!confirmed) return;
+
+        try {
+            const { error } = await Core.sb.from('comments').delete().eq('id', id);
+            if (error) throw error;
+            const el = document.getElementById(`msg-${id}`);
+            if (el) el.remove();
+            if (Core.Msg) Core.Msg("SIGNAL_TERMINATED", "success");
+        } catch (err) {
+            if (Core.Msg) Core.Msg("PURGE_FAILED", "error");
+        }
+    },
+
+    render(m, Core) {
+        const s = document.getElementById('chat-stream'); 
+        if (!s || document.getElementById(`msg-${m.id}`)) return;
+
+        const isMy = m.user_id === Core.user?.id;
+        const avatar = Core.getAvatar ? Core.getAvatar(m.user_id, m.avatar_url) : m.avatar_url;
+        const time = new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+        const deleteBtnHtml = isMy 
+            ? <span class="del-msg-trigger" style="margin-left:10px; cursor:pointer; color:var(--neon-pink); opacity:0.5;">×</span> 
+            : '';
+
+        const d = document.createElement('div'); 
+        d.id = `msg-${m.id}`;
+        d.className = `msg-container ${isMy ? 'my-msg' : ''}`;
+        
+        d.innerHTML = `
+            <div class="chat-row-layout">
+                <div class="avatar-wrapper" style="cursor:pointer"><img src="${avatar}" class="chat-row-avatar"></div>
+                <div class="chat-content-block">
+                    <div class="msg-header">
+                        <span class="msg-nick" style="cursor:pointer; color:${isMy ? 'var(--n)' : '#0ff'}">${(m.nickname || "PILOT").toUpperCase()}</span>
+                        <span class="msg-time">${time}</span>
+                        ${deleteBtnHtml}
+                    </div>
+                    <div class="msg-text">${m.message}</div>
+                </div>
+            </div>`;
+
+        d.querySelector('.avatar-wrapper').onclick = (e) => this.openPop(m.user_id, Core, e);
+        d.querySelector('.msg-nick').onclick = (e) => this.openPop(m.user_id, Core, e);
+
+        const delTrigger = d.querySelector('.del-msg-trigger');
+        if (delTrigger) {
+            delTrigger.onclick = (e) => {
+                e.stopPropagation(); 
+                this.deleteMessage(m.id, Core); 
+            };
+        }
+
+        s.appendChild(d);
+        s.scrollTop = s.scrollHeight;
+    },
 
     async openPop(uid, Core, event) {
         if (event) event.stopPropagation();
-
         const pop = document.getElementById('user-popover');
         if (!pop) return;
 
-        // Показываем поповер, удаляя класс скрытия
         pop.classList.remove('popover-hidden');
         pop.style.display = 'block';
 
         try {
-            const { data: p, error } = await Core.sb.from('profiles')
-                .select('*')
-                .eq('id', uid)
-                .maybeSingle();
-            
-            if (error) throw error;
-
+            const { data: p, error } = await Core.sb.from('profiles').select('*').eq('id', uid).maybeSingle();
             if (p) {
                 document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
                 document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
                 document.getElementById('pop-kills').innerText = p.combat_score || 0;
                 document.getElementById('pop-msgs').innerText = p.message_count || 0;
                 
-                const ufoEl = document.getElementById('pop-ufo');
-                if (ufoEl) ufoEl.innerText = p.nlo_clicks || 0; 
-
-                const rankEl = document.getElementById('pop-rank');
-                const rankCalculator = window.getRankByScore;
-
-                if (rankEl && rankCalculator) { 
-                    const rank = rankCalculator(p.combat_score || 0);
-                    rankEl.innerText = rank.name.toUpperCase();
-                    rankEl.style.color = rank.color;
-                }
-
                 let actionsCont = pop.querySelector('.pop-actions');
                 if (!actionsCont) {
                     actionsCont = document.createElement('div');
@@ -132,43 +167,19 @@ export const ChatModule = {
                 }
 
                 actionsCont.innerHTML = '';
-                const isMe = uid === Core.user?.id;
-
-                if (!isMe) {
-                    const btnStyle = "flex:1; background:rgba(255,0,85,0.1); border:1px solid var(--neon-pink); color:var(--neon-pink); font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer; transition:0.3s; text-transform:uppercase;";
-                    
-                    const commBtn = document.createElement('button');
-                    commBtn.innerText = "[ Establish Comm ]";
-                    commBtn.style.cssText = btnStyle;
-                    commBtn.onmouseover = () => {
-                        commBtn.style.background = "var(--neon-pink)";
-                        commBtn.style.color = "#000";
-                    };
-                    commBtn.onmouseout = () => {
-                        commBtn.style.background = "rgba(255,0,85,0.1)";
-                        commBtn.style.color = "var(--neon-pink)";
-                    };
-
-                    commBtn.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                if (uid !== Core.user?.id) {
+                    const btn = document.createElement('button');
+                    btn.innerText = "[ ESTABLISH_COMM ]";
+                    btn.style.cssText = "flex:1; background:rgba(255,0,85,0.1); border:1px solid var(--neon-pink); color:var(--neon-pink); font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
+                    btn.onclick = () => {
                         if (window.CommModule) {
                             window.CommModule.openPanel(p.id, p.nickname || "PILOT");
                             pop.classList.add('popover-hidden');
-                            pop.style.display = 'none';
                         }
                     };
-                    actionsCont.appendChild(commBtn);
+                    actionsCont.appendChild(btn);
                 }
             }
-        } catch (err) {
-            console.error("POPOVER_SYNC_ERROR:", err.message);
-        }
-    },
-    
-    // Не забываем добавить вспомогательные методы, если они используются внутри render
-    render(m, Core) {
-        // Твой существующий код метода render...
-        // (Я его не менял, чтобы не сломать твою верстку)
+        } catch (err) { console.error(err); }
     }
-}
+};
