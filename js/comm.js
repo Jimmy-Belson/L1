@@ -1,37 +1,43 @@
 export const CommModule = {
     activeTarget: null,
 
-    // 1. Открыть панель
     async openPanel(uid, nickname) {
-        this.activeTarget = uid;
-        const panel = document.getElementById('private-panel');
-        if (!panel) return;
+    this.activeTarget = uid;
+    const panel = document.getElementById('private-panel');
+    if (!panel) return;
 
-        const titleEl = document.getElementById('private-target-name');
-        if (titleEl) titleEl.innerText = `SECURE_LINE: ${nickname.toUpperCase()}`;
-        
-        panel.classList.remove('private-panel-hidden');
-        await this.loadPrivateHistory(uid);
+    // Если окно было перемещено, оно может быть вне поля зрения. 
+    // Если хочешь, чтобы оно всегда открывалось в дефолтном месте, раскомментируй это:
+    /*
+    panel.style.top = "auto";
+    panel.style.left = "auto";
+    panel.style.right = "20px";
+    panel.style.bottom = "20px";
+    */
 
-        const input = document.getElementById('private-in');
-        if (input) {
-            input.onkeypress = (e) => {
-                if (e.key === 'Enter') this.sendPrivate();
-            };
-            input.focus(); // Сразу ставим фокус для печати
-        }
-    },
+    document.getElementById('private-target-name').innerText = `SECURE_LINE: ${nickname.toUpperCase()}`;
+    
+    panel.classList.remove('private-panel-hidden'); // Теперь это просто display: flex
+    await this.loadPrivateHistory(uid);
 
-    // 2. Закрыть панель
-   closePanel(event) {
-    if (event) event.stopPropagation(); // Останавливаем передачу клика дальше
+    const input = document.getElementById('private-in');
+    if (input) {
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') this.sendPrivate();
+        };
+        input.focus();
+    }
+},
+
+closePanel(event) {
+    if (event) event.stopPropagation(); // Важно! Чтобы клик не улетел на элементы под кнопкой
     
     const panel = document.getElementById('private-panel');
     if (panel) {
         panel.classList.add('private-panel-hidden');
     }
-    this.activeTarget = null;
     
+    this.activeTarget = null;
     const container = document.getElementById('private-messages');
     if (container) container.innerHTML = '';
 },
