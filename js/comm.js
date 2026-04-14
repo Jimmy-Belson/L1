@@ -6,22 +6,35 @@ export const CommModule = {
 async openPanel(uid, nickname) {
     this.activeTarget = uid;
     const panel = document.getElementById('private-panel');
+    const input = document.getElementById('private-in'); // Находим инпут
+    
     if (!panel) return;
 
     panel.classList.remove('private-panel-hidden');
     panel.style.display = 'flex';
 
+    // --- ФИКС КНОПКИ ENTER ---
+    if (input) {
+        // Убираем старые слушатели, чтобы они не копились
+        input.onkeydown = null; 
+        
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Чтобы страница не перезагрузилась
+                this.sendPrivate(); // Вызываем твой метод отправки
+            }
+        };
+        
+        // Автофокус на поле ввода при открытии
+        setTimeout(() => input.focus(), 100); 
+    }
+    // -------------------------
+
     const titleEl = document.getElementById('private-target-name');
     if (titleEl) titleEl.innerText = `SECURE_LINE: ${nickname.toUpperCase()}`;
     
-    // 1. Загружаем историю (прошлые сообщения)
     await this.loadPrivateHistory(uid);
-
-    // 2. ВКЛЮЧАЕМ ЖИВОЙ ЧАТ (Realtime)
     this.subscribeToPrivate(uid);
-
-    const input = document.getElementById('private-in');
-    if (input) input.focus();
 },
 
 subscribeToPrivate(targetUid) {
