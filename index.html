@@ -122,6 +122,23 @@
         </div>
     </div>
 
+    <div id="private-panel" class="private-panel-hidden">
+    <div class="private-header">
+        <div class="status-indicator"></div>
+        <span id="private-target-name">SECURE_CHANNEL</span>
+        <button onclick="CommModule.closePanel()" class="close-comm-btn">[ X ]</button>
+    </div>
+    
+    <div id="private-messages">
+        </div>
+
+    <div class="private-actions">
+        <input type="text" id="private-in" placeholder="TYPE_ENCRYPTED_MSG...">
+        <button onclick="CommModule.sendPrivate()" id="private-send-btn">SEND</button>
+        <button onclick="VoiceModule.startCall()" id="private-call-btn">CALL</button>
+    </div>
+</div>
+
     
 
 

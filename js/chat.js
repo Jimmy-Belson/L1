@@ -156,57 +156,81 @@ if (delTrigger) {
 },
 
 async openPop(uid, Core, event) {
-        if (event) event.stopPropagation();
+    if (event) event.stopPropagation();
 
-        const pop = document.getElementById('user-popover');
-        if (!pop) return;
+    const pop = document.getElementById('user-popover');
+    if (!pop) return;
 
-        pop.style.display = 'block';
+    pop.style.display = 'block';
 
-        try {
-            const { data: p, error } = await Core.sb.from('profiles')
-                .select('*')
-                .eq('id', uid)
-                .maybeSingle();
+    try {
+        const { data: p, error } = await Core.sb.from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .maybeSingle();
+        
+        if (error) throw error;
+
+        if (p) {
+            document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
+            document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
             
-            if (error) throw error;
-
-            if (p) {
-                document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
-                document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
-                
-                // СТАТИСТИКА
-                document.getElementById('pop-kills').innerText = p.combat_score || 0;
-                document.getElementById('pop-msgs').innerText = p.message_count || 0;
-                
-                // ИСПРАВЛЕНО: берем данные из колонки nlo_clicks
-                const ufoEl = document.getElementById('pop-ufo');
-                if (ufoEl) {
-                    ufoEl.innerText = p.nlo_clicks || 0; 
-                }
+            // СТАТИСТИКА
+            document.getElementById('pop-kills').innerText = p.combat_score || 0;
+            document.getElementById('pop-msgs').innerText = p.message_count || 0;
+            
+            const ufoEl = document.getElementById('pop-ufo');
+            if (ufoEl) ufoEl.innerText = p.nlo_clicks || 0; 
 
             // РАНГ
-// РАНГ
             const rankEl = document.getElementById('pop-rank');
-            
-            // Пробуем найти функцию в глобальном окне (window), так как ranks.js подключен в index.html
             const rankCalculator = window.getRankByScore;
 
             if (rankEl && rankCalculator) { 
                 const rank = rankCalculator(p.combat_score || 0);
                 rankEl.innerText = rank.name.toUpperCase();
                 rankEl.style.color = rank.color;
-            } else {
-                // Если функция не найдена, ставим дефолт
-                if (rankEl) {
-                    rankEl.innerText = "PILOT";
-                    rankEl.style.color = "#0ff";
-                }
-                console.warn("RANK_SYSTEM_OFFLINE: getRankByScore not found in window");
+            } else if (rankEl) {
+                rankEl.innerText = "PILOT";
+                rankEl.style.color = "#0ff";
             }
+
+            // --- ВНЕДРЕНИЕ КНОПОК СВЯЗИ ---
+            // Ищем контейнер для кнопок в поповере (убедись, что в HTML есть div с таким id или классом)
+            let actionsCont = pop.querySelector('.pop-actions');
+            if (!actionsCont) {
+                // Если контейнера нет, создаем его динамически в конце поповера
+                actionsCont = document.createElement('div');
+                actionsCont.className = 'pop-actions';
+                actionsCont.style.cssText = "margin-top:15px; display:flex; gap:10px; padding:10px; border-top:1px solid rgba(0,255,255,0.1);";
+                pop.appendChild(actionsCont);
             }
-        } catch (err) {
-            console.error("POPOVER_SYNC_ERROR:", err.message);
+
+            // Очищаем старые кнопки и добавляем новые, если это не наш профиль
+            actionsCont.innerHTML = '';
+            const isMe = uid === Core.user?.id;
+
+            if (!isMe) {
+                const btnStyle = "flex:1; background:rgba(255,0,85,0.1); border:1px solid var(--neon-pink); color:var(--neon-pink); font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer; transition:0.3s;";
+                
+                const commBtn = document.createElement('button');
+                commBtn.innerText = "[ ESTABLISH_COMM ]";
+                commBtn.style.cssText = btnStyle;
+                commBtn.onclick = () => {
+                    if (window.CommModule) {
+                        window.CommModule.openPanel(p.id, p.nickname || "PILOT");
+                        pop.style.display = 'none'; // Закрываем поповер после открытия панели
+                    } else {
+                        console.error("CommModule_OFFLINE");
+                    }
+                };
+
+                actionsCont.appendChild(commBtn);
+            }
+            // ------------------------------
         }
-    },
-};
+    } catch (err) {
+        console.error("POPOVER_SYNC_ERROR:", err.message);
+    }
+},
+}
