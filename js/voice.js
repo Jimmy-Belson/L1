@@ -95,13 +95,23 @@ export const VoiceModule = {
             return this.endCall();
         }
 
-        this.pc.ontrack = (event) => {
-            const remoteAudio = document.getElementById('remote-audio');
-            if (remoteAudio) {
-                remoteAudio.srcObject = event.streams[0];
-                this.updateStatus("ENCRYPTED_LINK_ACTIVE");
-            }
-        };
+ this.pc.ontrack = (event) => {
+    console.log("%c[VOICE] СИГНАЛ ПОЛУЧЕН!", "color: #0f0; font-weight: bold;");
+    const remoteAudio = document.getElementById('remote-audio');
+    if (remoteAudio) {
+        remoteAudio.srcObject = event.streams[0];
+        
+        // Принудительный старт (важно!)
+        remoteAudio.play().then(() => {
+            console.log("[VOICE] Аудио поток запущен успешно");
+        }).catch(e => {
+            console.error("[VOICE] Автоплей заблокирован. Нужен клик по странице!", e);
+            window.Core.Msg("CLICK_ANYWHERE_TO_HEAR_AUDIO", "info");
+        });
+        
+        this.updateStatus("ENCRYPTED_LINK_ACTIVE");
+    }
+};
 
         this.pc.onicecandidate = (event) => {
             if (event.candidate && this.currentCallId) {
@@ -204,11 +214,16 @@ export const VoiceModule = {
                 const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
                 const remoteCandidates = myRole === 'caller' ? data.ice_candidates_receiver : data.ice_candidates_caller;
                 
-                if (remoteCandidates && remoteCandidates.length > 0) {
-                    remoteCandidates.forEach(cand => {
-                        this.pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => {});
-                    });
-                }
+if (remoteCandidates && remoteCandidates.length > 0) {
+    remoteCandidates.forEach(cand => {
+        // Проверка: добавляем кандидатов только если мы уже знаем, КТО на другом конце (SDP)
+        if (this.pc.remoteDescription && this.pc.remoteDescription.type) {
+            this.pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => {
+                console.warn("[VOICE] Ошибка добавления кандидата:", e);
+            });
+        }
+    });
+}
             }).subscribe();
     },
 
