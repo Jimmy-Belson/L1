@@ -1,4 +1,3 @@
-// init-core.js
 const createCore = () => {
     const sbClient = (window.supabase) ? window.supabase.createClient(
         'https://ebjsxlympwocluxgmwcu.supabase.co', 
@@ -8,13 +7,12 @@ const createCore = () => {
     window.Core = {
         sb: sbClient,
         user: null,
+        
         UpdateCombatScore: async (score) => {
             console.log("Saving score...", score);
         },
         
-        // ВЫНОСИМ СЛУШАТЕЛЯ В ОТДЕЛЬНУЮ ФУНКЦИЮ
-InitVoiceListener: function() {
-            // Используем Core напрямую вместо this, чтобы не терять контекст
+        InitVoiceListener: function() {
             const self = window.Core; 
             if (!self.sb || !self.user) {
                 console.error("[VOICE] Cannot init: SB or User missing");
@@ -22,9 +20,9 @@ InitVoiceListener: function() {
             }
 
             self.sb.removeAllChannels();
-
             const myId = String(self.user.id).toLowerCase().trim();
-            console.log("%c[VOICE] Listening on ID:", "color: #f0f", myId);
+            
+            console.log("%c[VOICE] Signal listener activated for:", "color: #f0f", myId);
 
             const voiceChannel = self.sb.channel('voice-room')
                 .on('postgres_changes', { 
@@ -40,11 +38,9 @@ InitVoiceListener: function() {
                     console.log("[VOICE_DEBUG] Incoming for:", targetId);
                     console.log("[VOICE_DEBUG] Current User:", myId);
 
-                    // Сравниваем напрямую
                     if (targetId === myId && call.status === 'pending') {
-                        console.log("%c[MATCH] Attempting UI Trigger...", "color: #0f0");
+                        console.log("%c[MATCH] Triggering UI...", "color: #0f0");
                         
-                        // Если CustomConfirm не готов, используем стандартный для страховки
                         let accept = false;
                         if (window.CustomConfirm) {
                             accept = await window.CustomConfirm("INCOMING VOICE SIGNAL. ESTABLISH LINK?");
@@ -63,8 +59,18 @@ InitVoiceListener: function() {
             voiceChannel.subscribe((status) => {
                 console.log("[VOICE_CHANNEL_STATUS]:", status);
             });
-        },
-    },
+        }
+    };
+
+    // ГЛАВНОЕ: Активация при входе
+    if (sbClient) {
+        sbClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                window.Core.user = session?.user;
+                window.Core.InitVoiceListener(); 
+            }
+        });
+    }
 
     console.log("%c[SYSTEM] Core Foundation Established", "color: #0ff; font-weight: bold;");
 };
