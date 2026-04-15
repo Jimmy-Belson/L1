@@ -1827,10 +1827,19 @@ html, body {
     animation: neon-flicker 1.5s infinite;
 }
 #voice-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(8px); z-index: 99999;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Orbitron', sans-serif;
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px); 
+    z-index: 999999; /* Огромный z-index, чтобы был поверх всего */
+    display: none; /* По умолчанию скрыт */
+    align-items: center; 
+    justify-content: center;
+}
+
+/* Этот класс мы будем удалять/добавлять через JS */
+#voice-overlay.active {
+    display: flex !important;
 }
 .voice-window {
     background: #1e1f22; width: 300px; padding: 40px;
@@ -1855,3 +1864,15 @@ html, body {
 .v-btn.hangup { background: #f23f42; }
 .v-btn.hangup:hover { background: #d83c3e; }
 .v-btn.muted { background: #f23f42; color: white; }
+/* Базовое состояние: скрыто */
+#voice-overlay {
+    display: none; 
+    position: fixed;
+    inset: 0;
+    z-index: 999999 !important; /* Поверх всего */
+}
+
+/* Состояние при звонке: показываем */
+#voice-overlay.active {
+    display: flex !important;
+}

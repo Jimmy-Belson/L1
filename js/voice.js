@@ -14,32 +14,33 @@ export const VoiceModule = {
         const avatarImg = document.getElementById('voice-target-avatar');
         if (!overlay) return;
 
-        overlay.style.display = 'flex';
-        document.getElementById('voice-target-nick').innerText = nickname.toUpperCase();
-        document.getElementById('voice-status').innerText = "ESTABLISHING_LINK...";
+        // ВМЕСТО .style.display = 'flex' ИСПОЛЬЗУЕМ КЛАСС
+        overlay.classList.add('active'); 
         
-        // Установка аватара
+        document.getElementById('voice-target-nick').innerText = nickname.toUpperCase();
+        this.updateStatus("ESTABLISHING_LINK...");
+        
         if (avatarImg) {
             avatarImg.src = avatarUrl || 'assets/default-avatar.png';
         }
 
-        // Reset mute state visually
         this.isMuted = false;
         const muteBtn = document.getElementById('mute-btn');
         const muteIcon = document.getElementById('mute-icon');
         if (muteBtn) {
             muteBtn.classList.remove('muted');
             if (muteIcon) {
-                // Поддержка иконок FontAwesome или текста
                 if (muteIcon.tagName === 'I') muteIcon.className = 'fas fa-microphone';
                 else muteIcon.innerText = "[ MIC_ON ]";
             }
         }
     },
 
-    hideOverlay() {
+   hideOverlay() {
         const overlay = document.getElementById('voice-overlay');
-        if (overlay) overlay.style.display = 'none';
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
     },
 
     updateStatus(text) {
