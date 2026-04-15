@@ -13,61 +13,58 @@ const createCore = () => {
         },
         
         // ВЫНОСИМ СЛУШАТЕЛЯ В ОТДЕЛЬНУЮ ФУНКЦИЮ
- InitVoiceListener: function() {
-            if (!this.sb || !this.user) return;
+InitVoiceListener: function() {
+            // Используем Core напрямую вместо this, чтобы не терять контекст
+            const self = window.Core; 
+            if (!self.sb || !self.user) {
+                console.error("[VOICE] Cannot init: SB or User missing");
+                return;
+            }
 
-            // 1. УБИВАЕМ СТАРЫЕ КАНАЛЫ (чтобы не было дублей)
-            this.sb.removeAllChannels();
+            self.sb.removeAllChannels();
 
-            console.log("%c[VOICE] Signal listener activated for:", "color: #f0f", this.user.id);
+            const myId = String(self.user.id).toLowerCase().trim();
+            console.log("%c[VOICE] Listening on ID:", "color: #f0f", myId);
 
-            const voiceChannel = this.sb.channel('voice-room')
+            const voiceChannel = self.sb.channel('voice-room')
                 .on('postgres_changes', { 
-                    event: 'INSERT', // Можно поставить '*', если хочешь ловить и обновления
+                    event: 'INSERT', 
                     schema: 'public', 
                     table: 'calls'
                 }, async (payload) => {
                     const call = payload.new;
-                    
-                    // --- МОЩНАЯ ПРОВЕРКА ---
-                    const myId = String(this.user.id).toLowerCase().trim();
+                    if (!call) return;
+
                     const targetId = String(call.receiver_id).toLowerCase().trim();
                     
-                    console.log("[VOICE_DEBUG] Incoming call for ID:", targetId);
-                    console.log("[VOICE_DEBUG] My ID:", myId);
+                    console.log("[VOICE_DEBUG] Incoming for:", targetId);
+                    console.log("[VOICE_DEBUG] Current User:", myId);
 
+                    // Сравниваем напрямую
                     if (targetId === myId && call.status === 'pending') {
-                        console.log("%c[MATCH] Triggering UI...", "color: #0f0");
+                        console.log("%c[MATCH] Attempting UI Trigger...", "color: #0f0");
                         
+                        // Если CustomConfirm не готов, используем стандартный для страховки
+                        let accept = false;
                         if (window.CustomConfirm) {
-                            const accept = await window.CustomConfirm("INCOMING VOICE SIGNAL. ESTABLISH ENCRYPTED LINK?");
-                            
-                            if (accept && window.VoiceModule) {
-                                window.VoiceModule.acceptCall(call);
-                            } else {
-                                await this.sb.from('calls').update({ status: 'ended' }).eq('id', call.id);
-                            }
+                            accept = await window.CustomConfirm("INCOMING VOICE SIGNAL. ESTABLISH LINK?");
+                        } else {
+                            accept = window.confirm("INCOMING VOICE SIGNAL. ESTABLISH LINK?");
                         }
-                    } else {
-                        console.log("[VOICE] Call ignored: not for me or not pending.");
+                        
+                        if (accept && window.VoiceModule) {
+                            window.VoiceModule.acceptCall(call);
+                        } else {
+                            await self.sb.from('calls').update({ status: 'ended' }).eq('id', call.id);
+                        }
                     }
                 });
 
             voiceChannel.subscribe((status) => {
                 console.log("[VOICE_CHANNEL_STATUS]:", status);
             });
-        }
-    };
-
-    // Автоматическая активация при смене состояния сессии
-    if (sbClient) {
-        sbClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                window.Core.user = session?.user;
-                window.Core.InitVoiceListener(); // Включаем уши, когда пилот на борту
-            }
-        });
-    }
+        },
+    },
 
     console.log("%c[SYSTEM] Core Foundation Established", "color: #0ff; font-weight: bold;");
 };
