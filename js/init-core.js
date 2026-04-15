@@ -7,22 +7,24 @@ const createCore = () => {
         ) : null;
     }
 
-    // 2. Инициализируем Core, если он пустой
-    window.Core = window.Core || {};
-    window.Core.sb = window.sbClient;
-    window.Core.user = null;
+// Вместо полной перезаписи объекта, мы только ДОБАВЛЯЕМ в него функции
+window.Core = window.Core || {}; 
 
-    // 3. ПРЯМОЕ НАЗНАЧЕНИЕ ФУНКЦИИ (чтобы точно была)
-    window.Core.InitVoiceListener = function() {
-        const self = window.Core;
-        if (!self.sb || !self.user) {
-            console.error("[VOICE] Missing SB or User", {sb: !!self.sb, user: !!self.user});
-            return;
-        }
+// Добавляем SB клиент, только если его нет
+if (!window.Core.sb) window.Core.sb = sbClient;
 
-        self.sb.removeAllChannels();
-        const myId = String(self.user.id).toLowerCase().trim();
-        console.log("%c[VOICE] Listener Active:", "color: #f0f", myId);
+// Прямое назначение функции, которое сложно затереть
+window.Core.InitVoiceListener = function() {
+    const self = window.Core;
+    if (!self.sb || !self.user) {
+        console.error("[VOICE] Missing SB or User");
+        return;
+    }
+
+    self.sb.removeAllChannels();
+    const myId = String(self.user.id).toLowerCase().trim();
+    console.log("%c[VOICE] Listener Active:", "color: #f0f", myId);
+
 
         self.sb.channel('voice-room')
             .on('postgres_changes', { 
