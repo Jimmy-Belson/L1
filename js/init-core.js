@@ -13,22 +13,32 @@ const createCore = () => {
         },
         
         // ВЫНОСИМ СЛУШАТЕЛЯ В ОТДЕЛЬНУЮ ФУНКЦИЮ
-        InitVoiceListener: function() {
+ InitVoiceListener: function() {
             if (!this.sb || !this.user) return;
+
+            // 1. УБИВАЕМ СТАРЫЕ КАНАЛЫ (чтобы не было дублей)
+            this.sb.removeAllChannels();
 
             console.log("%c[VOICE] Signal listener activated for:", "color: #f0f", this.user.id);
 
-            this.sb.channel('voice-room')
+            const voiceChannel = this.sb.channel('voice-room')
                 .on('postgres_changes', { 
-                    event: 'INSERT', 
+                    event: 'INSERT', // Можно поставить '*', если хочешь ловить и обновления
                     schema: 'public', 
                     table: 'calls'
                 }, async (payload) => {
                     const call = payload.new;
-                    console.log("[DEBUG] New entry in 'calls' table:", call);
                     
-                    // Проверка: мы ли получатель?
-                    if (call.receiver_id === this.user.id && call.status === 'pending') {
+                    // --- МОЩНАЯ ПРОВЕРКА ---
+                    const myId = String(this.user.id).toLowerCase().trim();
+                    const targetId = String(call.receiver_id).toLowerCase().trim();
+                    
+                    console.log("[VOICE_DEBUG] Incoming call for ID:", targetId);
+                    console.log("[VOICE_DEBUG] My ID:", myId);
+
+                    if (targetId === myId && call.status === 'pending') {
+                        console.log("%c[MATCH] Triggering UI...", "color: #0f0");
+                        
                         if (window.CustomConfirm) {
                             const accept = await window.CustomConfirm("INCOMING VOICE SIGNAL. ESTABLISH ENCRYPTED LINK?");
                             
@@ -38,9 +48,14 @@ const createCore = () => {
                                 await this.sb.from('calls').update({ status: 'ended' }).eq('id', call.id);
                             }
                         }
+                    } else {
+                        console.log("[VOICE] Call ignored: not for me or not pending.");
                     }
-                })
-                .subscribe();
+                });
+
+            voiceChannel.subscribe((status) => {
+                console.log("[VOICE_CHANNEL_STATUS]:", status);
+            });
         }
     };
 
