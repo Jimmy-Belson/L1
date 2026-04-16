@@ -6,19 +6,30 @@ export const ChatModule = {
         if (this.channel) await Core.sb.removeChannel(this.channel);
 
         this.channel = Core.sb.channel('global-chat')
+            // 1. СЛУШАТЕЛЬ ЧАТА (твой старый код)
             .on('postgres_changes', { 
                 event: 'INSERT', 
                 schema: 'public', 
                 table: 'comments' 
             }, payload => {
                 const m = payload.new;
-
-                // FILTER: Ignore if private or sent by me (already rendered)
                 if (m.recipient_id || m.user_id === Core.user?.id) return; 
-
                 this.render(m, Core);
                 if (Core.SystemNotify) {
                     Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
+                }
+            })
+            // 2. НОВЫЙ СЛУШАТЕЛЬ ЗВОНКОВ (добавляем сюда)
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'calls',
+                filter: `receiver_id=eq.${Core.user?.id}`
+            }, payload => {
+                const callData = payload.new;
+                // Если звонок в статусе ожидания, вызываем наше неоновое окно
+                if (callData.status === 'pending' && window.VoiceModule) {
+                    window.VoiceModule.showIncomingCall(callData);
                 }
             })
             .subscribe(async (status) => {
