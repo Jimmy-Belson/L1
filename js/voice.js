@@ -183,14 +183,22 @@ export const VoiceModule = {
         this.subscribeToCall(callData.id);
     },
 
-    async saveIceCandidate(callId, candidate, type) {
-        const column = type === 'caller' ? 'ice_candidates_caller' : 'ice_candidates_receiver';
-        await window.Core.sb.rpc('add_ice_candidate', { 
-            call_id: callId, 
-            candidate: candidate, 
-            target_col: column 
-        });
-    },
+async saveIceCandidate(callId, candidate, type) {
+    const column = type === 'caller' ? 'ice_candidates_caller' : 'ice_candidates_receiver';
+    
+    // ПРЕВРАЩАЕМ В JSON: База поймет только простой объект
+    const candJson = candidate.toJSON ? candidate.toJSON() : candidate;
+
+    const { error } = await window.Core.sb.rpc('add_ice_candidate', { 
+        call_id: callId, 
+        candidate: candJson, 
+        target_col: column 
+    });
+
+    if (error) {
+        console.error("[VOICE] Ошибка RPC:", error.message);
+    }
+},
 
     subscribeToCall(callId) {
         window.Core.sb.channel(`call_realtime:${callId}`)
