@@ -157,6 +157,7 @@ export const ChatModule = {
                 document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
                 document.getElementById('pop-kills').innerText = p.combat_score || 0;
                 document.getElementById('pop-msgs').innerText = p.message_count || 0;
+                document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
                 
                 let actionsCont = pop.querySelector('.pop-actions');
                 if (!actionsCont) {
