@@ -148,5 +148,9 @@ window.addEventListener('click', (e) => {
     }
 });
 
-window.Core = Core;
-Core.init();
+// Вместо жесткого window.Core = Core;
+// Мы объединяем существующий Core (со звонками) с новым функционалом
+window.Core = Object.assign(window.Core || {}, Core);
+
+// Инициализируем
+window.Core.init();

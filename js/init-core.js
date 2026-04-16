@@ -1,66 +1,42 @@
 /**
- * ORBITRON CORE - VOICE INITIALIZER (Final Stable Version)
+ * ORBITRON CORE - INVISIBLE VOICE PROTECTOR
  */
 (function() {
-    // 1. Создаем функцию в глобальном пространстве, чтобы её никто не стер
+    const DEPLOY_LOG = "%c[VOICE] SIGNAL LISTENER ACTIVE";
+    const LOG_STYLE = "color: #0ff; font-weight: bold; background: #002222; padding: 3px 10px; border-radius: 5px;";
+
     window.GlobalVoiceInit = function() {
-        // Проверяем зависимости
         const sb = window.Core?.sb || window.supabaseClient;
         const user = window.Core?.user;
 
-        if (!sb || !user) {
-            console.warn("[VOICE] Waiting for Core/User to be ready...");
-            return false; 
-        }
+        if (!sb || !user) return false;
 
         const myId = String(user.id).toLowerCase().trim();
-        
-        // Очистка старых каналов перед запуском нового
         sb.removeAllChannels();
 
-        console.log("%c[VOICE] SIGNAL LISTENER DEPLOYED:", "color: #0ff; font-weight: bold;", myId);
+        console.log(DEPLOY_LOG, LOG_STYLE, myId);
 
-        const voiceChannel = sb.channel('voice-broadcast')
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'calls'
-            }, async (payload) => {
+        sb.channel('voice-broadcast')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'calls' }, 
+            async (payload) => {
                 const call = payload.new;
-                if (!call) return;
-
-                const targetId = String(call.receiver_id).toLowerCase().trim();
-                
-                // Проверка: звонят ли именно мне?
-                if (targetId === myId && call.status === 'pending') {
-                    console.log("%c[INCOMING] VOICE SIGNAL DETECTED!", "color: #f0f; border: 1px solid #f0f; padding: 5px;");
-                    
-                    // Используем фоллбек: если VoiceModule еще грузится, подождем его
-                    const triggerCall = async () => {
+                if (String(call.receiver_id).toLowerCase().trim() === myId && call.status === 'pending') {
+                    // Ждем VoiceModule, если он еще грузится
+                    const checkModule = () => {
                         if (window.VoiceModule) {
-                            let accept = window.confirm("INCOMING VOICE SIGNAL. ESTABLISH LINK?");
-                            if (accept) {
+                            if (window.confirm("INCOMING VOICE SIGNAL. ACCEPT?")) {
                                 window.VoiceModule.acceptCall(call);
-                            } else {
-                                await sb.from('calls').update({ status: 'ended' }).eq('id', call.id);
                             }
-                        } else {
-                            console.log("Waiting for VoiceModule...");
-                            setTimeout(triggerCall, 500);
-                        }
+                        } else { setTimeout(checkModule, 500); }
                     };
-                    triggerCall();
+                    checkModule();
                 }
-            });
-
-        voiceChannel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') console.log("[VOICE] Realtime Channel: ONLINE");
-        });
+            }).subscribe();
 
         return true;
     };
 
-    // 2. Инициализация Supabase клиента (если еще нет)
+    // Создаем клиент, если его нет
     if (!window.supabaseClient) {
         window.supabaseClient = window.supabase.createClient(
             'https://ebjsxlympwocluxgmwcu.supabase.co', 
@@ -68,22 +44,29 @@
         );
     }
 
-    // 3. Автозапуск с защитой от перезаписи
+    // Следим за объектом Core. Если его перезапишут — восстанавливаем функцию.
+    const protectCore = () => {
+        window.Core = window.Core || {};
+        if (!window.Core.InitVoiceListener) {
+            window.Core.InitVoiceListener = window.GlobalVoiceInit;
+            
+            // Если юзер уже есть в Core, запускаем слушателя
+            if (window.Core.user) window.GlobalVoiceInit();
+        }
+    };
+
+    // Запускаем защиту каждые 2 секунды (на всякий случай)
+    setInterval(protectCore, 2000);
+
+    // Автозапуск при логине через Supabase
     window.supabaseClient.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
-            // Создаем Core если его нет, но НЕ перезаписываем его, если он уже есть
             window.Core = window.Core || {};
             window.Core.user = session.user;
             window.Core.sb = window.supabaseClient;
-
-            // Цикл "умного запуска" - пробуем запуститься, пока не получится
-            const attemptInit = () => {
-                const success = window.GlobalVoiceInit();
-                if (!success) setTimeout(attemptInit, 1000);
-            };
-            attemptInit();
+            protectCore();
         }
     });
 
-    console.log("%c[SYSTEM] Voice Core Initialized", "color: #55ff55");
+    console.log("%c[SYSTEM] Voice Protection Shield: ENGAGED", "color: #55ff55");
 })();
