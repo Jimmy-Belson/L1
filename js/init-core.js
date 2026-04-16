@@ -9,7 +9,7 @@ window.GlobalVoiceInit = function() {
     }
 
     const myId = String(user.id).toLowerCase().trim();
-    sb.removeAllChannels();
+   
 
     console.log("%c[VOICE] SIGNAL LISTENER DEPLOYED:", "color: #0ff; font-weight: bold;", myId);
 
