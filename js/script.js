@@ -62,6 +62,11 @@ const Core = {
 
         this.user = session.user;
 
+           // ФИНАЛЬНЫЙ ПИНОК: Запускаем голос прямо здесь!
+        if (window.GlobalVoiceInit) {
+            window.GlobalVoiceInit();
+        }
+
         if (isStation) {
             // Если залогинены, но попали на страницу входа — уходим на главную
             const home = isSubPage ? '../index.html' : 'index.html';
