@@ -25,13 +25,19 @@ export const VoiceModule = {
         }
 
         this.isMuted = false;
+
+       
         const muteBtn = document.getElementById('mute-btn');
         const muteIcon = document.getElementById('mute-icon');
+
         if (muteBtn) {
             muteBtn.classList.remove('muted');
             if (muteIcon) {
                 if (muteIcon.tagName === 'I') muteIcon.className = 'fas fa-microphone';
                 else muteIcon.innerText = "[ MIC_ON ]";
+                document.getElementById('end-call-btn').addEventListener('click', () => {
+    this.endCall();
+});
             }
         }
     },
