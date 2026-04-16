@@ -14,14 +14,19 @@ export const AvatarService = {
             return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
         }
 
-        // 3. Если это уже полная ссылка
-        if (cleanUrl.startsWith('http')) {
-            // Исправляем отсутствие /public/ в ссылках Supabase
-            if (cleanUrl.includes('supabase.co') && !cleanUrl.includes('/public/')) {
-                return cleanUrl.replace('/object/avatars/', '/object/public/avatars/');
-            }
-            return cleanUrl;
-        }
+       // 3. Если это уже полная ссылка
+if (cleanUrl.startsWith('http')) {
+    // БЛОКИРОВКА СТАРЫХ ПЛЕЙСХОЛДЕРОВ
+    if (cleanUrl.includes('placeholder.com') || cleanUrl.includes('via.placeholder')) {
+        return `https://api.dicebear.com/7.x/bottts/svg?seed=${user_id}&backgroundColor=001a2d`;
+    }
+
+    // Исправляем отсутствие /public/ в ссылках Supabase
+    if (cleanUrl.includes('supabase.co') && !cleanUrl.includes('/public/')) {
+        return cleanUrl.replace('/object/avatars/', '/object/public/avatars/');
+    }
+    return cleanUrl;
+}
         
         // 4. Генерация ссылки через SDK
         try {
