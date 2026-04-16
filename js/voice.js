@@ -96,21 +96,16 @@ export const VoiceModule = {
         }
 
  this.pc.ontrack = (event) => {
-    console.log("%c[VOICE] СИГНАЛ ПОЛУЧЕН!", "color: #0f0; font-weight: bold;");
     const remoteAudio = document.getElementById('remote-audio');
     if (remoteAudio) {
         remoteAudio.srcObject = event.streams[0];
-        
-        // Принудительный старт (важно!)
-        remoteAudio.play().then(() => {
-            console.log("[VOICE] Аудио поток запущен успешно");
-        }).catch(e => {
-            console.error("[VOICE] Автоплей заблокирован. Нужен клик по странице!", e);
-            window.Core.Msg("CLICK_ANYWHERE_TO_HEAR_AUDIO", "info");
+        // ДОБАВЛЯЕМ ЭТО:
+        remoteAudio.play().catch(e => {
+            console.error("Autoplay blocked", e);
+            window.Core.Msg("CLICK TO ENABLE AUDIO", "info");
         });
-        
-        this.updateStatus("ENCRYPTED_LINK_ACTIVE");
     }
+    this.updateStatus("ENCRYPTED_LINK_ACTIVE");
 };
 
         this.pc.onicecandidate = (event) => {
