@@ -115,19 +115,19 @@ const Core = {
         }
     },
 
-    Audio: {
+Audio: {
         el: null,
         setup() {
-            if (!this.el) {
-                const isSubPage = window.location.pathname.includes('/html/');
-                const trackPath = isSubPage ? '../track.mp3' : 'track.mp3';
-                
-                this.el = new Audio();
-                this.el.src = trackPath;
-                this.el.preload = 'none';
-                this.el.loop = true;
-                this.el.volume = 0.1;
-            }
+            if (this.el) return; // Если уже создан, ничего не делаем
+            
+            const isSubPage = window.location.pathname.includes('/html/');
+            // Используем относительный путь от корня, это надежнее
+            const trackPath = isSubPage ? '../track.mp3' : './track.mp3';
+            
+            this.el = new Audio(trackPath);
+            this.el.preload = 'auto'; // Поменял на auto для стабильности
+            this.el.loop = true;
+            this.el.volume = 0.1;
         },
         toggle() {
             this.setup();
@@ -135,7 +135,14 @@ const Core = {
             if (!this.el) return;
             
             if (this.el.paused) {
-                this.el.play().catch(() => console.log("Audio blocked"));
+                // Маленький хак: сбрасываем src только если он пустой, 
+                // чтобы не провоцировать лишние запросы
+                if (!this.el.src || this.el.src.endsWith('https')) {
+                     const isSubPage = window.location.pathname.includes('/html/');
+                     this.el.src = isSubPage ? '../track.mp3' : './track.mp3';
+                }
+                
+                this.el.play().catch(e => console.log("Audio play blocked:", e));
                 btn?.classList.add('playing');
             } else {
                 this.el.pause();
@@ -143,7 +150,7 @@ const Core = {
             }
         }
     }
-};
+}
 
 window.addEventListener('click', (e) => {
     const pop = document.getElementById('user-popover');

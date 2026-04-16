@@ -13,20 +13,26 @@ async SyncProfile(Core, user) {
 
                 // Остальной код (ники, ранги) оставляем...
 
-                if (avatarEl) {
-                    // Получаем чистую ссылку из нашего нового сервиса
-                    const newSrc = Core.getAvatar(user.id, data.avatar_url);
-                    
-                    // Сравниваем только чистые строки без лишних параметров
-                    if (avatarEl.getAttribute('src') !== newSrc) {
-                        avatarEl.onerror = () => {
-                            console.warn("AVATAR_LOAD_FAILED. Check Storage Policies.");
-                            avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}&backgroundColor=001a2d`;
-                            avatarEl.onerror = null; 
-                        };
-                        avatarEl.src = newSrc;
-                    }
-                }
+if (avatarEl) {
+    const newSrc = Core.getAvatar(user.id, data.avatar_url);
+    
+    // ПРОВЕРКА: Если ссылка битая или это просто слово "https", не грузим её
+    const isValidSrc = newSrc && newSrc.length > 10 && newSrc.includes('://');
+
+    if (isValidSrc) {
+        if (avatarEl.getAttribute('src') !== newSrc) {
+            avatarEl.onerror = () => {
+                console.warn("AVATAR_LOAD_FAILED. Using fallback.");
+                avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}&backgroundColor=001a2d`;
+                avatarEl.onerror = null; 
+            };
+            avatarEl.src = newSrc;
+        }
+    } else {
+        // Если ссылки нет, ставим заглушку сразу, не провоцируя 404
+        avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}&backgroundColor=001a2d`;
+    }
+}
             }
         } catch (e) { console.warn("SYNC_PROFILE_WARNING:", e.message); }
     },

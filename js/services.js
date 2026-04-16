@@ -1,16 +1,15 @@
 // services.js
 export const AvatarService = {
     getPublicUrl(sb, user_id, avatar_url) {
-        // 1. Очистка входных данных
         let cleanUrl = String(avatar_url || "").trim();
         
-        // Убираем ":1" или любые другие цифры после двоеточия, которые ломают ссылку
-        if (cleanUrl.includes(':')) {
+        // 1. Очистка входных данных (ТОЛЬКО если это не полная ссылка)
+        if (!cleanUrl.startsWith('http') && cleanUrl.includes(':')) {
             cleanUrl = cleanUrl.split(':')[0];
         }
 
         // 2. Если в базе пусто — возвращаем робота
-        if (!cleanUrl || cleanUrl === "" || cleanUrl === "null" || cleanUrl === "undefined") {
+        if (!cleanUrl || cleanUrl === "" || cleanUrl === "null" || cleanUrl === "undefined" || cleanUrl === "https") {
             const seed = user_id || "guest";
             return `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=001a2d`;
         }
