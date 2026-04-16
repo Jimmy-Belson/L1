@@ -1826,42 +1826,85 @@ html, body {
 #private-send-btn:hover, #private-call-btn:hover {
     animation: neon-flicker 1.5s infinite;
 }
+/* Основная карта звонка */
 .voice-card {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.9);
-    width: 320px;
-    background: rgba(0, 26, 45, 0.95);
-    border: 1px solid #0ff;
-    border-radius: 16px;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-    display: none; /* Включаем через класс .active */
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.8); /* Начальное состояние для анимации */
+    width: 340px;
+    background: radial-gradient(circle at center, #06283d 0%, #001a2d 100%);
+    border: 2px solid #0ff;
+    border-radius: 24px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2), inset 0 0 15px rgba(0, 255, 255, 0.1);
+    display: none; /* Включаем через js класс .active */
     flex-direction: column;
     align-items: center;
-    padding: 20px;
-    z-index: 1000;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
+    padding: 25px;
+    z-index: 2000;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Плавное "выпрыгивание" */
+    backdrop-filter: blur(15px);
+    overflow: hidden;
 }
 
+/* Класс активации окна (вызывается из JS) */
 .voice-card.active {
     display: flex;
     transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
 }
 
-/* Пульсирующее кольцо вокруг аватара при разговоре */
-.avatar-wrapper {
+/* Фоновое неоновое свечение */
+.neon-bg-glow {
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(0,255,255,0.1) 0%, rgba(0,255,255,0) 70%);
+    border-radius: 50%;
+    animation: neon-glow-move 10s infinite linear;
+    z-index: -1;
+}
+
+@keyframes neon-glow-move {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(10%, 10%) rotate(360deg); }
+}
+
+/* Хедер и Таймер */
+.voice-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    color: rgba(0, 255, 255, 0.7);
+}
+
+.status-group { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff0; box-shadow: 0 0 10px #ff0; transition: 0.3s; }
+
+.voice-timer {
+    color: #fff;
+    text-shadow: 0 0 10px #0ff;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* Аватар и глубокая пульсация голоса */
+.avatar-speaker-wrapper {
     position: relative;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    width: 130px; height: 130px;
 }
 
 #voice-target-avatar {
-    width: 120px;
-    height: 120px;
+    width: 100%; height: 100%;
     border-radius: 50%;
-    border: 2px solid #0ff;
+    border: 3px solid #0ff;
     object-fit: cover;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    position: relative; z-index: 2;
 }
 
 .pulse-ring {
@@ -1869,39 +1912,120 @@ html, body {
     top: 0; left: 0; right: 0; bottom: 0;
     border: 2px solid #0ff;
     border-radius: 50%;
-    animation: voice-pulse 2s infinite;
+    opacity: 0;
+    z-index: 1;
 }
 
-@keyframes voice-pulse {
-    0% { transform: scale(1); opacity: 0.5; }
-    100% { transform: scale(1.4); opacity: 0; }
+/* Запускаем анимацию колец ТОЛЬКО когда статус ACTIVE */
+.voice-card.active-call .pulse-ring {
+    animation: deep-voice-pulse 2.5s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Кнопки управления */
+.ring-1 { animation-delay: 0s !important; }
+.ring-2 { animation-delay: 0.8s !important; }
+.ring-3 { animation-delay: 1.6s !important; }
+
+@keyframes deep-voice-pulse {
+    0% { transform: scale(1); opacity: 0.6; border-width: 4px; }
+    50% { opacity: 0.3; }
+    100% { transform: scale(1.6); opacity: 0; border-width: 1px; }
+}
+
+#voice-target-nick {
+    font-family: 'Orbitron', sans-serif;
+    color: #fff;
+    text-shadow: 0 0 15px #0ff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+/* Кнопки управления (Discord style + Neon) */
 .voice-controls {
     display: flex;
-    gap: 20px;
-    margin-top: 20px;
+    gap: 25px;
+    margin-top: 35px;
 }
 
 .ctrl-btn {
-    width: 50px;
-    height: 50px;
+    width: 60px; height: 60px;
     border-radius: 50%;
-    border: none;
+    border: 2px solid transparent;
     background: #1a3a4a;
     color: #fff;
     cursor: pointer;
-    transition: 0.2s;
-    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    font-size: 1.4rem;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
 }
 
-.ctrl-btn:hover { background: #0ff; color: #000; box-shadow: 0 0 15px #0ff; }
-.ctrl-btn.hangup { background: #ff4444; }
-.ctrl-btn.hangup:hover { background: #ff0000; box-shadow: 0 0 15px #ff0000; }
-.ctrl-btn.muted { background: #ffaa00; color: #000; }
+/* Эффект при наведении */
+.ctrl-btn:hover {
+    transform: translateY(-3px);
+    background: #0ff;
+    color: #000;
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5);
+}
+
+/* Кнопка сброса (красная) */
+.ctrl-btn.hangup {
+    background: #ff4444;
+    border-color: #ff0000;
+}
+.ctrl-btn.hangup:hover {
+    background: #ff0000;
+    box-shadow: 0 5px 20px rgba(255, 0, 0, 0.5);
+}
+
+/* Кнопка мута (активная) */
+.ctrl-btn.muted {
+    background: #ffaa00;
+    color: #000;
+    box-shadow: 0 0 15px #ffaa00;
+}
+.ctrl-btn.muted:hover { background: #ffcc00; }
 
 /* Состояние при звонке: показываем */
 #voice-overlay.active {
     display: flex !important;
 }
+.incoming-call-card {
+    position: fixed;
+    bottom: 20px; right: 20px; /* Появляется в углу, как уведомление */
+    width: 300px;
+    background: radial-gradient(circle at center, #06283d 0%, #001a2d 100%);
+    border: 2px solid #0f0; /* Зеленый неон для входящего */
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    display: none; /* Включаем через js класс .active */
+    flex-direction: column;
+    padding: 15px;
+    z-index: 2100;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.incoming-call-card.active {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.incoming-content {
+    display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
+}
+
+#incoming-avatar {
+    width: 60px; height: 60px; border-radius: 50%; border: 2px solid #0f0;
+}
+
+.incoming-label { font-size: 0.7rem; color: #0f0; font-family: 'Orbitron', sans-serif; }
+.incoming-nick { font-size: 1.1rem; color: #fff; text-shadow: 0 0 10px #0f0; font-weight: bold; }
+
+.incoming-controls { display: flex; justify-content: space-around; gap: 10px; }
+.incoming-controls .ctrl-btn { width: 50px; height: 50px; font-size: 1.1rem; }
+.incoming-controls .ctrl-btn.accept { background: #00cc00; }
+.incoming-controls .ctrl-btn.accept:hover { background: #00ff00; box-shadow: 0 0 15px #0f0; }

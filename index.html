@@ -141,21 +141,28 @@
 </div>
 
 <div id="voice-overlay" class="voice-card">
+    <div class="neon-bg-glow"></div>
+
     <div class="voice-header">
-        <span class="status-dot"></span>
-        <span id="voice-status">ESTABLISHING_LINK...</span>
+        <div class="status-group">
+            <span class="status-dot"></span>
+            <span id="voice-status">CONNECTING...</span>
+        </div>
+        <div id="voice-timer" class="voice-timer">00:00</div>
     </div>
 
     <div class="voice-body">
-        <div class="avatar-wrapper">
+        <div class="avatar-speaker-wrapper">
             <img id="voice-target-avatar" src="" alt="pilot">
-            <div class="pulse-ring"></div>
+            <div class="pulse-ring ring-1"></div>
+            <div class="pulse-ring ring-2"></div>
+            <div class="pulse-ring ring-3"></div>
         </div>
         <h2 id="voice-target-nick">PILOT</h2>
     </div>
 
     <div class="voice-controls">
-        <button id="mute-btn" class="ctrl-btn" title="Mute">
+        <button id="mute-btn" class="ctrl-btn mute" title="Mute/Unmute">
             <i id="mute-icon" class="fas fa-microphone"></i>
         </button>
         <button id="end-call-btn" class="ctrl-btn hangup" title="End Call">
@@ -163,7 +170,22 @@
         </button>
     </div>
     
-   
+  
+</div>
+<div id="incoming-call-card" class="incoming-call-card">
+    <div class="neon-bg-glow"></div>
+    <div class="incoming-content">
+        <img id="incoming-avatar" src="" alt="pilot">
+        <div class="incoming-info">
+            <div class="incoming-label">INCOMING SIGNAL</div>
+            <div id="incoming-nick" class="incoming-nick">PILOT</div>
+        </div>
+    </div>
+    <div class="incoming-controls">
+        <button id="accept-call-btn" class="ctrl-btn accept"><i class="fas fa-phone"></i></button>
+        <button id="reject-call-btn" class="ctrl-btn hangup"><i class="fas fa-phone-slash"></i></button>
+    </div>
+    <audio id="ringtone-audio" src="assets/ringtone.mp3" loop></audio>
 </div>
 
 

@@ -7,6 +7,12 @@ export const VoiceModule = {
     config: {
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     },
+    
+    // ПЕРЕМЕННЫЕ ТАЙМЕРА И ВХОДЯЩЕГО ВЫЗОВА
+    callStartTime: null,
+    timerInterval: null,
+    incomingCallData: null,
+    callTimeout: null,
 
     // --- INTERFACE MANAGEMENT ---
     showOverlay(nickname, avatarUrl = null) {
@@ -14,44 +20,82 @@ export const VoiceModule = {
         const avatarImg = document.getElementById('voice-target-avatar');
         if (!overlay) return;
 
-        // ВМЕСТО .style.display = 'flex' ИСПОЛЬЗУЕМ КЛАСС
         overlay.classList.add('active'); 
+        overlay.classList.remove('active-call'); // Сброс анимации колец
+        this.resetTimerDisplay();
         
         document.getElementById('voice-target-nick').innerText = nickname.toUpperCase();
-        this.updateStatus("ESTABLISHING_LINK...");
+        this.updateStatus("ESTABLISHING...");
         
         if (avatarImg) {
-            avatarImg.src = avatarUrl || 'assets/default-avatar.png';
+            avatarImg.src = avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
         }
 
         this.isMuted = false;
-
-       
         const muteBtn = document.getElementById('mute-btn');
         const muteIcon = document.getElementById('mute-icon');
 
         if (muteBtn) {
             muteBtn.classList.remove('muted');
             if (muteIcon) {
-                if (muteIcon.tagName === 'I') muteIcon.className = 'fas fa-microphone';
-                else muteIcon.innerText = "[ MIC_ON ]";
-                document.getElementById('end-call-btn').addEventListener('click', () => {
-    this.endCall();
-});
+                muteIcon.className = 'fas fa-microphone';
             }
         }
     },
 
-   hideOverlay() {
+    hideOverlay() {
         const overlay = document.getElementById('voice-overlay');
         if (overlay) {
             overlay.classList.remove('active');
+            overlay.classList.remove('active-call');
         }
+        this.stopTimer();
     },
 
     updateStatus(text) {
         const statusEl = document.getElementById('voice-status');
+        const dot = document.querySelector('.status-dot');
+        const overlay = document.getElementById('voice-overlay');
+        
         if (statusEl) statusEl.innerText = text.toUpperCase();
+
+        if (text.includes('ACTIVE')) {
+            if (dot) dot.style.background = '#0f0'; 
+            if (overlay) overlay.classList.add('active-call');
+            this.startTimer();
+        } else if (text.includes('MUTED')) {
+            if (dot) dot.style.background = '#ffaa00';
+        } else {
+            if (dot) dot.style.background = '#ff0';
+            if (overlay) overlay.classList.remove('active-call');
+        }
+    },
+
+    // --- ЛОГИКА ТАЙМЕРА ---
+    startTimer() {
+        if (this.timerInterval) return;
+        this.callStartTime = Date.now();
+        this.timerInterval = setInterval(() => {
+            const delta = Date.now() - this.callStartTime;
+            const minutes = Math.floor(delta / 60000);
+            const seconds = Math.floor((delta % 60000) / 1000);
+            const timerEl = document.getElementById('voice-timer');
+            if (timerEl) {
+                timerEl.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+    },
+
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+    },
+
+    resetTimerDisplay() {
+        const timerEl = document.getElementById('voice-timer');
+        if (timerEl) timerEl.innerText = "00:00";
     },
 
     // --- MUTE LOGIC ---
@@ -68,15 +112,61 @@ export const VoiceModule = {
         
         if (this.isMuted) {
             btn.classList.add('muted');
-            if (icon.tagName === 'I') icon.className = 'fas fa-microphone-slash';
-            else icon.innerText = "[ MIC_OFF ]";
-            if (window.Core.Msg) window.Core.Msg("MICROPHONE_MUTED", "warning");
+            if (icon) icon.className = 'fas fa-microphone-slash'; 
+            this.updateStatus("MICROPHONE_MUTED");
         } else {
             btn.classList.remove('muted');
-            if (icon.tagName === 'I') icon.className = 'fas fa-microphone';
-            else icon.innerText = "[ MIC_ON ]";
-            if (window.Core.Msg) window.Core.Msg("MICROPHONE_ACTIVE", "success");
+            if (icon) icon.className = 'fas fa-microphone';
+            this.updateStatus("ENCRYPTED_LINK_ACTIVE");
         }
+    },
+
+    // --- INCOMING CALL UI ---
+    async showIncomingCall(callData) {
+        this.incomingCallData = callData;
+        const incomingCard = document.getElementById('incoming-call-card');
+        const ringtone = document.getElementById('ringtone-audio');
+
+        try {
+            const { data: p } = await window.Core.sb.from('profiles')
+                .select('nickname, avatar_url')
+                .eq('id', callData.caller_id)
+                .maybeSingle();
+            
+            if (p) {
+                document.getElementById('incoming-nick').innerText = (p.nickname || "PILOT").toUpperCase();
+                document.getElementById('incoming-avatar').src = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+            }
+        } catch (err) { console.error(err); }
+
+        if (incomingCard) incomingCard.classList.add('active');
+        if (ringtone) ringtone.play().catch(e => console.log("Ringtone blocked"));
+        
+        this.callTimeout = setTimeout(() => this.rejectIncomingCall(), 30000);
+    },
+
+    hideIncomingCall() {
+        const incomingCard = document.getElementById('incoming-call-card');
+        const ringtone = document.getElementById('ringtone-audio');
+        if (incomingCard) incomingCard.classList.remove('active');
+        if (ringtone) { ringtone.pause(); ringtone.currentTime = 0; }
+        if (this.callTimeout) clearTimeout(this.callTimeout);
+    },
+
+    async acceptIncomingCall() {
+        if (!this.incomingCallData) return;
+        const data = this.incomingCallData;
+        this.incomingCallData = null;
+        this.hideIncomingCall();
+        this.acceptCall(data);
+    },
+
+    async rejectIncomingCall() {
+        if (!this.incomingCallData) return;
+        const id = this.incomingCallData.id;
+        this.incomingCallData = null;
+        await window.Core.sb.from('calls').update({ status: 'ended' }).eq('id', id);
+        this.hideIncomingCall();
     },
 
     // --- CALL LOGIC ---
@@ -85,12 +175,9 @@ export const VoiceModule = {
         if (!targetId) return;
 
         const nick = document.getElementById('private-target-name')?.innerText.replace('SECURE_LINE: ', '') || "PILOT";
-        
-        // Пробуем достать аватарку из уже открытого поповера или чата
-       const currentAvatar = document.getElementById('pop-avatar')?.src || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
+        const currentAvatar = document.getElementById('pop-avatar')?.src || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
         
         this.showOverlay(nick, currentAvatar);
-
         this.pc = new RTCPeerConnection(this.config);
         
         try {
@@ -101,18 +188,14 @@ export const VoiceModule = {
             return this.endCall();
         }
 
- this.pc.ontrack = (event) => {
-    const remoteAudio = document.getElementById('remote-audio');
-    if (remoteAudio) {
-        remoteAudio.srcObject = event.streams[0];
-        // ДОБАВЛЯЕМ ЭТО:
-        remoteAudio.play().catch(e => {
-            console.error("Autoplay blocked", e);
-            window.Core.Msg("CLICK TO ENABLE AUDIO", "info");
-        });
-    }
-    this.updateStatus("ENCRYPTED_LINK_ACTIVE");
-};
+        this.pc.ontrack = (event) => {
+            const remoteAudio = document.getElementById('remote-audio');
+            if (remoteAudio) {
+                remoteAudio.srcObject = event.streams[0];
+                remoteAudio.play().catch(e => window.Core.Msg("CLICK TO ENABLE AUDIO", "info"));
+            }
+            this.updateStatus("ENCRYPTED_LINK_ACTIVE");
+        };
 
         this.pc.onicecandidate = (event) => {
             if (event.candidate && this.currentCallId) {
@@ -137,11 +220,8 @@ export const VoiceModule = {
 
     async acceptCall(callData) {
         this.currentCallId = callData.id;
-        
-        // 1. Показываем оверлей (сначала заглушку)
-        this.showOverlay("INCOMING SIGNAL", 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d');
+        this.showOverlay("CONNECTING...", 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d');
 
-        // 2. Фоновый запрос на получение данных профиля звонящего
         try {
             const { data: p } = await window.Core.sb.from('profiles')
                 .select('nickname, avatar_url')
@@ -149,12 +229,10 @@ export const VoiceModule = {
                 .maybeSingle();
             
             if (p) {
-                const nick = (p.nickname || "PILOT").toUpperCase();
-                const avatar = window.Core.getAvatar(callData.caller_id, p.avatar_url);
-                document.getElementById('voice-target-nick').innerText = nick;
-                document.getElementById('voice-target-avatar').src = avatar;
+                document.getElementById('voice-target-nick').innerText = (p.nickname || "PILOT").toUpperCase();
+                document.getElementById('voice-target-avatar').src = window.Core.getAvatar(callData.caller_id, p.avatar_url);
             }
-        } catch (err) { console.error("Profile sync error", err); }
+        } catch (err) { console.error(err); }
 
         this.pc = new RTCPeerConnection(this.config);
 
@@ -167,7 +245,10 @@ export const VoiceModule = {
 
         this.pc.ontrack = (event) => {
             const remoteAudio = document.getElementById('remote-audio');
-            if (remoteAudio) remoteAudio.srcObject = event.streams[0];
+            if (remoteAudio) {
+                remoteAudio.srcObject = event.streams[0];
+                remoteAudio.play().catch(e => console.log("Autoplay blocked"));
+            }
             this.updateStatus("ENCRYPTED_LINK_ACTIVE");
         };
 
@@ -181,41 +262,26 @@ export const VoiceModule = {
         const answer = await this.pc.createAnswer();
         await this.pc.setLocalDescription(answer);
 
-        await window.Core.sb.from('calls').update({ 
-            answer: answer, 
-            status: 'active' 
-        }).eq('id', callData.id);
-
+        await window.Core.sb.from('calls').update({ answer: answer, status: 'active' }).eq('id', callData.id);
         this.subscribeToCall(callData.id);
     },
 
-async saveIceCandidate(callId, candidate, type) {
-    const column = type === 'caller' ? 'ice_candidates_caller' : 'ice_candidates_receiver';
-    
-    // ПРЕВРАЩАЕМ В JSON: База поймет только простой объект
-    const candJson = candidate.toJSON ? candidate.toJSON() : candidate;
-
-    const { error } = await window.Core.sb.rpc('add_ice_candidate', { 
-        call_id: callId, 
-        candidate: candJson, 
-        target_col: column 
-    });
-
-    if (error) {
-        console.error("[VOICE] Ошибка RPC:", error.message);
-    }
-},
+    async saveIceCandidate(callId, candidate, type) {
+        const column = type === 'caller' ? 'ice_candidates_caller' : 'ice_candidates_receiver';
+        const candJson = candidate.toJSON ? candidate.toJSON() : candidate;
+        await window.Core.sb.rpc('add_ice_candidate', { 
+            call_id: callId, 
+            candidate: candJson, 
+            target_col: column 
+        });
+    },
 
     subscribeToCall(callId) {
         window.Core.sb.channel(`call_realtime:${callId}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls', filter: `id=eq.${callId}` }, 
             async (payload) => {
                 const data = payload.new;
-                
-                if (data.status === 'ended') {
-                    this.endCall(false);
-                }
-
+                if (data.status === 'ended') this.endCall(false);
                 if (data.answer && !this.pc.remoteDescription) {
                     await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                 }
@@ -223,16 +289,13 @@ async saveIceCandidate(callId, candidate, type) {
                 const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
                 const remoteCandidates = myRole === 'caller' ? data.ice_candidates_receiver : data.ice_candidates_caller;
                 
-if (remoteCandidates && remoteCandidates.length > 0) {
-    remoteCandidates.forEach(cand => {
-        // Проверка: добавляем кандидатов только если мы уже знаем, КТО на другом конце (SDP)
-        if (this.pc.remoteDescription && this.pc.remoteDescription.type) {
-            this.pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => {
-                console.warn("[VOICE] Ошибка добавления кандидата:", e);
-            });
-        }
-    });
-}
+                if (remoteCandidates && remoteCandidates.length > 0) {
+                    remoteCandidates.forEach(cand => {
+                        if (this.pc.remoteDescription && this.pc.remoteDescription.type) {
+                            this.pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => {});
+                        }
+                    });
+                }
             }).subscribe();
     },
 
@@ -245,15 +308,21 @@ if (remoteCandidates && remoteCandidates.length > 0) {
             this.pc.close();
             this.pc = null;
         }
-        
         if (notifyDb && this.currentCallId) {
             await window.Core.sb.from('calls').update({ status: 'ended' }).eq('id', this.currentCallId);
         }
-
         this.currentCallId = null;
         this.hideOverlay();
         if (window.Core.Msg) window.Core.Msg("LINK_TERMINATED", "warning");
     }
 };
+
+// СОБЫТИЯ КЛИКОВ
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#mute-btn')) VoiceModule.toggleMute();
+    if (e.target.closest('#end-call-btn')) VoiceModule.endCall();
+    if (e.target.closest('#accept-call-btn')) VoiceModule.acceptIncomingCall();
+    if (e.target.closest('#reject-call-btn')) VoiceModule.rejectIncomingCall();
+});
 
 window.VoiceModule = VoiceModule;
