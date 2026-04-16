@@ -81,7 +81,7 @@ export const VoiceModule = {
         const nick = document.getElementById('private-target-name')?.innerText.replace('SECURE_LINE: ', '') || "PILOT";
         
         // Пробуем достать аватарку из уже открытого поповера или чата
-        const currentAvatar = document.getElementById('pop-avatar')?.src || 'assets/default-avatar.png';
+       const currentAvatar = document.getElementById('pop-avatar')?.src || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
         
         this.showOverlay(nick, currentAvatar);
 
@@ -133,7 +133,7 @@ export const VoiceModule = {
         this.currentCallId = callData.id;
         
         // 1. Показываем оверлей (сначала заглушку)
-        this.showOverlay("INCOMING SIGNAL", 'assets/default-avatar.png');
+        this.showOverlay("INCOMING SIGNAL", 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d');
 
         // 2. Фоновый запрос на получение данных профиля звонящего
         try {
