@@ -11,6 +11,12 @@ async SyncProfile(Core, user) {
                 Core.userProfile = data; 
                 const avatarEl = document.getElementById('avatar-display');
 
+                  // --- ДОБАВЬ ЭТОТ БЛОК ---
+            // Обновляем метку времени "последний раз в сети" для себя
+            await Core.sb.from('profiles')
+                .update({ last_seen: new Date().toISOString() })
+                .eq('id', user.id);
+
                 // Остальной код (ники, ранги) оставляем...
 
 if (avatarEl) {
