@@ -176,53 +176,69 @@ export const VoiceModule = {
 
     // --- CALL LOGIC ---
     async startCall() {
-        const targetId = window.CommModule.activeTarget;
-        if (!targetId) return;
+    const targetId = window.CommModule.activeTarget;
+    if (!targetId) return;
 
-        const nick = document.getElementById('private-target-name')?.innerText.replace('SECURE_LINE: ', '') || "PILOT";
-        const currentAvatar = document.getElementById('pop-avatar')?.src || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
-        
-        this.showOverlay(nick, currentAvatar);
-        this.pc = new RTCPeerConnection(this.config);
-        
-        try {
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.localStream.getTracks().forEach(track => this.pc.addTrack(track, this.localStream));
-        } catch (e) {
-            window.Core.Msg("MIC_ACCESS_DENIED", "error");
-            return this.endCall();
+    const nick = document.getElementById('private-target-name')?.innerText.replace('SECURE_LINE: ', '') || "PILOT";
+    const currentAvatar = document.getElementById('pop-avatar')?.src || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
+    
+    this.showOverlay(nick, currentAvatar);
+
+    // 1. СНАЧАЛА СОЗДАЕМ ЗАПИСЬ В ТАБЛИЦЕ CALLS
+    const { data, error } = await window.Core.sb.from('calls').insert([{
+        caller_id: window.Core.user.id,
+        receiver_id: targetId,
+        status: 'pending',
+        offer: null // Пока пусто, обновим позже
+    }]).select().single();
+
+    if (error) return console.error("ОШИБКА СОЗДАНИЯ ЗВОНКА:", error);
+    
+    // ТЕПЕРЬ У НАС ЕСТЬ ID!
+    this.currentCallId = data.id;
+    this.processedCandidates.clear(); // Чистим кэш кандидатов
+
+    // 2. ТЕПЕРЬ ИНИЦИАЛИЗИРУЕМ СОЕДИНЕНИЕ
+    this.pc = new RTCPeerConnection(this.config);
+    
+    // Настраиваем микрофон
+    try {
+        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.localStream.getTracks().forEach(track => this.pc.addTrack(track, this.localStream));
+    } catch (e) {
+        window.Core.Msg("MIC_ACCESS_DENIED", "error");
+        return this.endCall();
+    }
+
+    // Слушаем удаленный звук
+    this.pc.ontrack = (event) => {
+        const remoteAudio = document.getElementById('remote-audio');
+        if (remoteAudio) {
+            remoteAudio.srcObject = event.streams[0];
+            remoteAudio.play().catch(e => console.log("Блокировка звука браузером"));
         }
+        this.updateStatus("ENCRYPTED_LINK_ACTIVE");
+    };
 
-        this.pc.ontrack = (event) => {
-            const remoteAudio = document.getElementById('remote-audio');
-            if (remoteAudio) {
-                remoteAudio.srcObject = event.streams[0];
-                remoteAudio.play().catch(e => window.Core.Msg("CLICK TO ENABLE AUDIO", "info"));
-            }
-            this.updateStatus("ENCRYPTED_LINK_ACTIVE");
-        };
+    // Слушаем кандидатов (ТЕПЕРЬ currentCallId СУЩЕСТВУЕТ)
+    this.pc.onicecandidate = (event) => {
+        if (event.candidate && this.currentCallId) {
+            console.log("LOG: Отправляю ICE с ID:", this.currentCallId);
+            this.saveIceCandidate(this.currentCallId, event.candidate, 'caller');
+        }
+    };
 
-        this.pc.onicecandidate = (event) => {
-            if (event.candidate && this.currentCallId) {
-                this.saveIceCandidate(this.currentCallId, event.candidate, 'caller');
-            }
-        };
+    // 3. СОЗДАЕМ OFFER И ОБНОВЛЯЕМ ЗАПИСЬ
+    const offer = await this.pc.createOffer();
+    await this.pc.setLocalDescription(offer);
 
-        const offer = await this.pc.createOffer();
-        await this.pc.setLocalDescription(offer);
+    await window.Core.sb.from('calls')
+        .update({ offer: offer })
+        .eq('id', this.currentCallId);
 
-        const { data, error } = await window.Core.sb.from('calls').insert([{
-            caller_id: window.Core.user.id,
-            receiver_id: targetId,
-            offer: offer,
-            status: 'pending'
-        }]).select().single();
-
-        if (error) return console.error(error);
-        this.currentCallId = data.id;
-        this.subscribeToCall(data.id);
-    },
-
+    // 4. ПОДПИСЫВАЕМСЯ НА ОТВЕТ
+    this.subscribeToCall(this.currentCallId);
+},
     async acceptCall(callData) {
         this.currentCallId = callData.id;
         this.showOverlay("CONNECTING...", 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d');
