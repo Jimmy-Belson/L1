@@ -13,6 +13,10 @@ const Core = {
     user: null,
     userProfile: null,
 
+    // Добавь эти две строки:
+    Utils: Utils, 
+    getRank: window.getRankByScore, // Привязываем твои ранги к Core
+
     Chat: ChatModule,
     Todo: TodoModule,
     Canvas: CanvasSystem,

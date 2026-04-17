@@ -225,14 +225,12 @@ if (p) {
                 { user_id: Core.user.id, friend_id: uid }
             ]);
 
-            if (errAdd) {
-                if (errAdd.status === 409) {
-                    Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
-                }
-            } else {
-                Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
-                if (window.FriendsModule) window.FriendsModule.loadFriends();
-            }
+           if (error) {
+    Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
+} else {
+    Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
+    if (window.FriendsModule) window.FriendsModule.loadFriends();
+}
         };
         actionsCont.appendChild(btnAdd);
     }
