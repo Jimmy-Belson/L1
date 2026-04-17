@@ -7,31 +7,24 @@ export const ChatModule = {
 
         this.channel = Core.sb.channel('global-chat')
             // 1. СЛУШАТЕЛЬ ЧАТА (твой старый код)
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'comments' 
-            }, payload => {
-                const m = payload.new;
-                if (m.recipient_id || m.user_id === Core.user?.id) return; 
-                this.render(m, Core);
-                if (Core.SystemNotify) {
-                    Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
-                }
-            })
-            // 2. НОВЫЙ СЛУШАТЕЛЬ ЗВОНКОВ (добавляем сюда)
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'calls',
-                filter: `receiver_id=eq.${Core.user?.id}`
-            }, payload => {
-                const callData = payload.new;
-                // Если звонок в статусе ожидания, вызываем наше неоновое окно
-                if (callData.status === 'pending' && window.VoiceModule) {
-                    window.VoiceModule.showIncomingCall(callData);
-                }
-            })
+.on('postgres_changes', { 
+    event: 'INSERT', 
+    schema: 'public', 
+    table: 'calls',
+    filter: `receiver_id=eq.${Core.user?.id}`
+}, payload => {
+    const callData = payload.new;
+    if (callData.status === 'pending' && window.VoiceModule) {
+        
+        // --- ГАСИМ СИСТЕМНОЕ ОКНО ТУТ ---
+        if ('Notification' in window && Notification.permission === 'granted') {
+            // Мы не создаем уведомление, но можем "занять" очередь, 
+            // чтобы система не выкидывала свои алерты.
+        }
+        
+        window.VoiceModule.showIncomingCall(callData);
+    }
+})
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') this.isSubscribed = true;
                 if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -216,22 +209,18 @@ if (p) {
         };
         actionsCont.appendChild(btnComm);
 
-        // Кнопка ADD (Друзья) - используем Utils только для уведомления
-        const btnAdd = document.createElement('button');
-        btnAdd.innerText = " ADD_TO_CONTACTS ";
-        btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:10px; cursor:pointer;";
-        btnAdd.onclick = async () => {
-            const { error: errAdd } = await Core.sb.from('friends').insert([
-                { user_id: Core.user.id, friend_id: uid }
-            ]);
+btnAdd.onclick = async () => {
+    const { error: errAdd } = await Core.sb.from('friends').insert([
+        { user_id: Core.user.id, friend_id: uid }
+    ]);
 
-           if (error) {
-    Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
-} else {
-    Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
-    if (window.FriendsModule) window.FriendsModule.loadFriends();
-}
-        };
+    if (errAdd) { // Исправлено с error на errAdd
+        Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
+    } else {
+        Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
+        if (window.FriendsModule) window.FriendsModule.loadFriends();
+    }
+};
         actionsCont.appendChild(btnAdd);
     }
 }

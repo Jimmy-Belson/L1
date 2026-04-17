@@ -276,27 +276,41 @@ export const VoiceModule = {
         });
     },
 
-    subscribeToCall(callId) {
-        window.Core.sb.channel(`call_realtime:${callId}`)
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls', filter: `id=eq.${callId}` }, 
-            async (payload) => {
-                const data = payload.new;
-                if (data.status === 'ended') this.endCall(false);
-                if (data.answer && !this.pc.remoteDescription) {
-                    await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-                }
+    // Добавь это свойство в начало объекта VoiceModule
+processedCandidates: new Set(),
 
-                const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
-                const remoteCandidates = myRole === 'caller' ? data.ice_candidates_receiver : data.ice_candidates_caller;
-                
-                if (remoteCandidates && remoteCandidates.length > 0) {
-                    remoteCandidates.forEach(cand => {
-                        if (this.pc.remoteDescription && this.pc.remoteDescription.type) {
-                            this.pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => {});
-                        }
-                    });
+subscribeToCall(callId) {
+    this.processedCandidates.clear(); // Очищаем историю при новом звонке
+
+    window.Core.sb.channel(`call_realtime:${callId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls', filter: `id=eq.${callId}` }, 
+        async (payload) => {
+            const data = payload.new;
+            if (data.status === 'ended') return this.endCall(false);
+            
+            // 1. Установка удаленного описания
+            if (data.answer && !this.pc.remoteDescription) {
+                await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+
+            // 2. Умный обмен кандидатами
+            const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
+            const remoteCandidates = myRole === 'caller' ? data.ice_candidates_receiver : data.ice_candidates_caller;
+            
+            if (remoteCandidates && remoteCandidates.length > 0) {
+                for (const cand of remoteCandidates) {
+                    const candId = JSON.stringify(cand);
+                    // Добавляем только если еще не обрабатывали и описание готово
+                    if (!this.processedCandidates.has(candId) && this.pc.remoteDescription) {
+                        try {
+                            await this.pc.addIceCandidate(new RTCIceCandidate(cand));
+                            this.processedCandidates.add(candId);
+                            console.log("ICE_SUCCESS: Координаты синхронизированы");
+                        } catch (e) { console.warn("ICE_ERROR", e); }
+                    }
                 }
-            }).subscribe();
+            }
+        }).subscribe();
     },
 
     async endCall(notifyDb = true) {
