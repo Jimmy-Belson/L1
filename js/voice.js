@@ -241,24 +241,23 @@ export const VoiceModule = {
 },
     async acceptCall(callData) {
         this.currentCallId = callData.id;
-        this.showOverlay("CONNECTING...", 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d');
+        this.showOverlay("CONNECTING...", '...');
 
-        // --- ИСПРАВЛЕНИЕ: Ждем реальный offer, если пришел null ---
+        // 1. Сначала догружаем оффер, если его нет
         let finalOffer = callData.offer;
         if (!finalOffer) {
-            console.log("LOG: Оффера нет в уведомлении, запрашиваю из БД...");
             const { data: refreshedCall } = await window.Core.sb
-                .from('calls')
-                .select('offer')
-                .eq('id', callData.id)
-                .single();
+                .from('calls').select('offer').eq('id', callData.id).single();
             finalOffer = refreshedCall?.offer;
         }
+        if (!finalOffer) return this.endCall();
 
-        if (!finalOffer) {
-            console.error("CRITICAL: Не удалось получить OFFER");
-            return this.endCall();
-        }
+        // --- КРИТИЧЕСКИЙ ПОРЯДОК ---
+
+        // 2. СОЗДАЕМ ОБЪЕКТ (теперь this.pc не null)
+        this.pc = new RTCPeerConnection(this.config);
+
+        // 3. ТЕПЕРЬ МОЖНО СТАВИТЬ СОБЫТИЯ
         this.pc.ontrack = (event) => {
             const remoteAudio = document.getElementById('remote-audio');
             if (remoteAudio) {
@@ -274,12 +273,24 @@ export const VoiceModule = {
             }
         };
 
-       await this.pc.setRemoteDescription(new RTCSessionDescription(finalOffer));
+        // 4. ПОЛУЧАЕМ МИКРОФОН
+        try {
+            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.localStream.getTracks().forEach(track => this.pc.addTrack(track, this.localStream));
+        } catch (e) {
+            return this.endCall();
+        }
 
-         this.subscribeToCall(callData.id);
+        // 5. РАБОТАЕМ С СИГНАЛИНГОМ
+        await this.pc.setRemoteDescription(new RTCSessionDescription(finalOffer));
+        const answer = await this.pc.createAnswer();
+        await this.pc.setLocalDescription(answer);
 
-        await window.Core.sb.from('calls').update({ answer: answer, status: 'active' }).eq('id', callData.id);
-       
+        this.subscribeToCall(callData.id);
+
+        await window.Core.sb.from('calls')
+            .update({ answer: answer, status: 'active' })
+            .eq('id', callData.id);
     },
 
     async saveIceCandidate(callId, candidate, type) {
