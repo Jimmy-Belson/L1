@@ -2029,3 +2029,89 @@ html, body {
 .incoming-controls .ctrl-btn { width: 50px; height: 50px; font-size: 1.1rem; }
 .incoming-controls .ctrl-btn.accept { background: #00cc00; }
 .incoming-controls .ctrl-btn.accept:hover { background: #00ff00; box-shadow: 0 0 15px #0f0; }
+.friends-panel {
+    position: fixed;
+    top: 0;
+    right: -350px; /* Спрятана за экраном справа */
+    width: 300px;
+    height: 100vh;
+    background: rgba(0, 15, 25, 0.95);
+    border-left: 1px solid #0ff;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1500;
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+}
+
+.friends-panel.open {
+    right: 0; /* Выезжает */
+}
+
+.friends-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.friends-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Карточка друга в списке */
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid transparent;
+}
+
+.friend-item:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: #0ff;
+}
+
+.friend-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #0ff;
+}
+
+.friend-info .name { color: #fff; font-size: 14px; display: block; }
+.friend-info .status { color: #0f0; font-size: 10px; text-transform: uppercase; }
+.friends-panel {
+    position: fixed; top: 0; right: -320px;
+    width: 300px; height: 100vh;
+    background: rgba(0, 10, 20, 0.98);
+    border-left: 1px solid #0ff;
+    transition: 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+    z-index: 1000;
+    padding: 20px;
+}
+.friends-panel.open { right: 0; box-shadow: -10px 0 30px rgba(0, 255, 255, 0.1); }
+
+.friend-item {
+    display: flex; align-items: center; gap: 15px;
+    padding: 12px; margin-bottom: 8px;
+    background: rgba(0, 255, 255, 0.03);
+    border: 1px solid rgba(0, 255, 255, 0.1);
+    border-radius: 8px; cursor: pointer;
+}
+.friend-item:hover { background: rgba(0, 255, 255, 0.1); border-color: #0ff; }
+
+.friend-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #0ff; }
+.friend-info .name { color: #fff; font-family: 'Orbitron'; font-size: 11px; display: block; }
+.friend-info .status { color: #0f0; font-size: 8px; opacity: 0.7; }
+
+.friend-actions { margin-left: auto; display: flex; gap: 10px; color: #0ff; font-size: 12px; opacity: 0.5; }
+.friend-actions i:hover { opacity: 1; transform: scale(1.2); }

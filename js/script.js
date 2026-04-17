@@ -83,7 +83,12 @@ const Core = {
         });
     },
 
-    async loadAppData() {
+async loadAppData() {
+        // Инициализируем панель друзей и вешаем события кликов
+        if (window.FriendsModule) {
+            window.FriendsModule.init();
+        }
+
         Promise.all([
             this.SyncProfile(this.user),
             this.Todo.load(this),

@@ -190,7 +190,24 @@ export const ChatModule = {
                         }
                     };
                     actionsCont.appendChild(btn);
-                }
+
+
+ // НОВАЯ КНОПКА: Добавить в друзья
+    const btnAdd = document.createElement('button');
+    btnAdd.innerText = "[ ADD_TO_CONTACTS ]";
+    btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
+    btnAdd.onclick = async () => {
+        const { error } = await Core.sb.from('friends').insert([
+            { user_id: Core.user.id, friend_id: uid }
+        ]);
+        if (error) Core.Msg("ALREADY_IN_LIST", "info");
+        else {
+            Core.Msg("CONTACT_SYNCED", "success");
+            window.FriendsModule.loadFriends(); // Сразу обновляем список
+        }
+    };
+    actionsCont.appendChild(btnAdd);
+}
             }
         } catch (err) { console.error(err); }
     }
