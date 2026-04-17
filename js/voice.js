@@ -243,27 +243,22 @@ export const VoiceModule = {
         this.currentCallId = callData.id;
         this.showOverlay("CONNECTING...", 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d');
 
-        try {
-            const { data: p } = await window.Core.sb.from('profiles')
-                .select('nickname, avatar_url')
-                .eq('id', callData.caller_id)
-                .maybeSingle();
-            
-            if (p) {
-                document.getElementById('voice-target-nick').innerText = (p.nickname || "PILOT").toUpperCase();
-                document.getElementById('voice-target-avatar').src = window.Core.getAvatar(callData.caller_id, p.avatar_url);
-            }
-        } catch (err) { console.error(err); }
-
-        this.pc = new RTCPeerConnection(this.config);
-
-        try {
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.localStream.getTracks().forEach(track => this.pc.addTrack(track, this.localStream));
-        } catch (e) {
-            return this.endCall();
+        // --- ИСПРАВЛЕНИЕ: Ждем реальный offer, если пришел null ---
+        let finalOffer = callData.offer;
+        if (!finalOffer) {
+            console.log("LOG: Оффера нет в уведомлении, запрашиваю из БД...");
+            const { data: refreshedCall } = await window.Core.sb
+                .from('calls')
+                .select('offer')
+                .eq('id', callData.id)
+                .single();
+            finalOffer = refreshedCall?.offer;
         }
 
+        if (!finalOffer) {
+            console.error("CRITICAL: Не удалось получить OFFER");
+            return this.endCall();
+        }
         this.pc.ontrack = (event) => {
             const remoteAudio = document.getElementById('remote-audio');
             if (remoteAudio) {
