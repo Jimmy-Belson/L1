@@ -21,9 +21,9 @@ export const FriendsModule = {
     if (close) close.onclick = () => panel.classList.remove('open');
 },
 
-    async loadFriends() {
+async loadFriends() {
     const listCont = document.getElementById('friends-list');
-    if (!listCont) return;
+    if (!listCont || !window.Core.user) return; // Защита от вылета
 
     const myId = window.Core.user.id;
 
