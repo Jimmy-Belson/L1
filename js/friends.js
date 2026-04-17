@@ -4,14 +4,22 @@ export const FriendsModule = {
         this.loadFriends();
     },
 
-    bindEvents() {
-        const toggle = document.getElementById('friends-toggle');
-        const panel = document.getElementById('friends-panel');
-        const close = document.getElementById('friends-close');
+    
 
-        if (toggle) toggle.onclick = () => panel.classList.toggle('open');
-        if (close) close.onclick = () => panel.classList.remove('open');
-    },
+    bindEvents() {
+    const toggle = document.getElementById('friends-toggle');
+    const panel = document.getElementById('friends-panel');
+    const close = document.getElementById('friends-close');
+
+    if (toggle) toggle.onclick = () => {
+        panel.classList.toggle('open');
+        // Если открыли — сканируем сеть заново
+        if (panel.classList.contains('open')) {
+            this.loadFriends();
+        }
+    };
+    if (close) close.onclick = () => panel.classList.remove('open');
+},
 
     async loadFriends() {
     const listCont = document.getElementById('friends-list');
@@ -85,5 +93,6 @@ renderFriend(p) {
     listCont.appendChild(div);
 }
 };
+
 
 window.FriendsModule = FriendsModule;
