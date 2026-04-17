@@ -267,8 +267,10 @@ export const VoiceModule = {
         const answer = await this.pc.createAnswer();
         await this.pc.setLocalDescription(answer);
 
+         this.subscribeToCall(callData.id);
+
         await window.Core.sb.from('calls').update({ answer: answer, status: 'active' }).eq('id', callData.id);
-        this.subscribeToCall(callData.id);
+       
     },
 
     async saveIceCandidate(callId, candidate, type) {
