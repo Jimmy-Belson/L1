@@ -5,7 +5,12 @@ export const VoiceModule = {
     currentCallId: null,
     isMuted: false,
     config: {
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun.services.mozilla.com' }
+        ]
     },
     
     // ПЕРЕМЕННЫЕ ТАЙМЕРА И ВХОДЯЩЕГО ВЫЗОВА
@@ -290,8 +295,10 @@ subscribeToCall(callId) {
             
             // 1. Установка удаленного описания
             if (data.answer && !this.pc.remoteDescription) {
-                await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
+    await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    // ВАЖНО: После установки описания, сразу пробуем прогнать накопившиеся кандидаты
+    this.retryPendingCandidates(data); 
+}
 
             // 2. Умный обмен кандидатами
             const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
@@ -311,6 +318,23 @@ subscribeToCall(callId) {
                 }
             }
         }).subscribe();
+    },
+
+    async retryPendingCandidates(data) {
+        const myRole = data.caller_id === window.Core.user.id ? 'caller' : 'receiver';
+        const remoteCandidates = myRole === 'caller' ? data.ice_candidates_receiver : data.ice_candidates_caller;
+        
+        if (remoteCandidates && this.pc.remoteDescription) {
+            for (const cand of remoteCandidates) {
+                const candId = JSON.stringify(cand);
+                if (!this.processedCandidates.has(candId)) {
+                    try {
+                        await this.pc.addIceCandidate(new RTCIceCandidate(cand));
+                        this.processedCandidates.add(candId);
+                    } catch (e) { console.warn("Retry ICE Error:", e); }
+                }
+            }
+        }
     },
 
     async endCall(notifyDb = true) {
