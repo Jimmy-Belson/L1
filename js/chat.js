@@ -230,9 +230,11 @@ export const ChatModule = {
                             if (window.FriendsModule) window.FriendsModule.loadFriends();
                         }
                     };
-                    actionsCont.appendChild(btnAdd);
+                   actionsCont.appendChild(btnAdd);
                 }
             }
-        } catch (err) { console.error("CRITICAL_POPOVER_ERROR:", err); }
-    }
-}
+        } catch (err) { 
+            console.error("CRITICAL_POPOVER_ERROR:", err); 
+        }
+    } // Закрывает openPop
+}; // ЗАКРЫВАЕТ ВЕСЬ ОБЪЕКТ ChatModule (ЭТОЙ СКОБКИ НЕ ХВАТАЛО)
