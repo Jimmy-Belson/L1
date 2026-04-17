@@ -163,24 +163,30 @@ export const ChatModule = {
 
         try {
             const { data: p, error } = await Core.sb.from('profiles').select('*').eq('id', uid).maybeSingle();
-           if (p) {
-    document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
-    document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
-    document.getElementById('pop-kills').innerText = p.combat_score || 0;
-    document.getElementById('pop-msgs').innerText = p.message_count || 0;
-    document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+            if (p) {
+                document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
+                document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
+                document.getElementById('pop-kills').innerText = p.combat_score || 0;
+                document.getElementById('pop-msgs').innerText = p.message_count || 0;
+                document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
 
-    // --- ВОТ ЭТОГО НЕ ХВАТАЛО: РАСЧЕТ И ВЫВОД РАНГА ---
-    const rankEl = document.getElementById('pop-rank');
-    if (rankEl) {
-        // Берем логику из твоего Utils
-        const rankData = Core.Utils.getRank(p.combat_score || 0);
-        rankEl.innerText = rankData.name.toUpperCase();
-        rankEl.style.color = rankData.color;
-        rankEl.style.textShadow = `0 0 10px ${rankData.color}`;
-    }
-    // ------------------------------------------------
-
+                // --- ОБНОВЛЕННАЯ СИСТЕМА РАНГОВ ---
+                const rankEl = document.getElementById('pop-rank');
+                if (rankEl) {
+                    // Используем функцию из твоего ranks.js через Core
+                    const rankData = Core.getRank(p.combat_score || 0);
+                    
+                    rankEl.innerText = rankData.name.toUpperCase();
+                    rankEl.style.color = rankData.color;
+                    rankEl.style.textShadow = `0 0 15px ${rankData.color}`;
+                    
+                    // Если ранг анимированный (SYSTEM ARCHITECT), добавляем класс
+                    if (rankData.animated) {
+                        rankEl.classList.add('rank-animated');
+                    } else {
+                        rankEl.classList.remove('rank-animated');
+                    }
+                }
                 
                 let actionsCont = pop.querySelector('.pop-actions');
                 if (!actionsCont) {
@@ -191,44 +197,42 @@ export const ChatModule = {
                 }
 
                 actionsCont.innerHTML = '';
-                if (uid !== Core.user?.id) {
-                    const btn = document.createElement('button');
-                    btn.innerText = " ESTABLISH_COMM ";
-                    btn.style.cssText = "flex:1; background:rgba(255,0,85,0.1); border:1px solid var(--neon-pink); color:var(--neon-pink); font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
-                    btn.onclick = () => {
+                
+                // Кнопки появятся, если это не твой профиль
+                if (String(uid) !== String(Core.user?.id)) {
+                    // Кнопка COMM
+                    const btnComm = document.createElement('button');
+                    btnComm.innerText = " ESTABLISH_COMM ";
+                    btnComm.style.cssText = "flex:1; background:rgba(255,0,85,0.1); border:1px solid var(--neon-pink); color:var(--neon-pink); font-family:'Orbitron'; font-size:9px; padding:10px; cursor:pointer;";
+                    btnComm.onclick = () => {
                         if (window.CommModule) {
                             window.CommModule.openPanel(p.id, p.nickname || "PILOT");
-                            pop.classList.add('popover-hidden');
+                            pop.style.display = 'none';
                         }
                     };
-                    actionsCont.appendChild(btn);
+                    actionsCont.appendChild(btnComm);
 
+                    // Кнопка ADD
+                    const btnAdd = document.createElement('button');
+                    btnAdd.innerText = " ADD_TO_CONTACTS ";
+                    btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:10px; cursor:pointer;";
+                    btnAdd.onclick = async () => {
+                        const { error: errAdd } = await Core.sb.from('friends').insert([
+                            { user_id: Core.user.id, friend_id: uid }
+                        ]);
 
- // НОВАЯ КНОПКА: Добавить в друзья
-    const btnAdd = document.createElement('button');
-    btnAdd.innerText = " ADD_TO_CONTACTS ";
-    btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
-    btnAdd.onclick = async () => {
-    const { error } = await Core.sb.from('friends').insert([
-        { user_id: Core.user.id, friend_id: uid }
-    ]);
-
-    if (error) {
-        // Если уже добавлен (ошибка 409 или код 23505)
-        if (error.status === 409 || error.code === '23505') {
-            window.ShowNeonNotify("Contact Already Linked", "info");
-        } else {
-            window.ShowNeonNotify("Sync Interference Detected", "info");
-        }
-    } else {
-        // Успешно добавлен
-        window.ShowNeonNotify("Neural Connection Established", "success");
-        if (window.FriendsModule) window.FriendsModule.loadFriends();
-    }
-};
-    actionsCont.appendChild(btnAdd);
-}
+                        if (errAdd) {
+                            if (errAdd.status === 409) {
+                                Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
+                            }
+                        } else {
+                            Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
+                            if (window.FriendsModule) window.FriendsModule.loadFriends();
+                        }
+                    };
+                    actionsCont.appendChild(btnAdd);
+                }
             }
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error("CRITICAL_POPOVER_ERROR:", err); }
     }
-};
+}
