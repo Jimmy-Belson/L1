@@ -197,15 +197,23 @@ export const ChatModule = {
     btnAdd.innerText = "[ ADD_TO_CONTACTS ]";
     btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
     btnAdd.onclick = async () => {
-        const { error } = await Core.sb.from('friends').insert([
-            { user_id: Core.user.id, friend_id: uid }
-        ]);
-        if (error) Core.Msg("ALREADY_IN_LIST", "info");
-        else {
-            Core.Msg("CONTACT_SYNCED", "success");
-            window.FriendsModule.loadFriends(); // Сразу обновляем список
+    const { error } = await Core.sb.from('friends').insert([
+        { user_id: Core.user.id, friend_id: uid }
+    ]);
+
+    if (error) {
+        // Если уже добавлен (ошибка 409 или код 23505)
+        if (error.status === 409 || error.code === '23505') {
+            window.ShowNeonNotify("Contact Already Linked", "info");
+        } else {
+            window.ShowNeonNotify("Sync Interference Detected", "info");
         }
-    };
+    } else {
+        // Успешно добавлен
+        window.ShowNeonNotify("Neural Connection Established", "success");
+        if (window.FriendsModule) window.FriendsModule.loadFriends();
+    }
+};
     actionsCont.appendChild(btnAdd);
 }
             }

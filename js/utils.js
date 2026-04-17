@@ -1,4 +1,5 @@
 export const Utils = {
+    
     // Часы
     startClock() {
         const clockEl = document.getElementById('clock');
@@ -11,7 +12,33 @@ export const Utils = {
         }
     },
 
-    // Системные уведомления
+    // КРАСИВОЕ НЕОНОВОЕ УВЕДОМЛЕНИЕ
+    ShowNeonNotify(text, type = 'success') {
+        // Удаляем старое, если оно еще висит
+        const oldAlert = document.querySelector('.system-alert');
+        if (oldAlert) oldAlert.remove();
+
+        const alertEl = document.createElement('div');
+        alertEl.className = `system-alert alert-${type}`;
+        alertEl.innerHTML = `
+            <div class="scan-line"></div>
+            <i class="fas ${type === 'success' ? 'fa-user-plus' : 'fa-exclamation-triangle'}"></i>
+            <span>${text.toUpperCase()}</span>
+        `;
+
+        document.body.appendChild(alertEl);
+
+        // Плавное появление
+        setTimeout(() => alertEl.classList.add('active'), 10);
+
+        // Удаление
+        setTimeout(() => {
+            alertEl.classList.remove('active');
+            setTimeout(() => alertEl.remove(), 300);
+        }, 3000);
+    },
+
+    // Системные уведомления (браузерные)
     SystemNotify(title, body) {
         if ("Notification" in window && Notification.permission === "granted") {
             new Notification(title, {
@@ -30,7 +57,6 @@ export const Utils = {
         passInput.type = (passInput.type === 'password') ? 'text' : 'password';
         toggleBtn.classList.toggle('viewing');
         
-        // Вызываем Msg через переданный объект core
         core.Msg(passInput.type === 'text' ? "DECRYPTING_OVERSIGHT: VISIBLE" : "ENCRYPTING_OVERSIGHT: HIDDEN");
     }
 };

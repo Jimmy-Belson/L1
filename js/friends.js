@@ -54,29 +54,29 @@ renderFriend(p) {
     div.className = 'friend-item';
     
     const avatar = window.Core.getAvatar(p.id, p.avatar_url);
-    
-    // ЛОГИКА СТАТУСА: Если last_seen был менее 5 минут назад — считаем Онлайн
     const isOnline = p.last_seen && (Date.now() - new Date(p.last_seen).getTime() < 300000);
-    const statusText = isOnline ? 'SIGNAL_ACTIVE' : 'SIGNAL_LOST';
-    const statusColor = isOnline ? '#0f0' : '#ff0055';
+    const statusColor = isOnline ? '#00ffaa' : '#555';
+    const statusText = isOnline ? 'LINK_STABLE' : 'OFFLINE';
 
     div.innerHTML = `
         <div class="friend-avatar-wrapper">
-            <img src="${avatar}" class="friend-avatar" style="border-color: ${statusColor}">
-            <span class="status-indicator" style="background: ${statusColor}"></span>
+            <img src="${avatar}" class="friend-avatar">
+            <span class="status-indicator" style="background: ${statusColor}; box-shadow: 0 0 5px ${statusColor}"></span>
         </div>
         <div class="friend-info">
             <span class="name">${(p.nickname || "PILOT").toUpperCase()}</span>
             <span class="status" style="color: ${statusColor}">${statusText}</span>
         </div>
         <div class="friend-actions">
-            <i class="fas fa-phone"></i>
+            <i class="fas fa-phone-alt call-trigger"></i>
         </div>
     `;
 
+    // Клик по всей строке — открывает чат
     div.onclick = () => window.CommModule.openPanel(p.id, p.nickname);
     
-    div.querySelector('.fa-phone').onclick = (e) => {
+    // Клик только по телефону — звонок
+    div.querySelector('.call-trigger').onclick = (e) => {
         e.stopPropagation();
         window.CommModule.openPanel(p.id, p.nickname);
         setTimeout(() => window.VoiceModule.startCall(), 500);
