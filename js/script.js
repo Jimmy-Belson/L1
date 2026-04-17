@@ -91,6 +91,16 @@ async loadAppData() {
         // Инициализируем панель друзей и вешаем события кликов
         if (window.FriendsModule) {
             window.FriendsModule.init();
+
+            // Обновляем свой статус каждые 45 секунд
+setInterval(async () => {
+    if (window.Core.user) {
+        await window.Core.sb
+            .from('profiles')
+            .update({ last_seen: new Date().toISOString() })
+            .eq('id', window.Core.user.id);
+    }
+}, 45000);
         }
 
         Promise.all([

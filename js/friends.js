@@ -25,27 +25,32 @@ export const FriendsModule = {
     const listCont = document.getElementById('friends-list');
     if (!listCont) return;
 
-    // 1. Получаем список ID друзей
-    const { data: friendRels, error: relError } = await window.Core.sb
+    const myId = window.Core.user.id;
+
+    // 1. Получаем ВСЕ связи: где я добавил и где меня добавили
+    const { data: rels, error: relError } = await window.Core.sb
         .from('friends')
-        .select('friend_id')
-        .eq('user_id', window.Core.user.id);
+        .select('user_id, friend_id')
+        .or(`user_id.eq.${myId},friend_id.eq.${myId}`);
 
     if (relError) return console.error("RELATION_FETCH_ERR", relError);
 
-    const ids = friendRels ? friendRels.map(r => r.friend_id) : [];
+    // Собираем уникальные ID всех людей, с которыми у нас есть связь
+    const ids = rels ? rels.map(r => r.user_id === myId ? r.friend_id : r.user_id) : [];
+    
+    // Убираем дубликаты (если оба добавили друг друга)
+    const uniqueIds = [...new Set(ids)];
 
-    // Проверка на пустой список
-    if (ids.length === 0) {
-        listCont.innerHTML = '<div class="empty-list" style="opacity:0.5; padding:20px; text-align:center; font-size:10px;">[ NO_ACTIVE_SIGNALS ]</div>';
+    if (uniqueIds.length === 0) {
+        listCont.innerHTML = '<div class="empty-list">[ NO_ACTIVE_SIGNALS ]</div>';
         return;
     }
 
-    // 2. Запрашиваем профили С ПОЛЕМ last_seen
+    // 2. Получаем профили
     const { data: profiles, error: profError } = await window.Core.sb
         .from('profiles')
         .select('id, nickname, avatar_url, last_seen') 
-        .in('id', ids);
+        .in('id', uniqueIds);
 
     if (profError || !profiles) {
         listCont.innerHTML = '<div class="empty-list">SYNC_ERROR</div>';
@@ -53,6 +58,13 @@ export const FriendsModule = {
     }
 
     listCont.innerHTML = '';
+    // Сортировка: сначала те, кто онлайн
+    profiles.sort((a, b) => {
+        const aOnline = a.last_seen && (Date.now() - new Date(a.last_seen).getTime() < 120000);
+        const bOnline = b.last_seen && (Date.now() - new Date(b.last_seen).getTime() < 120000);
+        return bOnline - aOnline;
+    });
+
     profiles.forEach(p => this.renderFriend(p));
 },
 
@@ -62,7 +74,7 @@ renderFriend(p) {
     div.className = 'friend-item';
     
     const avatar = window.Core.getAvatar(p.id, p.avatar_url);
-    const isOnline = p.last_seen && (Date.now() - new Date(p.last_seen).getTime() < 300000);
+    const isOnline = p.last_seen && (Date.now() - new Date(p.last_seen).getTime() < 90000);
     const statusColor = isOnline ? '#00ffaa' : '#555';
     const statusText = isOnline ? 'LINK_STABLE' : 'OFFLINE';
 
