@@ -112,11 +112,31 @@ setInterval(async () => {
         }).catch(e => console.warn("DATA_LOAD_ERR", e));
     },
 
+    
     UI() {
         const todoIn = document.getElementById('todo-in');
         const todoDate = document.getElementById('todo-date');
         const chatIn = document.getElementById('chat-in');
 
+        // --- ВОТ СЮДА ДОБАВЛЯЕМ ОБРАБОТЧИК РАКЕТЫ ---
+        const launchBtn = document.getElementById('scroll-to-game');
+        if (launchBtn) {
+            launchBtn.onclick = (e) => {
+                e.preventDefault(); // Задерживаем переход для анимации
+                
+                const rocket = launchBtn.querySelector('.rocket-container');
+                const url = launchBtn.getAttribute('href');
+                
+                if (rocket) rocket.classList.add('rocket-launching');
+                
+                // Опционально: выводим системное сообщение
+                if (this.Msg) this.Msg("ENGAGING_THRUSTERS...", "info");
+
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 550); // Ждем завершения анимации взлета
+            };
+        }
         if (todoIn) {
             todoIn.onkeypress = async (e) => {
                 if (e.key === 'Enter' && todoIn.value.trim()) {
