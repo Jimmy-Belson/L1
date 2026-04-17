@@ -181,7 +181,7 @@ export const ChatModule = {
                 actionsCont.innerHTML = '';
                 if (uid !== Core.user?.id) {
                     const btn = document.createElement('button');
-                    btn.innerText = "[ ESTABLISH_COMM ]";
+                    btn.innerText = " ESTABLISH_COMM ";
                     btn.style.cssText = "flex:1; background:rgba(255,0,85,0.1); border:1px solid var(--neon-pink); color:var(--neon-pink); font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
                     btn.onclick = () => {
                         if (window.CommModule) {
@@ -194,7 +194,7 @@ export const ChatModule = {
 
  // НОВАЯ КНОПКА: Добавить в друзья
     const btnAdd = document.createElement('button');
-    btnAdd.innerText = "[ ADD_TO_CONTACTS ]";
+    btnAdd.innerText = " ADD_TO_CONTACTS ";
     btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:8px; cursor:pointer;";
     btnAdd.onclick = async () => {
     const { error } = await Core.sb.from('friends').insert([
