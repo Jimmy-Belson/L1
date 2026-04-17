@@ -6,25 +6,29 @@ export const ChatModule = {
         if (this.channel) await Core.sb.removeChannel(this.channel);
 
         this.channel = Core.sb.channel('global-chat')
-            // 1. СЛУШАТЕЛЬ ЧАТА (твой старый код)
-.on('postgres_changes', { 
-    event: 'INSERT', 
-    schema: 'public', 
-    table: 'calls',
-    filter: `receiver_id=eq.${Core.user?.id}`
-}, payload => {
-    const callData = payload.new;
-    if (callData.status === 'pending' && window.VoiceModule) {
-        
-        // --- ГАСИМ СИСТЕМНОЕ ОКНО ТУТ ---
-        if ('Notification' in window && Notification.permission === 'granted') {
-            // Мы не создаем уведомление, но можем "занять" очередь, 
-            // чтобы система не выкидывала свои алерты.
-        }
-        
-        window.VoiceModule.showIncomingCall(callData);
-    }
-})
+            // ДОБАВЬ ЭТОТ БЛОК (СЛУШАТЕЛЬ СООБЩЕНИЙ):
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'comments' 
+            }, payload => {
+                const m = payload.new;
+                if (m.recipient_id || m.user_id === Core.user?.id) return; 
+                this.render(m, Core);
+                if (Core.SystemNotify) Core.SystemNotify(`NEW_SIGNAL: ${m.nickname}`, m.message);
+            })
+            // ТВОЙ БЛОК ЗВОНКОВ:
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'calls',
+                filter: `receiver_id=eq.${Core.user?.id}`
+            }, payload => {
+                const callData = payload.new;
+                if (callData.status === 'pending' && window.VoiceModule) {
+                    window.VoiceModule.showIncomingCall(callData);
+                }
+            })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') this.isSubscribed = true;
                 if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -183,53 +187,59 @@ if (p) {
         }
     }
 
-    // 2. КНОПКИ ДЕЙСТВИЙ
+   // 2. КНОПКИ ДЕЙСТВИЙ (Исправлено объявление и кавычки)
     let actionsCont = pop.querySelector('.pop-actions');
     if (!actionsCont) {
         actionsCont = document.createElement('div');
         actionsCont.className = 'pop-actions';
-        actionsCont.style.cssText = "margin-top:15px; display:flex; gap:10px; padding:10px; border-top:1px solid rgba(0,255,255,0.1);";
         pop.appendChild(actionsCont);
     }
-
+    
     actionsCont.innerHTML = '';
     
-    // Показываем кнопки только если это не наш профиль
     if (String(uid) !== String(Core.user?.id)) {
+        actionsCont.style.cssText = "margin-top:15px; display:flex; justify-content: space-around; padding:10px; border-top:1px solid rgba(0,255,255,0.1);";
+
+        // 1. ИКОНКА COMM (SMS) - Добавлены кавычки ``
+        const btnComm = document.createElement('div');
+        btnComm.innerHTML = `<i class="fas fa-comments"></i>`;
+        btnComm.title = "ESTABLISH_COMM";
+        btnComm.style.cssText = "font-size: 20px; color: #ff0055; cursor: pointer; transition: 0.3s; text-shadow: 0 0 10px #ff0055;";
         
-        // Кнопка COMM (ЛС)
-        const btnComm = document.createElement('button');
-        btnComm.innerText = " ESTABLISH_COMM ";
-        btnComm.style.cssText = "flex:1; background:rgba(255,0,85,0.1); border:1px solid #ff0055; color:#ff0055; font-family:'Orbitron'; font-size:9px; padding:10px; cursor:pointer;";
+        btnComm.onmouseover = () => btnComm.style.transform = "scale(1.2)";
+        btnComm.onmouseout = () => btnComm.style.transform = "scale(1)";
+        
         btnComm.onclick = () => {
             if (window.CommModule) {
                 window.CommModule.openPanel(p.id, p.nickname || "PILOT");
                 pop.style.display = 'none';
             }
         };
+
+        // 2. ИКОНКА ADD (USER PLUS) - Добавлены кавычки ``
+        const btnAdd = document.createElement('div');
+        btnAdd.innerHTML = `<i class="fas fa-user-plus"></i>`;
+        btnAdd.title = "ADD_TO_CONTACTS";
+        btnAdd.style.cssText = "font-size: 20px; color: #0ff; cursor: pointer; transition: 0.3s; text-shadow: 0 0 10px #0ff;";
+
+        btnAdd.onmouseover = () => btnAdd.style.transform = "scale(1.2)";
+        btnAdd.onmouseout = () => btnAdd.style.transform = "scale(1)";
+
+        btnAdd.onclick = async () => {
+            const { error: errAdd } = await Core.sb.from('friends').insert([
+                { user_id: Core.user.id, friend_id: uid }
+            ]);
+
+            if (errAdd) {
+                Core.Utils.ShowNeonNotify("LINK_ALREADY_EXISTS", "info");
+            } else {
+                Core.Utils.ShowNeonNotify("NEURAL_LINK_ESTABLISHED", "success");
+                if (window.FriendsModule) window.FriendsModule.loadFriends();
+            }
+        };
+
         actionsCont.appendChild(btnComm);
-
-// 1. СНАЧАЛА СОЗДАЕМ КНОПКУ (этого у тебя не хватает)
-const btnAdd = document.createElement('button');
-btnAdd.innerText = " ADD_TO_CONTACTS ";
-btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:10px; cursor:pointer;";
-
-// 2. ПОТОМ НАЗНАЧАЕМ СОБЫТИЕ (твой код)
-btnAdd.onclick = async () => {
-    const { error: errAdd } = await Core.sb.from('friends').insert([
-        { user_id: Core.user.id, friend_id: uid }
-    ]);
-
-    if (errAdd) {
-        Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
-    } else {
-        Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
-        if (window.FriendsModule) window.FriendsModule.loadFriends();
-    }
-};
-
-// 3. ДОБАВЛЯЕМ В КОНТЕЙНЕР
-actionsCont.appendChild(btnAdd);
+        actionsCont.appendChild(btnAdd);
     }
 }
         } catch (err) { 
