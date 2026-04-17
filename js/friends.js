@@ -14,66 +14,76 @@ export const FriendsModule = {
     },
 
     async loadFriends() {
-        const listCont = document.getElementById('friends-list');
-        if (!listCont) return;
+    const listCont = document.getElementById('friends-list');
+    if (!listCont) return;
 
-        // Загружаем список ID друзей
-        const { data: friendRels, error } = await window.Core.sb
-            .from('friends')
-            .select('friend_id')
-            .eq('user_id', window.Core.user.id);
+    // 1. Получаем список ID друзей
+    const { data: friendRels, error: relError } = await window.Core.sb
+        .from('friends')
+        .select('friend_id')
+        .eq('user_id', window.Core.user.id);
 
-        if (error || !friendRels.length) {
-            listCont.innerHTML = '<div class="empty-list">NO_ACTIVE_SIGNALS</div>';
-            return;
-        }
+    if (relError) return console.error("RELATION_FETCH_ERR", relError);
 
-        const ids = friendRels.map(r => r.friend_id);
+    const ids = friendRels ? friendRels.map(r => r.friend_id) : [];
 
-        // Получаем данные их профилей
-        const { data: profiles } = await window.Core.sb
-            .from('profiles')
-            .select('id, nickname, avatar_url, last_seen') // last_seen для онлайна
-            .in('id', ids);
-
-        listCont.innerHTML = '';
-        profiles.forEach(p => this.renderFriend(p));
-    },
-
-    renderFriend(p) {
-        const listCont = document.getElementById('friends-list');
-        const div = document.createElement('div');
-        div.className = 'friend-item';
-        
-        const avatar = window.Core.getAvatar(p.id, p.avatar_url);
-        
-        div.innerHTML = `
-            <img src="${avatar}" class="friend-avatar">
-            <div class="friend-info">
-                <span class="name">${(p.nickname || "PILOT").toUpperCase()}</span>
-                <span class="status">SIGNAL_STABLE</span>
-            </div>
-            <div class="friend-actions">
-                <i class="fas fa-comment-dots" title="Message"></i>
-                <i class="fas fa-phone" title="Call"></i>
-            </div>
-        `;
-
-        // Клик по другу открывает ЛС
-        div.onclick = () => {
-            window.CommModule.openPanel(p.id, p.nickname);
-            document.getElementById('friends-panel').classList.remove('open');
-        };
-
-        // Клик по иконке звонка (остановка всплытия события)
-        div.querySelector('.fa-phone').onclick = (e) => {
-            e.stopPropagation();
-            window.CommModule.openPanel(p.id, p.nickname);
-            setTimeout(() => window.VoiceModule.startCall(), 500);
-        };
-
-        listCont.appendChild(div);
+    // Проверка на пустой список
+    if (ids.length === 0) {
+        listCont.innerHTML = '<div class="empty-list" style="opacity:0.5; padding:20px; text-align:center; font-size:10px;">[ NO_ACTIVE_SIGNALS ]</div>';
+        return;
     }
+
+    // 2. Запрашиваем профили С ПОЛЕМ last_seen
+    const { data: profiles, error: profError } = await window.Core.sb
+        .from('profiles')
+        .select('id, nickname, avatar_url, last_seen') 
+        .in('id', ids);
+
+    if (profError || !profiles) {
+        listCont.innerHTML = '<div class="empty-list">SYNC_ERROR</div>';
+        return;
+    }
+
+    listCont.innerHTML = '';
+    profiles.forEach(p => this.renderFriend(p));
+},
+
+renderFriend(p) {
+    const listCont = document.getElementById('friends-list');
+    const div = document.createElement('div');
+    div.className = 'friend-item';
+    
+    const avatar = window.Core.getAvatar(p.id, p.avatar_url);
+    
+    // ЛОГИКА СТАТУСА: Если last_seen был менее 5 минут назад — считаем Онлайн
+    const isOnline = p.last_seen && (Date.now() - new Date(p.last_seen).getTime() < 300000);
+    const statusText = isOnline ? 'SIGNAL_ACTIVE' : 'SIGNAL_LOST';
+    const statusColor = isOnline ? '#0f0' : '#ff0055';
+
+    div.innerHTML = `
+        <div class="friend-avatar-wrapper">
+            <img src="${avatar}" class="friend-avatar" style="border-color: ${statusColor}">
+            <span class="status-indicator" style="background: ${statusColor}"></span>
+        </div>
+        <div class="friend-info">
+            <span class="name">${(p.nickname || "PILOT").toUpperCase()}</span>
+            <span class="status" style="color: ${statusColor}">${statusText}</span>
+        </div>
+        <div class="friend-actions">
+            <i class="fas fa-phone"></i>
+        </div>
+    `;
+
+    div.onclick = () => window.CommModule.openPanel(p.id, p.nickname);
+    
+    div.querySelector('.fa-phone').onclick = (e) => {
+        e.stopPropagation();
+        window.CommModule.openPanel(p.id, p.nickname);
+        setTimeout(() => window.VoiceModule.startCall(), 500);
+    };
+
+    listCont.appendChild(div);
+}
 };
 
 window.FriendsModule = FriendsModule;
