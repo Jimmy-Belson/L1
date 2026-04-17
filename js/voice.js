@@ -274,9 +274,7 @@ export const VoiceModule = {
             }
         };
 
-        await this.pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
-        const answer = await this.pc.createAnswer();
-        await this.pc.setLocalDescription(answer);
+       await this.pc.setRemoteDescription(new RTCSessionDescription(finalOffer));
 
          this.subscribeToCall(callData.id);
 
