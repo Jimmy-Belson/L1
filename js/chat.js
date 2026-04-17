@@ -209,19 +209,27 @@ if (p) {
         };
         actionsCont.appendChild(btnComm);
 
+// 1. СНАЧАЛА СОЗДАЕМ КНОПКУ (этого у тебя не хватает)
+const btnAdd = document.createElement('button');
+btnAdd.innerText = " ADD_TO_CONTACTS ";
+btnAdd.style.cssText = "flex:1; background:rgba(0,255,255,0.1); border:1px solid #0ff; color:#0ff; font-family:'Orbitron'; font-size:9px; padding:10px; cursor:pointer;";
+
+// 2. ПОТОМ НАЗНАЧАЕМ СОБЫТИЕ (твой код)
 btnAdd.onclick = async () => {
     const { error: errAdd } = await Core.sb.from('friends').insert([
         { user_id: Core.user.id, friend_id: uid }
     ]);
 
-    if (errAdd) { // Исправлено с error на errAdd
+    if (errAdd) {
         Core.Utils.ShowNeonNotify("Contact Already Linked", "info");
     } else {
         Core.Utils.ShowNeonNotify("Neural Connection Established", "success");
         if (window.FriendsModule) window.FriendsModule.loadFriends();
     }
 };
-        actionsCont.appendChild(btnAdd);
+
+// 3. ДОБАВЛЯЕМ В КОНТЕЙНЕР
+actionsCont.appendChild(btnAdd);
     }
 }
         } catch (err) { 
