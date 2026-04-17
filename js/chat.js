@@ -163,12 +163,24 @@ export const ChatModule = {
 
         try {
             const { data: p, error } = await Core.sb.from('profiles').select('*').eq('id', uid).maybeSingle();
-            if (p) {
-                document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
-                document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
-                document.getElementById('pop-kills').innerText = p.combat_score || 0;
-                document.getElementById('pop-msgs').innerText = p.message_count || 0;
-                document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+           if (p) {
+    document.getElementById('pop-nick').innerText = (p.nickname || "PILOT").toUpperCase();
+    document.getElementById('pop-avatar').src = Core.getAvatar(p.id, p.avatar_url);
+    document.getElementById('pop-kills').innerText = p.combat_score || 0;
+    document.getElementById('pop-msgs').innerText = p.message_count || 0;
+    document.getElementById('pop-ufo').innerText = p.nlo_clicks || 0;
+
+    // --- ВОТ ЭТОГО НЕ ХВАТАЛО: РАСЧЕТ И ВЫВОД РАНГА ---
+    const rankEl = document.getElementById('pop-rank');
+    if (rankEl) {
+        // Берем логику из твоего Utils
+        const rankData = Core.Utils.getRank(p.combat_score || 0);
+        rankEl.innerText = rankData.name.toUpperCase();
+        rankEl.style.color = rankData.color;
+        rankEl.style.textShadow = `0 0 10px ${rankData.color}`;
+    }
+    // ------------------------------------------------
+
                 
                 let actionsCont = pop.querySelector('.pop-actions');
                 if (!actionsCont) {
