@@ -85,8 +85,8 @@ class Player {
         this.overheated = false;
     }
     update(dt) {
-    // Умножаем 0.15 на dt * 60
-    this.x += (this.targetX - this.x) * (0.15 * dt * 60);
+    // Умножаем 0.5 на dt * 60
+    this.x += (this.targetX - this.x) * (0.5 * dt * 60);
     
     if (this.overheated) {
         this.heat -= 0.5 * 60 * dt; // Остывание по времени
@@ -191,29 +191,49 @@ class GameEngine {
         this.setupListeners();
     }
 
+    requestPointerLock() {
+    // Запрашиваем захват курсора у канваса
+    canvas.requestPointerLock = canvas.width && (canvas.requestPointerLock || canvas.mozRequestPointerLock);
+    if (canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+    }
+}
+
 setupListeners() {
-    // Прячем курсор сразу при инициализации слушателей
-    canvas.style.cursor = 'none'; 
+    // 1. При клике на поле боя — захватываем курсор
+    canvas.addEventListener('click', () => {
+        if (window.gameActive) this.requestPointerLock();
+    });
 
+    // 2. Новая логика движения
     window.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    
-    // Вычисляем коэффициент масштаба между CSS размером и разрешением канваса
-    const scaleX = canvas.width / rect.width;
-    
-    // Применяем масштаб к координате мыши
-    let mX = (e.clientX - rect.left) * scaleX;
+        if (!window.gameActive) return;
 
-    // Ограничиваем движение
-    const margin = 30;
-    if (mX < margin) mX = margin;
-    if (mX > canvas.width - margin) mX = canvas.width - margin;
+        // Если курсор успешно заблокирован игрой
+        if (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas) {
+            // Двигаем цель игрока на величину смещения мыши (movementX)
+            // 1.2 — это чувствительность (можно менять)
+            this.player.targetX += e.movementX * 1.2;
 
-    this.player.targetX = mX;
-});
+            // Ограничиваем, чтобы корабль не вылетал за края канваса (900px)
+            const margin = 30;
+            if (this.player.targetX < margin) this.player.targetX = margin;
+            if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
+        } else {
+            // ЗАПАСНОЙ ВАРИАНТ (если лок не активен, например, до первого клика)
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            let mX = (e.clientX - rect.left) * scaleX;
+            this.player.targetX = mX;
+        }
+    });
 
+    // 3. Стрельба (mousedown)
     window.addEventListener('mousedown', () => {
-        if (this.player.overheated) return;
+        // Стреляем только если курсор захвачен и нет перегрева
+        const isLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
+        if (!window.gameActive || this.player.overheated || !isLocked) return;
+
         this.player.heat += 20;
         if (this.player.heat >= 100) this.player.overheated = true;
         this.projectiles.push({x: this.player.x, y: this.player.y - 20});
@@ -327,6 +347,10 @@ draw() {
 
 async gameOver() {
     window.gameActive = false;
+    // Возвращаем курсор пользователю
+    if (document.exitPointerLock) {
+        document.exitPointerLock();
+    }
     
     // Получаем элементы нашего нового окна
     const overlay = document.getElementById('game-over-overlay');
