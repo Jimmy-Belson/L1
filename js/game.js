@@ -4,7 +4,9 @@
 import { getRankByScore } from '../js/ranks.js';
 
 let canvas, ctx;
+let lastTime = performance.now();
 window.gameActive = true; 
+
 
 
 
@@ -49,7 +51,11 @@ class Particle {
         this.life = 1.0;
         this.decay = 0.02;
     }
-    update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; }
+    update(dt) { 
+    this.x += this.speedX * 60 * dt; 
+    this.y += this.speedY * 60 * dt; 
+    this.life -= this.decay * 60 * dt; 
+}
     draw(ctx) {
         ctx.save();
         ctx.globalAlpha = this.life;
@@ -78,15 +84,17 @@ class Player {
         this.heat = 0;
         this.overheated = false;
     }
-    update() {
-        this.x += (this.targetX - this.x) * 0.15;
-        if (this.overheated) {
-            this.heat -= 0.5;
-            if (this.heat <= 0) { this.overheated = false; this.heat = 0; }
-        } else {
-            this.heat = Math.max(0, this.heat - 1);
-        }
+    update(dt) {
+    // Умножаем 0.15 на dt * 60
+    this.x += (this.targetX - this.x) * (0.15 * dt * 60);
+    
+    if (this.overheated) {
+        this.heat -= 0.5 * 60 * dt; // Остывание по времени
+        if (this.heat <= 0) { this.overheated = false; this.heat = 0; }
+    } else {
+        this.heat = Math.max(0, this.heat - 1 * 60 * dt);
     }
+}
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -162,9 +170,10 @@ class Enemy {
         }
         ctx.restore();
     }
-    update() {
-        this.y += this.speed;
-    }
+    update(dt) {
+    // Важно принимать dt и умножать на 60
+    this.y += this.speed * 60 * dt;
+}
 }
 
 // ==========================================
@@ -206,42 +215,43 @@ setupListeners() {
         this.projectiles.push({x: this.player.x, y: this.player.y - 20});
     });
 }
-    update() {
+update(dt) {
         if (!window.gameActive) return;
-        this.player.update();
+
+        // 1. Обновляем игрока (передаем dt)
+        this.player.update(dt);
         
-        // Спавн
-        if (++this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
+        // 2. Спавн врагов
+        // Умножаем на 60, чтобы привязать логику к "тикам" в секунду
+        this.spawnTimer += dt * 60; 
+        if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
             this.enemies.push(new Enemy());
             this.spawnTimer = 0;
         }
 
-        // Пули
+        // 3. Пули
         this.projectiles.forEach((p, i) => {
-            p.y -= 10;
+            // 600 - это скорость (10 пикселей * 60 кадров)
+            p.y -= 600 * dt; 
             if (p.y < -20) this.projectiles.splice(i, 1);
         });
 
-        // Враги
-    // Враги
+        // 4. Враги
         this.enemies.forEach((e, i) => {
-            e.update();
+            // Передаем dt в метод врага
+            e.update(dt);
             
-            // Коллизия с пулей
+            // --- Коллизия с пулей (математику не трогаем) ---
             this.projectiles.forEach((p, pi) => {
-                // Дистанция коллизии зависит от размера врага
                 if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
-                    
-                    e.hp -= 1; // УМЕНЬШАЕМ HP
-                    this.projectiles.splice(pi, 1); // Пуля исчезает
+                    e.hp -= 1;
+                    this.projectiles.splice(pi, 1);
 
                     if (e.hp <= 0) {
-                        // Если HP кончились — уничтожаем
-                        this.player.score += e.scoreValue; // Очки за конкретный тип
+                        this.player.score += e.scoreValue;
                         for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
                         this.enemies.splice(i, 1);
                     } else {
-                        // Эффект попадания (мини-взрыв) без уничтожения
                         for(let j=0; j<3; j++) this.particles.push(new Particle(p.x, p.y, '#fff'));
                     }
                 }
@@ -256,8 +266,9 @@ setupListeners() {
             }
         });
 
+        // 5. Частицы
         this.particles.forEach((p, i) => {
-            p.update();
+            p.update(dt); // Передаем dt
             if (p.life <= 0) this.particles.splice(i, 1);
         });
     }
@@ -342,8 +353,16 @@ async gameOver() {
 
 }
 
-    loop() {
-        this.update();
+loop() {
+        const currentTime = performance.now();
+        // Вычисляем дельту в секундах (например, 0.016 для 60fps)
+        const dt = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        // Ограничиваем dt, чтобы при лагах игра не "прыгала" слишком далеко
+        const limitedDt = Math.min(dt, 0.1);
+
+        this.update(limitedDt); // Передаем dt в update
         this.draw();
         requestAnimationFrame(() => this.loop());
     }
