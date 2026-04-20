@@ -41,20 +41,22 @@ body::before {
     pointer-events: none;
 }
 
-/* --- НОВАЯ ЦЕНТРАЛЬНАЯ РАМКА --- */
 .game-viewport {
     position: relative;
-    /* Используем clamp для гибкости: минимум 600px, максимум 1400px */
+    /* Игра занимает 85% ширины, но не более 1400px и не менее 600px */
     width: clamp(600px, 85vw, 1400px); 
-    aspect-ratio: 3 / 2; /* Магия CSS: автоматически держит высоту в зависимости от ширины */
-    height: auto; 
-
+    
+    /* КРИТИЧНО: Ограничиваем высоту, чтобы она не вылетала за экран ноута */
+    max-height: 85vh; 
+    
+    aspect-ratio: 3 / 2;
+    margin: 0 auto;
+    
     border: 2px solid rgba(0, 242, 255, 0.3);
     background: #000;
-    box-shadow: 0 0 40px rgba(0, 242, 255, 0.15), inset 0 0 20px rgba(0, 242, 255, 0.1);
+    box-shadow: 0 0 40px rgba(0, 242, 255, 0.15);
     z-index: 100;
     overflow: hidden;
-    border-radius: 4px;
     cursor: none;
 }
 
@@ -130,36 +132,31 @@ cursor: none;
 
 .left-status-panel {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    margin-top: 70px;
-    width: 200px;
+    top: 10px;
+    left: 10px; /* Прижимаем к левому краю ВНУТРИ рамки игры */
+    width: 180px;
     background: var(--panel-bg);
     border: 1px solid rgba(0, 242, 255, 0.2);
-    padding: 15px;
-    font-size: 11px;
-    color: var(--neon-blue);
+    z-index: 110;
+
     
     /* Ограничиваем высоту относительно контейнера игры */
     max-height: 70%; 
     overflow-y: auto; /* Добавляем скролл, если текста будет слишком много */
 }
 
+/* Панели теперь будут внутри вьюпорта или четко по его краям */
 .tactical-log {
     position: absolute;
-    top: 20px;
-    right: 8px;
-    width: 170px;
-    background: rgba(0, 5, 10, 0.7);
+    top: 10px;
+    right: 10px; /* Прижимаем к правому краю ВНУТРИ рамки игры */
+    width: 180px;
+    max-height: 60%; /* Чтобы не перекрывала всё поле */
+    background: rgba(0, 5, 10, 0.8);
     border: 1px solid rgba(0, 242, 255, 0.2);
-    padding: 15px;
-    backdrop-filter: blur(5px);
+    font-size: 11px;
+    z-index: 110; /* Выше чем канвас */
     pointer-events: auto;
-    z-index: 20;
-
-    /* Тоже ограничиваем по высоте игры */
-    max-height: 70%;
-    overflow-y: auto;
 }
 
 
