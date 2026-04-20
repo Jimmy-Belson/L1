@@ -127,8 +127,8 @@ export const VoiceModule = {
     },
 
     // --- INCOMING CALL UI ---
-    async showIncomingCall(callData) {
- if ('mediaSession' in navigator) {
+async showIncomingCall(callData) {
+        if ('mediaSession' in navigator) {
             navigator.mediaSession.playbackState = 'none';
             try {
                 navigator.mediaSession.setActionHandler('answer', null);
@@ -136,25 +136,51 @@ export const VoiceModule = {
             } catch (e) {}
         }
 
-
         this.incomingCallData = callData;
         const incomingCard = document.getElementById('incoming-call-card');
         const ringtone = document.getElementById('ringtone-audio');
 
+        // --- ЛОГИРОВАНИЕ ДЛЯ ДИАГНОСТИКИ ---
+        console.group("%c[VOICE_DEBUG] INCOMING_SIGNAL", "color: #0ff; font-weight: bold;");
+        console.log("1. CALLER_ID:", callData.caller_id);
+        console.log("2. RECEIVER_ID (Я):", window.Core?.user?.id);
+        
         try {
-            const { data: p } = await window.Core.sb.from('profiles')
+            const { data: p, error } = await window.Core.sb.from('profiles')
                 .select('nickname, avatar_url')
                 .eq('id', callData.caller_id)
                 .maybeSingle();
             
-            if (p) {
-                document.getElementById('incoming-nick').innerText = (p.nickname || "PILOT").toUpperCase();
-                document.getElementById('incoming-avatar').src = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+            if (error) {
+                console.error("3. DATABASE_ERROR:", error);
             }
-        } catch (err) { console.error(err); }
+
+            if (p) {
+                console.log("3. PROFILE_FOUND:", p);
+                
+                const nickEl = document.getElementById('incoming-nick');
+                const avatarEl = document.getElementById('incoming-avatar');
+                
+                if (nickEl) nickEl.innerText = (p.nickname || "PILOT").toUpperCase();
+                
+                if (avatarEl) {
+                    const finalAvatarUrl = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+                    console.log("4. FINAL_AVATAR_URL:", finalAvatarUrl);
+                    avatarEl.src = finalAvatarUrl;
+                }
+            } else {
+                console.warn("3. PROFILE_NOT_FOUND: В таблице profiles нет записи для этого ID. Проверь RLS!");
+            }
+        } catch (err) { 
+            console.error("CRITICAL_UI_ERROR:", err); 
+        }
+        console.groupEnd();
+        // -----------------------------------
 
         if (incomingCard) incomingCard.classList.add('active');
-        if (ringtone) ringtone.play().catch(e => console.log("Ringtone blocked"));
+        if (ringtone) {
+            ringtone.play().catch(e => console.warn("Ringtone autoplay blocked by browser"));
+        }
         
         this.callTimeout = setTimeout(() => this.rejectIncomingCall(), 30000);
     },
