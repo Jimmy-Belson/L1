@@ -5,10 +5,13 @@
     --neon-pink: #ff00e5;
     --bg-black: #01050a;
     --panel-bg: rgba(0, 10, 20, 0.85);
-    /* Размеры игровой зоны */
-    --game-width: 900px;
-    --game-height: 600px;
+    
+    /* ИЗМЕНЕНО: Теперь это не лимит, а пропорция. 
+       Используем vmin, чтобы игра всегда влезала в экран по меньшей стороне */
+    --game-width: 90vw; 
+    --game-height: 60vw; /* Соотношение 3:2 */
 }
+
 
 body {
     margin: 0;
@@ -41,8 +44,11 @@ body::before {
 /* --- НОВАЯ ЦЕНТРАЛЬНАЯ РАМКА --- */
 .game-viewport {
     position: relative;
-    width: var(--game-width);
-    height: var(--game-height);
+    /* Используем clamp для гибкости: минимум 600px, максимум 1400px */
+    width: clamp(600px, 85vw, 1400px); 
+    aspect-ratio: 3 / 2; /* Магия CSS: автоматически держит высоту в зависимости от ширины */
+    height: auto; 
+
     border: 2px solid rgba(0, 242, 255, 0.3);
     background: #000;
     box-shadow: 0 0 40px rgba(0, 242, 255, 0.15), inset 0 0 20px rgba(0, 242, 255, 0.1);
@@ -64,12 +70,14 @@ body::before {
     cursor: none;
 }
 
-/* Холст теперь внутри рамки, а не на весь экран */
 #game-canvas {
     display: block;
     width: 100%;
     height: 100%;
     cursor: none;
+    /* Чтобы пиксели оставались четкими при растяжении */
+    image-rendering: pixelated; 
+    image-rendering: crisp-edges;
 }
 
 .game-container {
@@ -120,33 +128,38 @@ cursor: none;
     box-shadow: 0 0 15px var(--neon-blue);
 }
 
-/* Левая панель статуса (Новая) */
 .left-status-panel {
     position: absolute;
     top: 20px;
     left: 20px;
-    margin-top: 70px; /* Чтобы не перекрывала кнопку выхода */
+    margin-top: 70px;
     width: 200px;
     background: var(--panel-bg);
     border: 1px solid rgba(0, 242, 255, 0.2);
     padding: 15px;
     font-size: 11px;
     color: var(--neon-blue);
+    
+    /* Ограничиваем высоту относительно контейнера игры */
+    max-height: 70%; 
+    overflow-y: auto; /* Добавляем скролл, если текста будет слишком много */
 }
 
-/* Tactical Log (Твоя правая панель) */
 .tactical-log {
     position: absolute;
     top: 20px;
     right: 8px;
-    width: 170px; /* Уменьшили с 280px */
-    max-height: 80vh;
-    background: rgba(0, 5, 10, 0.7); /* Более прозрачный фон */
+    width: 170px;
+    background: rgba(0, 5, 10, 0.7);
     border: 1px solid rgba(0, 242, 255, 0.2);
     padding: 15px;
     backdrop-filter: blur(5px);
     pointer-events: auto;
     z-index: 20;
+
+    /* Тоже ограничиваем по высоте игры */
+    max-height: 70%;
+    overflow-y: auto;
 }
 
 

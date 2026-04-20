@@ -196,17 +196,21 @@ setupListeners() {
     canvas.style.cursor = 'none'; 
 
     window.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        
-        let mX = e.clientX - rect.left;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Вычисляем коэффициент масштаба между CSS размером и разрешением канваса
+    const scaleX = canvas.width / rect.width;
+    
+    // Применяем масштаб к координате мыши
+    let mX = (e.clientX - rect.left) * scaleX;
 
-        // Ограничиваем движение рамками холста (30px от краев)
-        const margin = 30;
-        if (mX < margin) mX = margin;
-        if (mX > canvas.width - margin) mX = canvas.width - margin;
+    // Ограничиваем движение
+    const margin = 30;
+    if (mX < margin) mX = margin;
+    if (mX > canvas.width - margin) mX = canvas.width - margin;
 
-        this.player.targetX = mX;
-    });
+    this.player.targetX = mX;
+});
 
     window.addEventListener('mousedown', () => {
         if (this.player.overheated) return;
