@@ -155,7 +155,7 @@ async showIncomingCall(callData) {
                 console.error("3. DATABASE_ERROR:", error);
             }
 
-            if (p) {
+if (p) {
                 console.log("3. PROFILE_FOUND:", p);
                 
                 const nickEl = document.getElementById('incoming-nick');
@@ -164,8 +164,26 @@ async showIncomingCall(callData) {
                 if (nickEl) nickEl.innerText = (p.nickname || "PILOT").toUpperCase();
                 
                 if (avatarEl) {
-                    const finalAvatarUrl = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+                    // Формируем базовый URL через твой сервис
+                    let finalAvatarUrl = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+                    
+                    // ХАК: Обход кэша. Если это ссылка Supabase, добавляем метку времени.
+                    // Это заставит браузер друга скачать картинку заново, игнорируя старые ошибки 404.
+                    if (finalAvatarUrl.includes('supabase.co')) {
+                        const sep = finalAvatarUrl.includes('?') ? '&' : '?';
+                        finalAvatarUrl += `${sep}t=${Date.now()}`;
+                    }
+
                     console.log("4. FINAL_AVATAR_URL:", finalAvatarUrl);
+
+                    // Сначала настраиваем обработку ошибки
+                    avatarEl.onerror = () => {
+                        console.warn("⚠️ AVATAR_RENDER_FAILED: Ссылка рабочая, но браузер не смог отобразить. Ставлю fallback.");
+                        avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${callData.caller_id}&backgroundColor=001a2d`;
+                        avatarEl.onerror = null; // Чтобы не зациклилось
+                    };
+
+                    // И только теперь пускаем загрузку
                     avatarEl.src = finalAvatarUrl;
                 }
             } else {
