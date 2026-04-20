@@ -30,7 +30,7 @@ export const VoiceModule = {
         this.resetTimerDisplay();
         
         document.getElementById('voice-target-nick').innerText = nickname.toUpperCase();
-        this.updateStatus("ESTABLISHING...");
+        this.updateStatus(status);
         
         if (avatarImg) {
             avatarImg.src = avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=PILOT&backgroundColor=001a2d';
@@ -164,28 +164,22 @@ if (p) {
                 if (nickEl) nickEl.innerText = (p.nickname || "PILOT").toUpperCase();
                 
                 if (avatarEl) {
-                    // Формируем базовый URL через твой сервис
-                    let finalAvatarUrl = window.Core.getAvatar(callData.caller_id, p.avatar_url);
-                    
-                    // ХАК: Обход кэша. Если это ссылка Supabase, добавляем метку времени.
-                    // Это заставит браузер друга скачать картинку заново, игнорируя старые ошибки 404.
-                    if (finalAvatarUrl.includes('supabase.co')) {
-                        const sep = finalAvatarUrl.includes('?') ? '&' : '?';
-                        finalAvatarUrl += `${sep}t=${Date.now()}`;
-                    }
+    let finalAvatarUrl = window.Core.getAvatar(callData.caller_id, p.avatar_url);
+    
+    // Добавляем хвостик времени, чтобы браузер не брал старую ошибку 404 из кэша
+    if (finalAvatarUrl.includes('supabase.co')) {
+        const sep = finalAvatarUrl.includes('?') ? '&' : '?';
+        finalAvatarUrl += `${sep}t=${Date.now()}`;
+    }
 
-                    console.log("4. FINAL_AVATAR_URL:", finalAvatarUrl);
+    // Если всё равно не грузится — ставим робота
+    avatarEl.onerror = () => {
+        avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${callData.caller_id}`;
+        avatarEl.onerror = null;
+    };
 
-                    // Сначала настраиваем обработку ошибки
-                    avatarEl.onerror = () => {
-                        console.warn("⚠️ AVATAR_RENDER_FAILED: Ссылка рабочая, но браузер не смог отобразить. Ставлю fallback.");
-                        avatarEl.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${callData.caller_id}&backgroundColor=001a2d`;
-                        avatarEl.onerror = null; // Чтобы не зациклилось
-                    };
-
-                    // И только теперь пускаем загрузку
-                    avatarEl.src = finalAvatarUrl;
-                }
+    avatarEl.src = finalAvatarUrl;
+}
             } else {
                 console.warn("3. PROFILE_NOT_FOUND: В таблице profiles нет записи для этого ID. Проверь RLS!");
             }
@@ -293,31 +287,27 @@ if (p) {
     this.subscribeToCall(this.currentCallId);
 },
     async acceptCall(callData) {
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'none';
+    }
 
+    this.currentCallId = callData.id;
+    this.processedCandidates.clear(); // Важно чистить кэш перед новым звонком
 
-          if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'none';
-        }
-        // ---------------------
+    // Теперь передаем статус CONNECTING, чтобы он не перекрывался
+    this.showOverlay("PILOT", null, "CONNECTING...");
 
-        this.currentCallId = callData.id;
-        this.showOverlay("CONNECTING...", '...');
-        this.currentCallId = callData.id;
-        this.showOverlay("CONNECTING...", '...');
+    // 1. Сначала догружаем оффер, если его нет
+    let finalOffer = callData.offer;
+    if (!finalOffer) {
+        const { data: refreshedCall } = await window.Core.sb
+            .from('calls').select('offer').eq('id', callData.id).single();
+        finalOffer = refreshedCall?.offer;
+    }
+    if (!finalOffer) return this.endCall();
 
-        // 1. Сначала догружаем оффер, если его нет
-        let finalOffer = callData.offer;
-        if (!finalOffer) {
-            const { data: refreshedCall } = await window.Core.sb
-                .from('calls').select('offer').eq('id', callData.id).single();
-            finalOffer = refreshedCall?.offer;
-        }
-        if (!finalOffer) return this.endCall();
-
-        // --- КРИТИЧЕСКИЙ ПОРЯДОК ---
-
-        // 2. СОЗДАЕМ ОБЪЕКТ (теперь this.pc не null)
-        this.pc = new RTCPeerConnection(this.config);
+    // 2. СОЗДАЕМ ОБЪЕКТ
+    this.pc = new RTCPeerConnection(this.config);
 
         // 3. ТЕПЕРЬ МОЖНО СТАВИТЬ СОБЫТИЯ
         this.pc.ontrack = (event) => {
