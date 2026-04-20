@@ -128,6 +128,15 @@ export const VoiceModule = {
 
     // --- INCOMING CALL UI ---
     async showIncomingCall(callData) {
+ if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'none';
+            try {
+                navigator.mediaSession.setActionHandler('answer', null);
+                navigator.mediaSession.setActionHandler('hangup', null);
+            } catch (e) {}
+        }
+
+
         this.incomingCallData = callData;
         const incomingCard = document.getElementById('incoming-call-card');
         const ringtone = document.getElementById('ringtone-audio');
@@ -240,6 +249,15 @@ export const VoiceModule = {
     this.subscribeToCall(this.currentCallId);
 },
     async acceptCall(callData) {
+
+
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'none';
+        }
+        // ---------------------
+
+        this.currentCallId = callData.id;
+        this.showOverlay("CONNECTING...", '...');
         this.currentCallId = callData.id;
         this.showOverlay("CONNECTING...", '...');
 
