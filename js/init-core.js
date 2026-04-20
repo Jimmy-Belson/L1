@@ -13,24 +13,5 @@ window.GlobalVoiceInit = function() {
 
     console.log("%c[VOICE] SIGNAL LISTENER DEPLOYED:", "color: #0ff; font-weight: bold;", myId);
 
-    sb.channel('voice-broadcast')
-        .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'calls'
-        }, async (payload) => {
-            const call = payload.new;
-            if (String(call.receiver_id).toLowerCase().trim() === myId && call.status === 'pending') {
-                console.log("%c[INCOMING] SIGNAL!", "color: #f0f;");
-                
-                const checkModule = () => {
-                    if (window.VoiceModule) {
-                        if (window.confirm("INCOMING VOICE SIGNAL. ACCEPT?")) {
-                            window.VoiceModule.acceptCall(call);
-                        }
-                    } else { setTimeout(checkModule, 500); }
-                };
-                checkModule();
-            }
-        }).subscribe();
+   
 };
