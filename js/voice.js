@@ -20,16 +20,19 @@ export const VoiceModule = {
     callTimeout: null,
 
     // --- INTERFACE MANAGEMENT ---
-    showOverlay(nickname, avatarUrl = null) {
+    // Добавь аргумент status здесь
+    showOverlay(nickname, avatarUrl = null, status = "ESTABLISHING...") {
         const overlay = document.getElementById('voice-overlay');
         const avatarImg = document.getElementById('voice-target-avatar');
         if (!overlay) return;
 
         overlay.classList.add('active'); 
-        overlay.classList.remove('active-call'); // Сброс анимации колец
+        overlay.classList.remove('active-call'); 
         this.resetTimerDisplay();
         
         document.getElementById('voice-target-nick').innerText = nickname.toUpperCase();
+        
+        // Теперь эта строчка будет работать
         this.updateStatus(status);
         
         if (avatarImg) {
@@ -162,6 +165,11 @@ if (p) {
                 const avatarEl = document.getElementById('incoming-avatar');
                 
                 if (nickEl) nickEl.innerText = (p.nickname || "PILOT").toUpperCase();
+
+                // ДОБАВЬ ЭТО: Сохраняем в объект, чтобы не потерять при ответе
+    this.incomingCallData.caller_nickname = p.nickname;
+    this.incomingCallData.caller_avatar = p.avatar_url;
+
                 
                 if (avatarEl) {
     let finalAvatarUrl = window.Core.getAvatar(callData.caller_id, p.avatar_url);
@@ -287,15 +295,19 @@ if (p) {
     this.subscribeToCall(this.currentCallId);
 },
     async acceptCall(callData) {
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'none';
-    }
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'none';
+        }
 
-    this.currentCallId = callData.id;
-    this.processedCandidates.clear(); // Важно чистить кэш перед новым звонком
+        this.currentCallId = callData.id;
+        this.processedCandidates.clear();
 
-    // Теперь передаем статус CONNECTING, чтобы он не перекрывался
-    this.showOverlay("PILOT", null, "CONNECTING...");
+        // 1. ПОЛУЧАЕМ ДАННЫЕ ИЗ КАРТОЧКИ (которые мы уже нашли в showIncomingCall)
+        const incomingNick = document.getElementById('incoming-nick')?.innerText || "PILOT";
+        const incomingAvatar = document.getElementById('incoming-avatar')?.src;
+
+        // 2. ПЕРЕДАЕМ ИХ В ОВЕРЛЕЙ
+        this.showOverlay(incomingNick, incomingAvatar, "CONNECTING...");
 
     // 1. Сначала догружаем оффер, если его нет
     let finalOffer = callData.offer;
