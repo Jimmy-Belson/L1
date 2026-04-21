@@ -282,7 +282,9 @@ class GameEngine {
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
+        
         this.setupListeners();
+        
     }
 
    requestPointerLock() {
