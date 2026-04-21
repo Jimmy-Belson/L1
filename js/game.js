@@ -286,7 +286,7 @@ class GameEngine {
         this.setupListeners();
         
     }
-
+ // gg ez
    requestPointerLock() {
     // Вызываем метод корректно, без перезаписи
     const request = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
