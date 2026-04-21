@@ -163,19 +163,41 @@ body::before {
 
 .log-entry {
     display: flex;
-    justify-content: space-between;
-    width: 100%; /* Занимает всё пространство панели */
-    font-size: 11px; /* Чуть уменьшим, чтобы точно влезло */
-    padding: 8px 2px;
+    /* ФИКС: распределяем элементы: номер и ник слева, очки справа */
+    justify-content: flex-start; 
+    align-items: center;
+    
+    width: 100%;
+    font-size: 11px;
+    padding: 8px 5px; /* Уменьшили боковые отступы */
     border-bottom: 1px solid rgba(0, 242, 255, 0.05);
-    white-space: nowrap; /* Запрещаем перенос, но... */
-    overflow: hidden;    /* ...обрезаем, если вдруг вылезет */
+    white-space: nowrap;
+    overflow: hidden;
 }
 
-/* Если у тебя внутри есть колонки (span), зажмем их */
-.log-entry span {
+/* Настраиваем порядковый номер */
+.log-entry span:first-child {
+    min-width: 20px; /* Фиксируем ширину для цифр 1, 2, 3... */
+    margin-right: 5px;
+    color: var(--neon-blue);
+    flex-shrink: 0; /* Чтобы номер не сжимался */
+}
+
+/* Настраиваем никнейм */
+.log-entry span:nth-child(2) {
+    flex-grow: 1;    /* Занимает всё свободное место в центре */
+    text-align: left;
     overflow: hidden;
-    text-overflow: ellipsis; /* Добавит три точки, если имя слишком длинное */
+    text-overflow: ellipsis; /* Если ник слишком длинный — поставит точки */
+    margin-right: 10px;
+}
+
+/* Настраиваем очки (Score) */
+.log-entry span:last-child {
+    margin-left: auto; /* Прижимает очки к правому краю */
+    color: var(--neon-pink);
+    font-weight: bold;
+    flex-shrink: 0;
 }
 
 /* Экран смерти */
