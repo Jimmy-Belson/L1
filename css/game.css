@@ -163,41 +163,38 @@ body::before {
 
 .log-entry {
     display: flex;
-    /* ФИКС: распределяем элементы: номер и ник слева, очки справа */
-    justify-content: flex-start; 
     align-items: center;
-    
     width: 100%;
-    font-size: 11px;
-    padding: 8px 5px; /* Уменьшили боковые отступы */
-    border-bottom: 1px solid rgba(0, 242, 255, 0.05);
+    padding: 8px 5px;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+    font-size: 12px;
+    /* Убираем любые центровки, если они были */
+    justify-content: flex-start; 
+}
+
+/* 1. Номер (слева) */
+.log-entry span:first-child {
+    min-width: 25px; /* Запас под двузначные числа */
+    color: var(--neon-blue);
+    flex-shrink: 0;
+}
+
+/* 2. Никнейм (в центре, забирает всё место) */
+.log-entry span:nth-child(2) {
+    flex-grow: 1;    /* ГЛАВНОЕ: Растягивается и выталкивает очки вправо */
+    text-align: left;
     white-space: nowrap;
     overflow: hidden;
-}
-
-/* Настраиваем порядковый номер */
-.log-entry span:first-child {
-    min-width: 20px; /* Фиксируем ширину для цифр 1, 2, 3... */
-    margin-right: 5px;
-    color: var(--neon-blue);
-    flex-shrink: 0; /* Чтобы номер не сжимался */
-}
-
-/* Настраиваем никнейм */
-.log-entry span:nth-child(2) {
-    flex-grow: 1;    /* Занимает всё свободное место в центре */
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Если ник слишком длинный — поставит точки */
+    text-overflow: ellipsis; /* Если ник гигантский, он аккуратно сократится */
     margin-right: 10px;
 }
 
-/* Настраиваем очки (Score) */
+/* 3. Очки (справа) */
 .log-entry span:last-child {
-    margin-left: auto; /* Прижимает очки к правому краю */
     color: var(--neon-pink);
-    font-weight: bold;
-    flex-shrink: 0;
+    text-align: right;
+    flex-shrink: 0;  /* Запрещаем очкам сжиматься или исчезать */
+    min-width: 40px; /* Чтобы всегда было место под цифры */
 }
 
 /* Экран смерти */
