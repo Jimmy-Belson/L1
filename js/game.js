@@ -191,52 +191,53 @@ class GameEngine {
         this.setupListeners();
     }
 
-    requestPointerLock() {
-    // Запрашиваем захват курсора у канваса
-    canvas.requestPointerLock = canvas.width && (canvas.requestPointerLock || canvas.mozRequestPointerLock);
-    if (canvas.requestPointerLock) {
-        canvas.requestPointerLock();
+   requestPointerLock() {
+    // Вызываем метод корректно, без перезаписи
+    const request = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+    if (request) {
+        request.call(canvas);
     }
 }
 
 setupListeners() {
-    // 1. При клике на поле боя — захватываем курсор
-    canvas.addEventListener('click', () => {
-        if (window.gameActive) this.requestPointerLock();
-    });
-
-    // 2. Новая логика движения
-    window.addEventListener('mousemove', (e) => {
+    // 1. Клик по канвасу для активации
+    canvas.addEventListener('mousedown', (e) => {
         if (!window.gameActive) return;
+        
+        // Попытка захвата при каждом клике (если еще не захвачен)
+        if (document.pointerLockElement !== canvas) {
+            this.requestPointerLock();
+        }
 
-        // Если курсор успешно заблокирован игрой
-        if (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas) {
-            // Двигаем цель игрока на величину смещения мыши (movementX)
-            // 1.2 — это чувствительность (можно менять)
-            this.player.targetX += e.movementX * 1.2;
-
-            // Ограничиваем, чтобы корабль не вылетал за края канваса (900px)
-            const margin = 30;
-            if (this.player.targetX < margin) this.player.targetX = margin;
-            if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
-        } else {
-            // ЗАПАСНОЙ ВАРИАНТ (если лок не активен, например, до первого клика)
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            let mX = (e.clientX - rect.left) * scaleX;
-            this.player.targetX = mX;
+        // Логика стрельбы
+        if (!this.player.overheated) {
+            this.player.heat += 15; // Уменьшил нагрев, чтобы стрелял дольше
+            if (this.player.heat >= 100) this.player.overheated = true;
+            this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
+            
+            // Маленький эффект отдачи (тряска) при выстреле
+            this.shake = 2;
         }
     });
 
-    // 3. Стрельба (mousedown)
-    window.addEventListener('mousedown', () => {
-        // Стреляем только если курсор захвачен и нет перегрева
-        const isLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
-        if (!window.gameActive || this.player.overheated || !isLocked) return;
+    // 2. Движение
+    window.addEventListener('mousemove', (e) => {
+        if (!window.gameActive) return;
 
-        this.player.heat += 20;
-        if (this.player.heat >= 100) this.player.overheated = true;
-        this.projectiles.push({x: this.player.x, y: this.player.y - 20});
+        if (document.pointerLockElement === canvas) {
+            // Режим захвата: двигаем корабль относительно движения мыши
+            this.player.targetX += e.movementX * 1.5;
+        } else {
+            // Режим обычный: корабль следует за курсором
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            this.player.targetX = (e.clientX - rect.left) * scaleX;
+        }
+
+        // Ограничиваем края (учитываем ширину панелей из CSS)
+        const margin = 40; 
+        if (this.player.targetX < margin) this.player.targetX = margin;
+        if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
     });
 }
 update(dt) {
@@ -253,43 +254,43 @@ update(dt) {
             this.spawnTimer = 0;
         }
 
-        // 3. Пули
-        this.projectiles.forEach((p, i) => {
-            // 600 - это скорость (10 пикселей * 60 кадров)
-            p.y -= 600 * dt; 
-            if (p.y < -20) this.projectiles.splice(i, 1);
-        });
+        // 3. Пули (идем с конца массива)
+for (let i = this.projectiles.length - 1; i >= 0; i--) {
+    let p = this.projectiles[i];
+    p.y -= 700 * dt; 
+    if (p.y < -20) this.projectiles.splice(i, 1);
+}
 
-        // 4. Враги
-        this.enemies.forEach((e, i) => {
-            // Передаем dt в метод врага
-            e.update(dt);
-            
-            // --- Коллизия с пулей (математику не трогаем) ---
-            this.projectiles.forEach((p, pi) => {
-                if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
-                    e.hp -= 1;
-                    this.projectiles.splice(pi, 1);
+// 4. Враги
+for (let i = this.enemies.length - 1; i >= 0; i--) {
+    let e = this.enemies[i];
+    e.update(dt);
+    
+    // Проверка столкновения с пулями
+    for (let j = this.projectiles.length - 1; j >= 0; j--) {
+        let p = this.projectiles[j];
+        if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
+            e.hp--;
+            this.projectiles.splice(j, 1);
+            if (e.hp <= 0) break;
+        }
+    }
 
-                    if (e.hp <= 0) {
-                        this.player.score += e.scoreValue;
-                        for(let j=0; j<10; j++) this.particles.push(new Particle(e.x, e.y, e.color));
-                        this.enemies.splice(i, 1);
-                    } else {
-                        for(let j=0; j<3; j++) this.particles.push(new Particle(p.x, p.y, '#fff'));
-                    }
-                }
-            });
+    if (e.hp <= 0) {
+        this.player.score += e.scoreValue;
+        for(let j=0; j<8; j++) this.particles.push(new Particle(e.x, e.y, e.color));
+        this.enemies.splice(i, 1);
+        continue;
+    }
 
-            // Пропуск или столкновение с игроком
-            if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
-                this.enemies.splice(i, 1);
-                this.player.lives--;
-                this.shake = 10;
-                if (this.player.lives <= 0) this.gameOver();
-            }
-        });
-
+    // Пропуск или смерть игрока
+    if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
+        this.enemies.splice(i, 1);
+        this.player.lives--;
+        this.shake = 15;
+        if (this.player.lives <= 0) this.gameOver();
+    }
+}
         // 5. Частицы
         this.particles.forEach((p, i) => {
             p.update(dt); // Передаем dt
@@ -406,11 +407,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Убиваем фон из script.js
     killBackgroundProcesses();
 
-    // 2. Ресайз
-const res = () => {
-    // Теперь холст всегда 900x600, как в CSS
+    const res = () => {
     canvas.width = 900;
     canvas.height = 600;
+    // Если игра только началась, ставим корабль в центр нового размера
+    if (engine && engine.player) {
+        engine.player.x = canvas.width / 2;
+        engine.player.targetX = canvas.width / 2;
+    }
 };
     window.addEventListener('resize', res);
     res();
