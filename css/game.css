@@ -16,16 +16,12 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: var(--bg-black);
-    color: #fff;
-    font-family: 'Share Tech Mono', monospace;
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-    /* Центрируем всё содержимое по центру экрана */
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Сетка на фоне */
@@ -43,12 +39,10 @@ body::before {
 
 .game-viewport {
     position: relative;
-    /* Игра занимает 85% ширины, но не более 1400px и не менее 600px */
-    width: clamp(600px, 85vw, 1400px); 
-    
-    /* КРИТИЧНО: Ограничиваем высоту, чтобы она не вылетала за экран ноута */
-    max-height: 85vh; 
-    
+    /* Ширина подстраивается, но ограничена */
+    width: clamp(600px, 85vw, 1200px); 
+    /* Не дает игре уйти за нижний край экрана ноутбука */
+    max-height: 80vh; 
     aspect-ratio: 3 / 2;
     margin: 0 auto;
     
@@ -57,7 +51,6 @@ body::before {
     box-shadow: 0 0 40px rgba(0, 242, 255, 0.15);
     z-index: 100;
     overflow: hidden;
-    cursor: none;
 }
 
 /* Эффект сканирующих линий поверх игры */
@@ -77,9 +70,11 @@ body::before {
     width: 100%;
     height: 100%;
     cursor: none;
-    /* Чтобы пиксели оставались четкими при растяжении */
-    image-rendering: pixelated; 
+    /* КРИТИЧНО: Убирает размытие (антиалиасинг) при растяжении */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 
 .game-container {
@@ -132,31 +127,28 @@ cursor: none;
 
 .left-status-panel {
     position: absolute;
-    top: 10px;
-    left: 10px; /* Прижимаем к левому краю ВНУТРИ рамки игры */
-    width: 180px;
+    top: 80px; /* Оставляем место под кнопку назад */
+    left: 20px;
+    width: 170px;
     background: var(--panel-bg);
     border: 1px solid rgba(0, 242, 255, 0.2);
-    z-index: 110;
-
-    
-    /* Ограничиваем высоту относительно контейнера игры */
-    max-height: 70%; 
-    overflow-y: auto; /* Добавляем скролл, если текста будет слишком много */
+    z-index: 150;
+    font-size: 11px;
+    backdrop-filter: blur(4px);
 }
 
 /* Панели теперь будут внутри вьюпорта или четко по его краям */
 .tactical-log {
     position: absolute;
-    top: 10px;
-    right: 10px; /* Прижимаем к правому краю ВНУТРИ рамки игры */
-    width: 180px;
-    max-height: 60%; /* Чтобы не перекрывала всё поле */
-    background: rgba(0, 5, 10, 0.8);
+    top: 20px;
+    right: 20px;
+    width: 170px;
+    max-height: 75vh; /* Ограничиваем высоту лога на ноутах */
+    background: rgba(0, 5, 10, 0.85);
     border: 1px solid rgba(0, 242, 255, 0.2);
-    font-size: 11px;
-    z-index: 110; /* Выше чем канвас */
-    pointer-events: auto;
+    z-index: 150;
+    overflow-y: auto; /* Скролл, если записей много */
+    
 }
 
 
@@ -179,13 +171,7 @@ cursor: none;
     border-bottom: 1px solid rgba(0, 242, 255, 0.05);
 }
 
-/* Адаптация под малые экраны */
-@media (max-width: 1400px) {
-    :root {
-        --game-width: 900px;
-        --game-height: 600px;
-    }
-}
+
 #game-over-overlay {
     position: absolute;
     top: 50%; left: 50%;
