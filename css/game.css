@@ -147,7 +147,7 @@ body::before {
     /* ФИКС: Убираем центрирование и лишние отступы */
     padding: 10px 5px; /* Минимальный отступ только сверху/снизу и по бокам */
     display: block;    /* Убеждаемся, что это не флекс-контейнер, который всё центрует */
-    overflow-x: hidden;
+    overflow-x: auto;
     overflow-y: auto;
 }
 
@@ -164,35 +164,31 @@ body::before {
 
 .log-entry {
     display: flex;
-    width: 100%;
+    align-items: center;
     padding: 6px 4px;
     border-bottom: 1px solid rgba(0, 242, 255, 0.1);
-    font-size: 13px; /* Чуть увеличим для читаемости */
-    gap: 8px; /* Расстояние между элементами */
+    font-size: 13px;
+    gap: 10px;
+    /* ФИКС: ширина теперь зависит от контента, а не от рамки */
+    min-width: max-content; 
 }
 
-/* Номер - прижат влево */
 .num {
     color: var(--neon-blue);
-    width: 25px;
+    width: 20px;
     flex-shrink: 0;
 }
 
-/* Ник - забирает всё свободное место посередине */
 .name {
-    flex-grow: 1;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Если ник очень длинный, он сократится точками */
+    color: #fff;
+    /* УБИРАЕМ ellipsis, чтобы ник был виден полностью при скролле */
+    white-space: nowrap; 
 }
 
-/* Очки - всегда прижаты вправо */
 .score {
     color: var(--neon-pink);
-    text-align: right;
-    flex-shrink: 0;
     font-weight: bold;
+    padding-right: 10px; /* Отступ от края при скролле */
 }
 
 /* Экран смерти */
@@ -319,4 +315,26 @@ body:not(:has(.game-over-visible)) {
     margin: 0;
     padding: 0;
     list-style: none; /* Убирает стандартные точки/цифры, если они лезут */
+}
+/* Стили для горизонтального скроллбара (внизу) */
+.tactical-log::-webkit-scrollbar:horizontal {
+    height: 3px; /* Делаем его очень тонким */
+}
+
+.tactical-log::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.tactical-log::-webkit-scrollbar-thumb {
+    background: var(--neon-pink); /* Используем розовый неон для горизонтали */
+    border-radius: 4px;
+}
+
+/* Стили для вертикального скроллбара (сбоку) */
+.tactical-log::-webkit-scrollbar:vertical {
+    width: 3px;
+}
+
+.tactical-log::-webkit-scrollbar-thumb:vertical {
+    background: var(--neon-blue);
 }
