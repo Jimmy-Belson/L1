@@ -407,6 +407,22 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
             p.update(dt); // Передаем dt
             if (p.life <= 0) this.particles.splice(i, 1);
         });
+
+        // Внутри класса GameEngine, метод update
+const heatFill = document.getElementById('heat-fill');
+if (heatFill) {
+    // Рассчитываем процент (от 0 до 100)
+    const heatPercent = (this.player.heat / 100) * 100; 
+    heatFill.style.width = Math.min(heatPercent, 100) + '%';
+    
+    // Добавляем класс перегрева родительскому контейнеру
+    const container = document.querySelector('.heat-bar-container');
+    if (this.player.overheated) {
+        container.parentElement.classList.add('overheated-bar');
+    } else {
+        container.parentElement.classList.remove('overheated-bar');
+    }
+}
     }
 
 draw() {

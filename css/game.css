@@ -338,3 +338,47 @@ body:not(:has(.game-over-visible)) {
 .tactical-log::-webkit-scrollbar-thumb:vertical {
     background: var(--neon-blue);
 }
+.heat-system {
+    position: absolute;
+    bottom: 20px; /* Отступ от нижнего края игры */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%; /* Шкала будет занимать 40% от ширины игрового поля */
+    min-width: 200px; /* Чтобы на маленьких экранах не стала ниточкой */
+    z-index: 200;
+    pointer-events: none;
+}
+
+.heat-bar-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    overflow: hidden;
+    backdrop-filter: blur(2px);
+}
+
+#heat-fill {
+    width: 0%; 
+    height: 100%;
+    background: var(--neon-blue);
+    box-shadow: 0 0 15px var(--neon-blue);
+    /* Плавный переход, чтобы шкала не дергалась */
+    transition: width 0.15s ease-out, background 0.3s;
+}
+
+.heat-label {
+    font-size: 9px;
+    color: var(--neon-blue);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 3px;
+    margin-top: 5px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+/* Эффект при перегреве */
+.overheated-bar #heat-fill {
+    background: var(--neon-pink) !important;
+    box-shadow: 0 0 20px var(--neon-pink) !important;
+}
