@@ -273,6 +273,97 @@ class Enemy {
 // ==========================================
 // ДВИЖАТЕЛЬ
 // ==========================================
+class Boss {
+    constructor() {
+        this.x = canvas.width / 2;
+        this.y = -150;          // Появляется сверху за экраном
+        this.targetY = 120;     // Остановится на этой высоте
+        this.hp = 100;          // Жизни
+        this.maxHp = 100;
+        this.color = '#ff0055'; // Цвет первого босса (Кроваво-розовый)
+        this.angle = 0;         // Для вращения колец
+        this.moveTimer = 0;
+    }
+
+    update(dt) {
+        // Плавный въезд на арену
+        if (this.y < this.targetY) {
+            this.y += 1.5 * 60 * dt;
+        }
+
+        // Движение влево-вправо "восьмеркой"
+        this.moveTimer += dt;
+        this.x = (canvas.width / 2) + Math.sin(this.moveTimer * 0.8) * 250;
+        
+        // Вращение декоративных элементов
+        this.angle += 0.02 * 60 * dt;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // --- ВНЕШНИЕ КОЛЬЦА (AAA ДЕТАЛИЗАЦИЯ) ---
+        ctx.strokeStyle = this.color;
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = this.color;
+        ctx.lineWidth = 2;
+
+        // Кольцо 1 (вращается вправо)
+        ctx.save();
+        ctx.rotate(this.angle);
+        ctx.beginPath();
+        ctx.arc(0, 0, 70, 0, Math.PI * 2);
+        ctx.stroke();
+        // Зазубрины на кольце
+        for(let i=0; i<4; i++) {
+            ctx.rotate(Math.PI/2);
+            ctx.strokeRect(65, -5, 10, 10);
+        }
+        ctx.restore();
+
+        // Кольцо 2 (вращается влево)
+        ctx.save();
+        ctx.rotate(-this.angle * 1.5);
+        ctx.setLineDash([10, 15]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 90, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- ЯДРО БОССА ---
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 40;
+        ctx.beginPath();
+        // Сложная форма ядра (ромб в квадрате)
+        ctx.moveTo(0, -30); ctx.lineTo(30, 0); ctx.lineTo(0, 30); ctx.lineTo(-30, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // --- ПОЛОСКА HP БОССА ---
+        this.drawUI(ctx);
+
+        ctx.restore();
+    }
+
+    drawUI(ctx) {
+        const barW = 300;
+        const barH = 6;
+        // Тень/Фон полоски
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(-barW/2, -110, barW, barH);
+        // Сама полоска
+        const currentW = (this.hp / this.maxHp) * barW;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-barW/2, -110, currentW, barH);
+        // Текст названия
+        ctx.font = '10px Orbitron';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText("SENTINEL-01: ARCHITECT", 0, -115);
+    }
+}
 
 class GameEngine {
     constructor() {
@@ -282,11 +373,14 @@ class GameEngine {
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
+         this.gameTime = 0;          // Таймер игры
+        this.bossSpawned = false;    // Флаг, что босс уже вызван
+        this.boss = null;            // Ссылка на объект босса
         
         this.setupListeners();
         
     }
- // gg ez
+ 
    requestPointerLock() {
     // Вызываем метод корректно, без перезаписи
     const request = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
@@ -341,6 +435,22 @@ setupListeners() {
 }
 update(dt) {
         if (!window.gameActive) return;
+            // --- ВСТАВИТЬ ЭТО В НАЧАЛО UPDATE ---
+    this.gameTime += dt; 
+
+    // Если прошло 120 сек и босса еще нет
+    if (this.gameTime >= 120 && !this.bossSpawned) {
+        this.bossSpawned = true;
+        this.enemies = []; // Очищаем экран от мелочи
+        this.shake = 30;   // Сильная тряска при появлении
+        this.boss = new Boss(); // Создаем босса
+    }
+
+    // Если босс на экране, обновляем его
+    if (this.boss) {
+        this.boss.update(dt);
+    }
+
 
         // 1. Обновляем игрока (передаем dt)
         this.player.update(dt);
@@ -429,6 +539,11 @@ draw() {
     // 3. Отрисовка игровых объектов
     this.particles.forEach(p => p.draw(ctx));
     this.enemies.forEach(e => e.draw(ctx));
+
+     // --- ВСТАВИТЬ ЭТО ---
+    if (this.boss) {
+        this.boss.draw(ctx);
+    }
     
     // Рисуем игрока (теперь он точно будет внутри после фикса в конструкторе)
     this.player.draw(ctx);
