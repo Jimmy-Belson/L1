@@ -6,10 +6,7 @@
     --bg-black: #01050a;
     --panel-bg: rgba(0, 10, 20, 0.85);
     
-    /* ИЗМЕНЕНО: Теперь это не лимит, а пропорция. 
-       Используем vmin, чтобы игра всегда влезала в экран по меньшей стороне */
-    --game-width: 90vw; 
-    --game-height: 60vw; /* Соотношение 3:2 */
+    
 }
 
 
@@ -62,7 +59,6 @@ body::before {
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 6;
-    cursor: none;
 }
 
 #game-canvas {
@@ -85,7 +81,7 @@ body::before {
     height: 100vh;
     z-index: 10;
     pointer-events: none;
-cursor: none;
+
     /* ДОБАВЛЯЕМ ЭТИ СТРОКИ ДЛЯ ЦЕНТРИРОВАНИЯ ВНУТРЕННОСТЕЙ */
     display: flex;
     justify-content: center;
@@ -277,4 +273,20 @@ body:not(:has(.game-over-visible)) {
 /* Исключение для кнопки выхода [ EXIT_TO_STATION ] */
 .back-btn {
     cursor: pointer !important;
+}
+/* Адаптация панелей под маленькие экраны ноутбуков */
+@media (max-height: 700px) {
+    .left-status-panel, .tactical-log {
+        width: 140px;      /* Сужаем ширину таблиц */
+        font-size: 10px;   /* Уменьшаем текст, чтобы влез */
+        padding: 8px;      /* Ужимаем внутренние отступы */
+    }
+    
+    .left-status-panel { 
+        top: 60px;         /* Поднимаем чуть выше к кнопке назад */
+    }
+
+    .tactical-log {
+        max-height: 60vh;  /* Делаем лог короче по высоте */
+    }
 }
