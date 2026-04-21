@@ -67,84 +67,92 @@ class Particle {
 
 class Player {
     constructor() {
-        // Заменяем window.innerWidth на canvas.width
-        // Это поставит корабль ровно по центру игровой зоны (450px)
+        // Позиционирование по центру канваса
         this.x = canvas.width / 2;
-
-        // Заменяем window.innerHeight на canvas.height
-        // Это гарантирует, что корабль будет внизу рамки, а не улетит под экран
         this.y = canvas.height - 60; 
 
         this.score = 0;
         this.lives = CONFIG.BALANCE.LIVES;
-
-        // Целевая точка для мыши тоже должна быть привязана к центру канваса
         this.targetX = this.x;
 
         this.heat = 0;
+        this.maxHeat = 100; // Добавим максимум для корректных расчетов
         this.overheated = false;
+        
+        // Для AAA-эффекта наклона
+        this.tilt = 0; 
     }
+
     update(dt) {
-    // Умножаем 0.5 на dt * 60
-    this.x += (this.targetX - this.x) * (0.5 * dt * 60);
-    
-    if (this.overheated) {
-        this.heat -= 0.5 * 60 * dt; // Остывание по времени
-        if (this.heat <= 0) { this.overheated = false; this.heat = 0; }
-    } else {
-        this.heat = Math.max(0, this.heat - 1 * 60 * dt);
+        const prevX = this.x;
+        // Движение к курсору
+        this.x += (this.targetX - this.x) * (0.3 * dt * 60);
+        
+        // Расчет наклона корпуса (AAA динамика)
+        const velocity = (this.x - prevX) * 0.2;
+        this.tilt = velocity * Math.PI / 180;
+
+        // Логика перегрева
+        if (this.overheated) {
+            this.heat -= 0.5 * 60 * dt; 
+            if (this.heat <= 0) { 
+                this.overheated = false; 
+                this.heat = 0; 
+            }
+        } else {
+            this.heat = Math.max(0, this.heat - 1 * 60 * dt);
+        }
     }
-}
-    // game.js -> Класс Player -> метод draw(ctx)
 
-draw(ctx) {
-    ctx.save();
-ctx.translate(this.x, this.y);
-ctx.rotate(this.tilt); // Наклон при движении
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.tilt); 
 
-const color = this.overheated ? '#ff3300' : '#00f2ff';
+        const color = this.overheated ? '#ff3300' : '#00f2ff';
 
-// Основной корпус (Сложная геометрия)
-ctx.strokeStyle = color;
-ctx.lineWidth = 2.5;
-ctx.shadowBlur = 15;
-ctx.shadowColor = color;
+        // 1. Основной корпус (Сложная геометрия "Aegis")
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
 
-ctx.beginPath();
-ctx.moveTo(0, -25);     // Острый нос
-ctx.lineTo(8, -10);     // Переход к крылу
-ctx.lineTo(25, 15);     // Край крыла
-ctx.lineTo(10, 15);     // Внутренний угол
-ctx.lineTo(0, 5);       // Задний центр
-ctx.lineTo(-10, 15);    // Левое крыло внутр.
-ctx.lineTo(-25, 15);    // Левое крыло край
-ctx.lineTo(-8, -10);    // Переход
-ctx.closePath();
-ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -25);     
+        ctx.lineTo(8, -10);     
+        ctx.lineTo(25, 15);     
+        ctx.lineTo(10, 15);     
+        ctx.lineTo(0, 5);       
+        ctx.lineTo(-10, 15);    
+        ctx.lineTo(-25, 15);    
+        ctx.lineTo(-8, -10);    
+        ctx.closePath();
+        ctx.stroke();
 
-// Внутренние механизмы (Тонкие линии)
-ctx.lineWidth = 1;
-ctx.beginPath();
-ctx.moveTo(-8, 0); ctx.lineTo(8, 0);   // Лонжерон
-ctx.moveTo(0, -10); ctx.lineTo(0, 5);  // Осевая линия
-ctx.stroke();
+        // 2. Внутренние механизмы
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-8, 0); ctx.lineTo(8, 0);   
+        ctx.moveTo(0, -10); ctx.lineTo(0, 5);  
+        ctx.stroke();
 
-// Кабина (Заливка с градиентом)
-ctx.fillStyle = '#fff';
-ctx.globalAlpha = 0.8;
-ctx.beginPath();
-ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
-ctx.closePath();
-ctx.fill();
+        // 3. Кабина (Блик системы)
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
+        ctx.closePath();
+        ctx.fill();
 
-// Двигатели (Двойной неоновый шлейф)
-ctx.globalAlpha = 0.4;
-const enginePulse = Math.sin(Date.now() / 50) * 5;
-ctx.fillStyle = color;
-ctx.fillRect(-18, 15, 6, 10 + enginePulse); // Левый
-ctx.fillRect(12, 15, 6, 10 + enginePulse);  // Правый
-ctx.restore();
-}
+        // 4. Двигатели (Пульсирующий шлейф)
+        ctx.globalAlpha = 0.4;
+        const enginePulse = Math.sin(Date.now() / 50) * 5;
+        ctx.fillStyle = color;
+        ctx.fillRect(-18, 15, 6, 10 + enginePulse); 
+        ctx.fillRect(12, 15, 6, 10 + enginePulse);  
+        
+        ctx.restore();
+    }
 }
 
 class Enemy {
@@ -152,28 +160,25 @@ class Enemy {
         const rand = Math.random();
         
         if (rand < 0.15) { 
-            // ТАНК (15% шанс)
             this.type = 'tank';
             this.size = 50;
-            this.hp = 5; // Нужно 5 попаданий
+            this.hp = 5;
             this.speed = 1 + Math.random() * 0.5;
-            this.color = '#ffea00'; // Желтый неоновый
+            this.color = '#ffea00'; 
             this.scoreValue = 50;
         } else if (rand < 0.35) { 
-            // СПРИНТЕР (20% шанс)
             this.type = 'sprinter';
             this.size = 15;
             this.hp = 1;
             this.speed = 5 + Math.random() * 2;
-            this.color = '#00ff44'; // Ярко-зеленый
+            this.color = '#00ff44'; 
             this.scoreValue = 30;
         } else { 
-            // ОБЫЧНЫЙ (65% шанс)
             this.type = 'normal';
             this.size = 30;
             this.hp = 1;
             this.speed = 2 + Math.random() * 2;
-            this.color = '#ff00e5'; // Твой стандартный розовый
+            this.color = '#ff00e5'; 
             this.scoreValue = 10;
         }
 
@@ -181,101 +186,88 @@ class Enemy {
         this.y = -this.size;
     }
 
-    draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-
-    // Настройка свечения для врагов
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = this.color;
-    ctx.strokeStyle = this.color;
-    ctx.fillStyle = this.color; // Для заливки ядра
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-
-    // Отрисовка в зависимости от ТИПА
-    switch (this.type) {
-        case 'tank':
-            // Внутри Enemy.draw (тип 'tank')
-const s = this.size / 2;
-ctx.strokeStyle = this.color;
-ctx.lineWidth = 3;
-
-// Массивный восьмиугольник
-ctx.beginPath();
-ctx.moveTo(-s/2, -s); ctx.lineTo(s/2, -s);
-ctx.lineTo(s, -s/2); ctx.lineTo(s, s/2);
-ctx.lineTo(s/2, s); ctx.lineTo(-s/2, s);
-ctx.lineTo(-s, s/2); ctx.lineTo(-s, -s/2);
-ctx.closePath();
-ctx.stroke();
-
-// Внутренняя структура (Техно-паттерн)
-ctx.lineWidth = 1;
-for (let i = -s + 10; i < s; i += 10) {
-    ctx.beginPath();
-    ctx.moveTo(-s + 5, i); ctx.lineTo(s - 5, i);
-    ctx.stroke();
-}
-// Фронтальные орудия
-ctx.strokeRect(-s/3, -s - 5, 5, 10);
-ctx.strokeRect(s/3 - 5, -s - 5, 5, 10)
-            break;
-
-        case 'sprinter':
-            // --- СПРИНТЕР ("Игла"): Узкий, Вытянутый Ромб ---
-            // Внутри Enemy.draw (тип 'sprinter')
-const s = this.size / 2;
-ctx.strokeStyle = this.color;
-ctx.lineWidth = 2;
-
-ctx.beginPath();
-ctx.moveTo(0, -s * 2); // Очень длинный нос
-ctx.lineTo(s, s);      // Правое лезвие
-ctx.lineTo(0, s/2);    // Вырез хвоста
-ctx.lineTo(-s, s);     // Левое лезвие
-ctx.closePath();
-ctx.stroke();
-
-// Эффект скорости (Линии внутри)
-ctx.beginPath();
-ctx.moveTo(0, -s); ctx.lineTo(0, s/2);
-ctx.stroke();
-            break;
-
-        default: // case 'normal'
-            // Внутри Enemy.draw (тип 'normal')
-const s = this.size / 2;
-ctx.strokeStyle = this.color;
-ctx.lineWidth = 2;
-
-// Центральное ядро (Ромб)
-ctx.beginPath();
-ctx.moveTo(0, -s); ctx.lineTo(s, 0); ctx.lineTo(0, s); ctx.lineTo(-s, 0);
-ctx.closePath();
-ctx.stroke();
-
-// Внешние "пластины брони" (не касаются корпуса)
-ctx.beginPath();
-ctx.moveTo(-s - 5, -s/2); ctx.lineTo(-s - 5, s/2); // Левая пластина
-ctx.moveTo(s + 5, -s/2); ctx.lineTo(s + 5, s/2);   // Правая пластина
-ctx.stroke();
-
-// Светящийся глаз (Пульсирует)
-ctx.shadowBlur = 10 + Math.sin(Date.now() / 100) * 10;
-ctx.fillStyle = this.color;
-ctx.beginPath();
-ctx.arc(0, 0, 4, 0, Math.PI * 2);
-ctx.fill();
-            break;
+    update(dt) {
+        this.y += this.speed * 60 * dt;
     }
 
-    ctx.restore();
-}
-    update(dt) {
-    // Важно принимать dt и умножать на 60
-    this.y += this.speed * 60 * dt;
-}
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.color;
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+
+        const s = this.size / 2;
+
+        switch (this.type) {
+            case 'tank':
+                ctx.lineWidth = 3;
+                // Массивный восьмиугольник
+                ctx.beginPath();
+                ctx.moveTo(-s/2, -s); ctx.lineTo(s/2, -s);
+                ctx.lineTo(s, -s/2); ctx.lineTo(s, s/2);
+                ctx.lineTo(s/2, s); ctx.lineTo(-s/2, s);
+                ctx.lineTo(-s, s/2); ctx.lineTo(-s, -s/2);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Техно-паттерн внутри
+                ctx.lineWidth = 1;
+                for (let i = -s + 10; i < s; i += 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(-s + 5, i); ctx.lineTo(s - 5, i);
+                    ctx.stroke();
+                }
+                // Фронтальные орудия
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-s/3, -s - 5, 5, 10);
+                ctx.fillRect(s/3 - 5, -s - 5, 5, 10);
+                break;
+
+            case 'sprinter':
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -s * 2); 
+                ctx.lineTo(s, s);      
+                ctx.lineTo(0, s/2);    
+                ctx.lineTo(-s, s);     
+                ctx.closePath();
+                ctx.stroke();
+
+                // Линии скорости
+                ctx.beginPath();
+                ctx.moveTo(0, -s); ctx.lineTo(0, s/2);
+                ctx.stroke();
+                break;
+
+            default: // normal
+                ctx.lineWidth = 2;
+                // Ядро-ромб
+                ctx.beginPath();
+                ctx.moveTo(0, -s); ctx.lineTo(s, 0); ctx.lineTo(0, s); ctx.lineTo(-s, 0);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Внешние пластины
+                ctx.beginPath();
+                ctx.moveTo(-s - 5, -s/2); ctx.lineTo(-s - 5, s/2);
+                ctx.moveTo(s + 5, -s/2); ctx.lineTo(s + 5, s/2);
+                ctx.stroke();
+
+                // Пульсирующий глаз
+                ctx.shadowBlur = 10 + Math.sin(Date.now() / 100) * 10;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+        }
+
+        ctx.restore();
+    }
 }
 
 // ==========================================
