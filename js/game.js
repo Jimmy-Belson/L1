@@ -95,18 +95,63 @@ class Player {
         this.heat = Math.max(0, this.heat - 1 * 60 * dt);
     }
 }
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        const color = this.overheated ? '#f00' : '#0ff';
-        ctx.strokeStyle = color;
-        ctx.shadowBlur = 15; ctx.shadowColor = color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, -20); ctx.lineTo(-20, 15); ctx.lineTo(0, 5); ctx.lineTo(20, 15);
-        ctx.closePath(); ctx.stroke();
-        ctx.restore();
-    }
+    // game.js -> Класс Player -> метод draw(ctx)
+
+draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Устанавливаем цвет в зависимости от перегрева
+    const mainColor = this.overheated ? '#f00' : '#0ff'; // Красный или Голубой неон
+    const coreColor = this.overheated ? '#ff5555' : '#fff'; // Ядро (белое или ярко-красное)
+
+    // Настройка сильного свечения (Neon Glow)
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = mainColor;
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round'; // Закругляем углы для мягкости неона
+
+    // --- Отрисовка СЛОЖНОГО контура корпуса (8 точек) ---
+    ctx.beginPath();
+    // 1. Левый "нос" (раздвоенный)
+    ctx.moveTo(-8, -22); 
+    // 2. Центральная выемка носа
+    ctx.lineTo(0, -15);
+    // 3. Правый "нос"
+    ctx.lineTo(8, -22);
+    // 4. Правое крыло (внешний угол)
+    ctx.lineTo(25, 12);
+    // 5. Правый задний угол
+    ctx.lineTo(12, 18);
+    // 6. Центральная выемка сзади (место двигателя)
+    ctx.lineTo(0, 10);
+    // 7. Левый задний угол
+    ctx.lineTo(-12, 18);
+    // 8. Левое крыло (внешний угол)
+    ctx.lineTo(-25, 12);
+    ctx.closePath(); // Автоматически соединяет с точкой 1
+    ctx.stroke(); // Рисуем контур
+
+    // --- Отрисовка ВНУТРЕННИХ деталей (кабина/двигатель) ---
+    // Внутренние линии корпуса
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-10, 5); ctx.lineTo(0, -10); ctx.lineTo(10, 5); // Треугольник кабины
+    ctx.moveTo(-12, 18); ctx.lineTo(-8, 8); // Левая стойка двигателя
+    ctx.moveTo(12, 18); ctx.lineTo(8, 8);  // Правая стойка двигателя
+    ctx.stroke();
+
+    // --- ЯРКОЕ ЦЕНТРАЛЬНОЕ ЯДРО (Реактор) ---
+    ctx.shadowBlur = 40; // Максимальное свечение ядра
+    ctx.shadowColor = coreColor;
+    ctx.fillStyle = coreColor;
+    ctx.beginPath();
+    ctx.arc(0, 5, 4, 0, Math.PI * 2); // Маленький белый круг в центре
+    ctx.fill();
+
+    ctx.restore();
+}
 }
 
 class Enemy {
@@ -144,32 +189,95 @@ class Enemy {
     }
 
     draw(ctx) {
-        ctx.save();
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = this.color;
-        ctx.fillStyle = this.color;
-        
-        // Отрисовка формы в зависимости от типа
-        if (this.type === 'tank') {
-            ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
-            // Добавим полоску брони сверху
-            ctx.strokeStyle = '#fff';
-            ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
-        } else if (this.type === 'sprinter') {
-            // Треугольник для шустрого врага
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Настройка свечения для врагов
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = this.color;
+    ctx.strokeStyle = this.color;
+    ctx.fillStyle = this.color; // Для заливки ядра
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    // Отрисовка в зависимости от ТИПА
+    switch (this.type) {
+        case 'tank':
+            // --- ТАНК ("Крепость"): Массивный Восьмиугольник ---
+            // Тяжелый внешний контур
+            ctx.lineWidth = 3; 
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y + this.size);
-            ctx.lineTo(this.x - this.size, this.y - this.size);
-            ctx.lineTo(this.x + this.size, this.y - this.size);
-            ctx.fill();
-        } else {
-            // Обычный ромб или круг
+            const s = this.size / 2; // Половина размера для координат
+            ctx.moveTo(-s/2, -s); ctx.lineTo(s/2, -s); // Верх
+            ctx.lineTo(s, -s/2);  ctx.lineTo(s, s/2);  // Право
+            ctx.lineTo(s/2, s);   ctx.lineTo(-s/2, s); // Низ
+            ctx.lineTo(-s, s/2);  ctx.lineTo(-s, -s/2);// Лево
+            ctx.closePath();
+            ctx.stroke();
+
+            // Внутренние линии брони (решетка)
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.restore();
+            ctx.moveTo(-s, -s/4); ctx.lineTo(s, -s/4);
+            ctx.moveTo(-s, 0);    ctx.lineTo(s, 0);
+            ctx.moveTo(-s, s/4);  ctx.lineTo(s, s/4);
+            // Центральный реактор танка
+            ctx.moveTo(0, -s/2);  ctx.lineTo(0, s/2);
+            ctx.stroke();
+            break;
+
+        case 'sprinter':
+            // --- СПРИНТЕР ("Игла"): Узкий, Вытянутый Ромб ---
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // Вытягиваем по вертикали (y)
+            ctx.moveTo(0, -this.size); // Острый нос
+            ctx.lineTo(this.size/3, 0);  // Правый угол
+            ctx.lineTo(0, this.size);  // Хвост
+            ctx.lineTo(-this.size/3, 0); // Левый угол
+            ctx.closePath();
+            ctx.stroke();
+
+            // Внутренняя линия (стержень)
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -this.size + 5);
+            ctx.lineTo(0, this.size - 5);
+            ctx.stroke();
+            break;
+
+        default: // case 'normal'
+            // --- ОБЫЧНЫЙ ("Дрон"): Шестиугольник с Глазом ---
+            ctx.lineWidth = 2;
+            const ns = this.size / 2; // Половина размера
+            ctx.beginPath();
+            // Координаты шестиугольника
+            ctx.moveTo(-ns/2, -ns); ctx.lineTo(ns/2, -ns);
+            ctx.lineTo(ns, 0);
+            ctx.lineTo(ns/2, ns);   ctx.lineTo(-ns/2, ns);
+            ctx.lineTo(-ns, 0);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Четыре маленькие антенны по углам
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-ns/2, -ns); ctx.lineTo(-ns-3, -ns-3);
+            ctx.moveTo(ns/2, -ns);  ctx.lineTo(ns+3, -ns-3);
+            ctx.moveTo(ns/2, ns);   ctx.lineTo(ns+3, ns+3);
+            ctx.moveTo(-ns/2, ns);  ctx.lineTo(-ns-3, ns+3);
+            ctx.stroke();
+
+            // Яркий "Глаз" в центре (заливка)
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fill(); // Заливаем цветом врага
+            break;
     }
+
+    ctx.restore();
+}
     update(dt) {
     // Важно принимать dt и умножать на 60
     this.y += this.speed * 60 * dt;
