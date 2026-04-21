@@ -138,16 +138,17 @@ body::before {
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 170px;
-    max-height: 75vh; 
+    width: 190px; /* Немного расширим для уверенности */
+    max-height: 75vh;
     background: rgba(0, 5, 10, 0.85);
     border: 1px solid rgba(0, 242, 255, 0.2);
     z-index: 150;
     
-    /* ФИКС СКРОЛЛА */
-    overflow-y: auto;   /* Вертикальный скролл оставляем */
-    overflow-x: hidden; /* Горизонтальный — рубим на корню */
-    padding: 10px;
+    /* ФИКС: Убираем центрирование и лишние отступы */
+    padding: 10px 5px; /* Минимальный отступ только сверху/снизу и по бокам */
+    display: block;    /* Убеждаемся, что это не флекс-контейнер, который всё центрует */
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .tactical-log h3 {
