@@ -313,3 +313,10 @@ body:not(:has(.game-over-visible)) {
 .tactical-log::-webkit-scrollbar-thumb {
     background: var(--neon-blue); /* Твой основной цвет */
 }
+/* КИЛЛЕР ОТСТУПОВ: убираем стандартные отступы списков */
+.tactical-log ul, 
+.tactical-log ol {
+    margin: 0;
+    padding: 0;
+    list-style: none; /* Убирает стандартные точки/цифры, если они лезут */
+}
