@@ -163,38 +163,35 @@ body::before {
 
 .log-entry {
     display: flex;
-    align-items: center;
     width: 100%;
-    padding: 8px 5px;
+    padding: 6px 4px;
     border-bottom: 1px solid rgba(0, 242, 255, 0.1);
-    font-size: 12px;
-    /* Убираем любые центровки, если они были */
-    justify-content: flex-start; 
+    font-size: 13px; /* Чуть увеличим для читаемости */
+    gap: 8px; /* Расстояние между элементами */
 }
 
-/* 1. Номер (слева) */
-.log-entry span:first-child {
-    min-width: 25px; /* Запас под двузначные числа */
+/* Номер - прижат влево */
+.num {
     color: var(--neon-blue);
+    width: 25px;
     flex-shrink: 0;
 }
 
-/* 2. Никнейм (в центре, забирает всё место) */
-.log-entry span:nth-child(2) {
-    flex-grow: 1;    /* ГЛАВНОЕ: Растягивается и выталкивает очки вправо */
+/* Ник - забирает всё свободное место посередине */
+.name {
+    flex-grow: 1;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Если ник гигантский, он аккуратно сократится */
-    margin-right: 10px;
+    text-overflow: ellipsis; /* Если ник очень длинный, он сократится точками */
 }
 
-/* 3. Очки (справа) */
-.log-entry span:last-child {
+/* Очки - всегда прижаты вправо */
+.score {
     color: var(--neon-pink);
     text-align: right;
-    flex-shrink: 0;  /* Запрещаем очкам сжиматься или исчезать */
-    min-width: 40px; /* Чтобы всегда было место под цифры */
+    flex-shrink: 0;
+    font-weight: bold;
 }
 
 /* Экран смерти */
