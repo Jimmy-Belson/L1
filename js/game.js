@@ -398,28 +398,29 @@ loop() {
 }
 
 // --- СТАРТ ---
+let engine; // Вынесли вверх
+
 document.addEventListener('DOMContentLoaded', () => {
     canvas = document.getElementById('game-canvas');
     if (!canvas) return;
-
     ctx = canvas.getContext('2d');
     
-    // 1. Убиваем фон из script.js
     killBackgroundProcesses();
 
     const res = () => {
-    canvas.width = 900;
-    canvas.height = 600;
-    // Если игра только началась, ставим корабль в центр нового размера
-    if (engine && engine.player) {
-        engine.player.x = canvas.width / 2;
-        engine.player.targetX = canvas.width / 2;
-    }
-};
+        canvas.width = 900;
+        canvas.height = 600;
+        // Теперь это сработает без ошибок
+        if (engine && engine.player) {
+            engine.player.x = canvas.width / 2;
+            engine.player.targetX = canvas.width / 2;
+        }
+    };
+
+    // СНАЧАЛА создаем, ПОТОМ ресайзим
+    engine = new GameEngine(); 
     window.addEventListener('resize', res);
     res();
 
-    // 3. Запуск
-    const engine = new GameEngine();
     engine.loop();
 });

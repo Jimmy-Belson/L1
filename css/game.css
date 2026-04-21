@@ -1,4 +1,7 @@
 /* game.css — Advanced Battle Sector UI */
+* {
+    box-sizing: border-box;
+}
 
 :root {
     --neon-blue: #00f2ff;
@@ -19,6 +22,9 @@ body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+    background-color: #01050a; /* ФИКС: Убирает белые края */
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace; /* ФИКС: Шрифт по умолчанию */
 }
 
 /* Сетка на фоне */
