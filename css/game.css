@@ -1,4 +1,5 @@
 /* game.css — Advanced Battle Sector UI */
+
 * {
     box-sizing: border-box;
 }
@@ -8,10 +9,7 @@
     --neon-pink: #ff00e5;
     --bg-black: #01050a;
     --panel-bg: rgba(0, 10, 20, 0.85);
-    
-    
 }
-
 
 body {
     margin: 0;
@@ -22,9 +20,9 @@ body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    background-color: #01050a; /* ФИКС: Убирает белые края */
+    background-color: #01050a !important; /* ФИКС 1: ЖЕСТКИЙ ЧЕРНЫЙ ФОН */
     color: #fff;
-    font-family: 'Share Tech Mono', monospace; /* ФИКС: Шрифт по умолчанию */
+    font-family: 'Share Tech Mono', monospace; 
 }
 
 /* Сетка на фоне */
@@ -42,11 +40,9 @@ body::before {
 
 .game-viewport {
     position: relative;
-    /* Ширина подстраивается, но ограничена */
-    width: clamp(600px, 85vw, 1200px); 
-    /* Не дает игре уйти за нижний край экрана ноутбука */
-    max-height: 80vh; 
-    aspect-ratio: 3 / 2;
+    /* ФИКС 2: ЖЕСТКИЙ РАЗМЕР ВМЕСТО CLAMP, ЧТОБЫ ИЗБЕЖАТЬ "МЫЛА" */
+    width: 900px; 
+    height: 600px;
     margin: 0 auto;
     
     border: 2px solid rgba(0, 242, 255, 0.3);
@@ -72,7 +68,7 @@ body::before {
     width: 100%;
     height: 100%;
     cursor: none;
-    /* КРИТИЧНО: Убирает размытие (антиалиасинг) при растяжении */
+    /* Убирает размытие (антиалиасинг) */
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
@@ -80,21 +76,19 @@ body::before {
 }
 
 .game-container {
-    position: fixed; /* Оставляем фиксированным, чтобы перекрыть экран */
+    position: fixed; 
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     z-index: 10;
     pointer-events: none;
-
-    /* ДОБАВЛЯЕМ ЭТИ СТРОКИ ДЛЯ ЦЕНТРИРОВАНИЯ ВНУТРЕННОСТЕЙ */
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Разрешаем клики по оверлею в общем списке */
+/* Разрешаем клики */
 .tactical-log, .back-btn, .side-panel, #game-over-overlay {
     pointer-events: auto !important;
 }
@@ -104,7 +98,7 @@ body::before {
     cursor: default !important;
 }
 
-/* Кнопка выхода (слева сверху) */
+/* Кнопка выхода */
 .back-btn {
     position: absolute;
     top: 20px;
@@ -129,7 +123,7 @@ body::before {
 
 .left-status-panel {
     position: absolute;
-    top: 80px; /* Оставляем место под кнопку назад */
+    top: 80px; 
     left: 20px;
     width: 170px;
     background: var(--panel-bg);
@@ -137,22 +131,22 @@ body::before {
     z-index: 150;
     font-size: 11px;
     backdrop-filter: blur(4px);
+    padding: 10px;
 }
 
-/* Панели теперь будут внутри вьюпорта или четко по его краям */
+/* Лог */
 .tactical-log {
     position: absolute;
     top: 20px;
     right: 20px;
     width: 170px;
-    max-height: 75vh; /* Ограничиваем высоту лога на ноутах */
+    max-height: 75vh; 
     background: rgba(0, 5, 10, 0.85);
     border: 1px solid rgba(0, 242, 255, 0.2);
     z-index: 150;
-    overflow-y: auto; /* Скролл, если записей много */
-    
+    overflow-y: auto; 
+    padding: 10px;
 }
-
 
 .tactical-log h3 {
     font-family: 'Orbitron', sans-serif;
@@ -173,21 +167,18 @@ body::before {
     border-bottom: 1px solid rgba(0, 242, 255, 0.05);
 }
 
-
+/* Экран смерти */
 #game-over-overlay {
     position: absolute;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 400px;
-    background: rgba(1, 5, 10, 0.98); /* Сделаем чуть плотнее */
+    background: rgba(1, 5, 10, 0.98); 
     border: 2px solid var(--neon-pink);
     box-shadow: 0 0 50px rgba(255, 0, 229, 0.5);
-    
-    /* КРИТИЧЕСКИЕ ПРАВКИ: */
     z-index: 10000 !important; 
     pointer-events: auto !important; 
     display: none; 
-    
     padding: 30px;
     text-align: center;
     backdrop-filter: blur(10px);
@@ -222,7 +213,6 @@ body::before {
     padding-bottom: 5px;
 }
 
-/* Контейнер для кнопок, чтобы они стояли ровно в столбик */
 .game-over-content {
     display: flex;
     flex-direction: column;
@@ -230,16 +220,16 @@ body::before {
     width: 100%;
 }
 
-/* Возвращаем красивое стекло и неон */
+/* Неоновые кнопки */
 #retry-btn, #exit-btn {
-    background: rgba(0, 242, 255, 0.05) !important; /* Прозрачный фон */
-    backdrop-filter: blur(5px); /* Эффект матового стекла */
+    background: rgba(0, 242, 255, 0.05) !important; 
+    backdrop-filter: blur(5px); 
     border: 1px solid var(--neon-blue);
     color: var(--neon-blue);
     padding: 12px 20px;
     margin-top: 15px;
     cursor: pointer !important;
-    font-family: 'Orbitron', sans-serif; /* Тот же шрифт, что в игре */
+    font-family: 'Orbitron', sans-serif; 
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -248,10 +238,9 @@ body::before {
     position: relative;
     z-index: 10005 !important;
     pointer-events: auto !important;
-    box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.1); /* Внутреннее свечение */
+    box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.1); 
 }
 
-/* Специфический цвет для выхода (розовый неон) */
 #exit-btn {
     border-color: var(--neon-pink);
     color: var(--neon-pink);
@@ -259,7 +248,6 @@ body::before {
     box-shadow: inset 0 0 10px rgba(255, 0, 229, 0.1);
 }
 
-/* Эффект при наведении (яркая вспышка) */
 #retry-btn:hover {
     background: var(--neon-blue) !important;
     color: #000 !important;
@@ -271,28 +259,22 @@ body::before {
     color: #000 !important;
     box-shadow: 0 0 25px var(--neon-pink), inset 0 0 10px rgba(255, 255, 255, 0.5);
 }
-/* Полная блокировка курсора для всего документа во время игры */
+
 body:not(:has(.game-over-visible)) {
     cursor: none !important;
 }
 
-/* Исключение для кнопки выхода [ EXIT_TO_STATION ] */
 .back-btn {
     cursor: pointer !important;
 }
-/* Адаптация панелей под маленькие экраны ноутбуков */
+
+/* Адаптация под мелкие экраны */
 @media (max-height: 700px) {
     .left-status-panel, .tactical-log {
-        width: 140px;      /* Сужаем ширину таблиц */
-        font-size: 10px;   /* Уменьшаем текст, чтобы влез */
-        padding: 8px;      /* Ужимаем внутренние отступы */
+        width: 140px;      
+        font-size: 10px;   
+        padding: 8px;      
     }
-    
-    .left-status-panel { 
-        top: 60px;         /* Поднимаем чуть выше к кнопке назад */
-    }
-
-    .tactical-log {
-        max-height: 60vh;  /* Делаем лог короче по высоте */
-    }
+    .left-status-panel { top: 60px; }
+    .tactical-log { max-height: 60vh; }
 }
