@@ -200,22 +200,25 @@ class GameEngine {
 }
 
 setupListeners() {
-    // 1. Клик по канвасу для активации
-    canvas.addEventListener('mousedown', (e) => {
+    // МЕНЯЕМ canvas на window, чтобы клики не блокировались интерфейсом
+    window.addEventListener('mousedown', (e) => {
+        // Игнорируем клики по кнопкам интерфейса (чтобы не стрелял, когда жмешь "Назад")
+        if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
+        
         if (!window.gameActive) return;
         
-        // Попытка захвата при каждом клике (если еще не захвачен)
+        // Попытка захвата при каждом клике (Прячет курсор системы)
         if (document.pointerLockElement !== canvas) {
             this.requestPointerLock();
         }
 
         // Логика стрельбы
         if (!this.player.overheated) {
-            this.player.heat += 15; // Уменьшил нагрев, чтобы стрелял дольше
+            this.player.heat += 15; 
             if (this.player.heat >= 100) this.player.overheated = true;
             this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
             
-            // Маленький эффект отдачи (тряска) при выстреле
+            // Тряска при выстреле
             this.shake = 2;
         }
     });
@@ -225,16 +228,16 @@ setupListeners() {
         if (!window.gameActive) return;
 
         if (document.pointerLockElement === canvas) {
-            // Режим захвата: двигаем корабль относительно движения мыши
+            // Режим захвата (курсор невидим, корабль двигается плавно)
             this.player.targetX += e.movementX * 1.5;
         } else {
-            // Режим обычный: корабль следует за курсором
+            // Режим обычный (если игрок нажал ESC и сбросил захват)
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             this.player.targetX = (e.clientX - rect.left) * scaleX;
         }
 
-        // Ограничиваем края (учитываем ширину панелей из CSS)
+        // Ограничиваем края 
         const margin = 40; 
         if (this.player.targetX < margin) this.player.targetX = margin;
         if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
@@ -398,7 +401,7 @@ loop() {
 }
 
 // --- СТАРТ ---
-let engine; // Вынесли вверх
+let engine; 
 
 document.addEventListener('DOMContentLoaded', () => {
     canvas = document.getElementById('game-canvas');
@@ -407,20 +410,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     killBackgroundProcesses();
 
-    const res = () => {
-        canvas.width = 900;
-        canvas.height = 600;
-        // Теперь это сработает без ошибок
-        if (engine && engine.player) {
-            engine.player.x = canvas.width / 2;
-            engine.player.targetX = canvas.width / 2;
-        }
-    };
+    // 1. СНАЧАЛА жестко задаем размер канваса
+    canvas.width = 900;
+    canvas.height = 600;
 
-    // СНАЧАЛА создаем, ПОТОМ ресайзим
+    // 2. ПОТОМ создаем движок (теперь корабль заспавнится четко внизу по координате 600)
     engine = new GameEngine(); 
-    window.addEventListener('resize', res);
-    res();
 
+    // 3. Запускаем игру
     engine.loop();
 });
