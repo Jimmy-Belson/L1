@@ -283,6 +283,7 @@ class Boss {
         this.color = '#ff0055'; // Цвет первого босса (Кроваво-розовый)
         this.angle = 0;         // Для вращения колец
         this.moveTimer = 0;
+        this.shootTimer = 0;
     }
 
     update(dt) {
@@ -297,6 +298,30 @@ class Boss {
         
         // Вращение декоративных элементов
         this.angle += 0.02 * 60 * dt;
+
+
+        // ЛОГИКА СТРЕЛЬБЫ
+    this.shootTimer += dt;
+    if (this.shootTimer > 1.5) { // Стреляет каждые 1.5 секунды
+        this.shoot();
+        this.shootTimer = 0;
+    }
+}
+
+shoot() {
+    // Создаем 5 пуль веером
+    for (let i = -2; i <= 2; i++) {
+        const angle = Math.PI / 2 + (i * 0.2); // Направление вниз с разбросом
+        const speed = 4;
+        // Пушим пулю в глобальный массив (нам нужно его создать в движке)
+        engine.enemyProjectiles.push({
+            x: this.x,
+            y: this.y + 20,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 5
+        });
+    }
     }
 
     draw(ctx) {
@@ -375,7 +400,8 @@ class GameEngine {
         this.shake = 0;
          this.gameTime = 0;          // Таймер игры
         this.bossSpawned = false;    // Флаг, что босс уже вызван
-        this.boss = null;            // Ссылка на объект босса
+        this.boss = null;    
+        this.enemyProjectiles = [];        // Ссылка на объект босса
         
         this.setupListeners();
         
@@ -467,7 +493,24 @@ update(dt) {
 for (let i = this.projectiles.length - 1; i >= 0; i--) {
     let p = this.projectiles[i];
     p.y -= 700 * dt; 
+
+    if (this.boss) {
+        // Проверяем расстояние от пули до центра босса
+        const dist = Math.hypot(p.x - this.boss.x, p.y - this.boss.y);
+        if (dist < 60) { // 60 — радиус хитбокса босса
+            this.boss.hp -= 1; // Урон от одной пули
+            this.projectiles.splice(i, 1); // Удаляем пулю
+            this.shake = 3; // Легкая тряска при попадании
+            
+            if (this.boss.hp <= 0) {
+                this.handleBossDeath(); // Метод для победы
+            }
+            continue; // Идем к следующей пуле
+        }
+    }
     if (p.y < -20) this.projectiles.splice(i, 1);
+
+
 }
 
 // 4. Враги
