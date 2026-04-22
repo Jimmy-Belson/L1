@@ -899,15 +899,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     killBackgroundProcesses();
 
-    // 1. СНАЧАЛА жестко задаем размер канваса
     canvas.width = 900;
     canvas.height = 600;
 
-    // 2. ПОТОМ создаем движок (теперь корабль заспавнится четко внизу по координате 600)
+    // Создаем ОДИН экземпляр и привязываем его везде
     engine = new GameEngine(); 
+    window.engine = engine; // Теперь window.engine ссылается на ту же игру, что и engine
 
-    window.engine = new GameEngine();
-
-    // 3. Запускаем игру
     engine.loop();
 });
