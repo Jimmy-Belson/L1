@@ -247,3 +247,29 @@ if (p) {
         }
     } // Закрывает openPop
 }; // ЗАКРЫВАЕТ ВЕСЬ ОБЪЕКТ ChatModule (ЭТОЙ СКОБКИ НЕ ХВАТАЛО)
+
+// Ждем загрузки и вешаем событие напрямую на ID кнопки
+setTimeout(() => {
+    const btn = document.getElementById('chat-send-btn');
+    const input = document.getElementById('chat-in');
+
+    if (btn) {
+        btn.onclick = () => {
+            console.log("Кнопка нажата!");
+            // Вызываем метод напрямую из модуля, который мы экспортировали
+            if (typeof ChatModule !== 'undefined') {
+                ChatModule.send(window.Core);
+            }
+        };
+    }
+
+    if (input) {
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                if (typeof ChatModule !== 'undefined') {
+                    ChatModule.send(window.Core);
+                }
+            }
+        };
+    }
+}, 1000); // Задержка в 1 секунду, чтобы всё успело загрузиться

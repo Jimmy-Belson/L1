@@ -187,9 +187,24 @@ class Enemy {
     }
 
     update(dt) {
+    // Проверяем: началось ли время паники (между 115 и 120 секундами)
+    // И проверяем, что босс еще не появился официально
+    if (engine.gameTime > 115 && engine.gameTime < 120 && !engine.bossSpawned) {
+        
+        // 1. Ускоряем падение (в 3 раза быстрее обычного)
+        this.y += this.speed * 180 * dt; 
+
+        // 2. Добавляем "дрожание" влево-вправо (эффект страха)
+        this.x += (Math.random() - 0.5) * 15;
+
+        // 3. Визуальный эффект: моб начинает мигать белым
+        this.color = Math.random() > 0.5 ? '#ffffff' : this.color;
+
+    } else {
+        // ОБЫЧНОЕ ПОВЕДЕНИЕ (твой старый код)
         this.y += this.speed * 60 * dt;
     }
-
+}
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -287,6 +302,12 @@ class Boss {
     }
 
     update(dt) {
+    // Проверка смены фазы
+    if (this.phase === 1 && this.hp < this.maxHp / 2) {
+        this.phase = 2;
+        this.color = '#ffaa00'; // Меняем цвет на оранжевый (режим тревоги)
+        engine.shake = 50;      // Тряска при переходе
+    }
         // Плавный въезд на арену
         if (this.y < this.targetY) {
             this.y += 1.5 * 60 * dt;
@@ -300,77 +321,114 @@ class Boss {
         this.angle += 0.02 * 60 * dt;
 
 
-        // ЛОГИКА СТРЕЛЬБЫ
+ // ОБНОВЛЕННАЯ ЛОГИКА СТРЕЛЬБЫ
     this.shootTimer += dt;
-    if (this.shootTimer > 1.5) { // Стреляет каждые 1.5 секунды
+    
+    let interval = this.phase === 1 ? 1.5 : 0.8; // Во второй фазе стреляет почти в 2 раза чаще
+
+    if (this.shootTimer > interval) {
         this.shoot();
         this.shootTimer = 0;
     }
 }
 
 shoot() {
-    // Создаем 5 пуль веером
-    for (let i = -2; i <= 2; i++) {
-        const angle = Math.PI / 2 + (i * 0.2); // Направление вниз с разбросом
-        const speed = 4;
-        // Пушим пулю в глобальный массив (нам нужно его создать в движке)
-        engine.enemyProjectiles.push({
-            x: this.x,
-            y: this.y + 20,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            size: 5
-        });
-    }
-    }
-
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-
-        // --- ВНЕШНИЕ КОЛЬЦА (AAA ДЕТАЛИЗАЦИЯ) ---
-        ctx.strokeStyle = this.color;
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = this.color;
-        ctx.lineWidth = 2;
-
-        // Кольцо 1 (вращается вправо)
-        ctx.save();
-        ctx.rotate(this.angle);
-        ctx.beginPath();
-        ctx.arc(0, 0, 70, 0, Math.PI * 2);
-        ctx.stroke();
-        // Зазубрины на кольце
-        for(let i=0; i<4; i++) {
-            ctx.rotate(Math.PI/2);
-            ctx.strokeRect(65, -5, 10, 10);
+    if (this.phase === 1) {
+        // Старый веерный выстрел (как мы писали раньше)
+        for (let i = -2; i <= 2; i++) {
+            const angle = Math.PI / 2 + (i * 0.2);
+            this.spawnProjectile(angle, 4);
         }
-        ctx.restore();
+    } else {
+        // ФАЗА 2: Прицельный залп по игроку + веер
+        // 1. Считаем угол до игрока
+        const dx = engine.player.x - this.x;
+        const dy = engine.player.y - this.y;
+        const angleToPlayer = Math.atan2(dy, dx);
 
-        // Кольцо 2 (вращается влево)
-        ctx.save();
-        ctx.rotate(-this.angle * 1.5);
-        ctx.setLineDash([10, 15]);
-        ctx.beginPath();
-        ctx.arc(0, 0, 90, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-
-        // --- ЯДРО БОССА ---
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#fff';
-        ctx.shadowBlur = 40;
-        ctx.beginPath();
-        // Сложная форма ядра (ромб в квадрате)
-        ctx.moveTo(0, -30); ctx.lineTo(30, 0); ctx.lineTo(0, 30); ctx.lineTo(-30, 0);
-        ctx.closePath();
-        ctx.fill();
-
-        // --- ПОЛОСКА HP БОССА ---
-        this.drawUI(ctx);
-
-        ctx.restore();
+        // 2. Пускаем 3 быстрых пули точно в игрока
+        for (let i = -1; i <= 1; i++) {
+            this.spawnProjectile(angleToPlayer + (i * 0.1), 7); // Скорость выше!
+        }
     }
+}
+
+// Вспомогательный метод, чтобы не дублировать код
+spawnProjectile(angle, speed) {
+    engine.enemyProjectiles.push({
+        x: this.x,
+        y: this.y + 20,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 6
+    });
+}
+    
+
+// Внутри класса Boss
+draw(ctx) {
+    ctx.save(); // Сохраняем чистое состояние холста
+    
+    // --- 1. AAA ЭФФЕКТ: ГЛИТЧ (РАСЧЕТ КООРДИНАТ) ---
+    let gx = this.x; // Берем базовую позицию X
+    let gy = this.y; // Берем базовую позицию Y
+    
+    // Если вторая фаза, с шансом 20% смещаем координаты (дергаем модельку)
+    if (this.phase === 2 && Math.random() > 0.8) {
+        gx += Math.random() * 10 - 5; // Смещение от -5 до +5 пикселей
+        gy += Math.random() * 10 - 5;
+    }
+    
+    // --- 2. ТРАНСЛЕЙТ (ОСТАВЛЯЕМ! ИСПОЛЬЗУЕМ ГЛИТЧ-КООРДИНАТЫ) ---
+    // Мы переносим центр рисования в точку gx, gy.
+    // Теперь все moveTo, lineTo и arc будут считаться от этой точки (0,0).
+    ctx.translate(gx, gy);
+
+    // --- 3. ВНЕШНИЕ КОЛЬЦА (AAA ДЕТАЛИЗАЦИЯ) ---
+    // Убедись, что используешь ctx.strokeStyle = this.color, 
+    // чтобы цвет реально менялся на оранжевый во второй фазе.
+    ctx.strokeStyle = this.color; 
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = this.color;
+    ctx.lineWidth = 2;
+
+    // Кольцо 1 (вращается вправо)
+    ctx.save();
+    ctx.rotate(this.angle);
+    ctx.beginPath();
+    ctx.arc(0, 0, 70, 0, Math.PI * 2);
+    ctx.stroke();
+    // Зазубрины на кольце
+    for(let i=0; i<4; i++) {
+        ctx.rotate(Math.PI/2);
+        ctx.strokeRect(65, -5, 10, 10);
+    }
+    ctx.restore();
+
+    // Кольцо 2 (вращается влево)
+    ctx.save();
+    ctx.rotate(-this.angle * 1.5);
+    ctx.setLineDash([10, 15]); // Пунктирное кольцо
+    ctx.beginPath();
+    ctx.arc(0, 0, 90, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- 4. ЯДРО БОССА ---
+    ctx.setLineDash([]); // Сброс пунктира
+    ctx.fillStyle = '#fff'; // Ядро всегда белое и яркое
+    ctx.shadowBlur = 40;
+    ctx.beginPath();
+    // Сложная форма ядра (ромб в квадрате)
+    ctx.moveTo(0, -30); ctx.lineTo(30, 0); ctx.lineTo(0, 30); ctx.lineTo(-30, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- 5. ПОЛОСКА HP БОССА (UI) ---
+    this.drawUI(ctx); // Вызываем метод отрисовки UI (он тоже считается отgx, gy)
+
+    ctx.restore(); // Восстанавливаем холст (убираем глитч и транслейт для других объектов)
+}
 
     drawUI(ctx) {
         const barW = 300;
@@ -462,15 +520,27 @@ setupListeners() {
 update(dt) {
         if (!window.gameActive) return;
             // --- ВСТАВИТЬ ЭТО В НАЧАЛО UPDATE ---
-    this.gameTime += dt; 
+// Внутри GameEngine -> update(dt)
+this.gameTime += dt;
 
-    // Если прошло 120 сек и босса еще нет
-    if (this.gameTime >= 120 && !this.bossSpawned) {
-        this.bossSpawned = true;
-        this.enemies = []; // Очищаем экран от мелочи
-        this.shake = 30;   // Сильная тряска при появлении
-        this.boss = new Boss(); // Создаем босса
-    }
+// За 5 секунд до босса включаем "Панику" (на 115-й секунде)
+if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
+    this.enemies.forEach(e => {
+        e.speed *= 1.1; // Постепенно ускоряем их
+        e.color = '#fff'; // Меняем цвет на белый (эффект испуга/перегрузки)
+    });
+    
+    // Тряска экрана усиливается по мере приближения босса
+    this.shake = Math.max(this.shake, (this.gameTime - 115) * 2);
+}
+
+// Появление самого босса (на 120-й секунде)
+if (this.gameTime >= 120 && !this.bossSpawned) {
+    this.bossSpawned = true;
+    this.enemies = []; // Очищаем остатки
+    this.shake = 50;
+    this.boss = new Boss();
+}
 
     // Если босс на экране, обновляем его
     if (this.boss) {
@@ -503,13 +573,16 @@ for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
         // 1. Обновляем игрока (передаем dt)
         this.player.update(dt);
         
-        // 2. Спавн врагов
-        // Умножаем на 60, чтобы привязать логику к "тикам" в секунду
-        this.spawnTimer += dt * 60; 
-        if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL) {
-            this.enemies.push(new Enemy());
-            this.spawnTimer = 0;
-        }
+       // Внутри GameEngine -> update(dt)
+
+// 2. Спавн врагов (с защитой от боссфайта)
+this.spawnTimer += dt * 60; 
+
+// Добавляем проверку !this.boss (восклицательный знак означает "НЕТ")
+if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL && !this.boss) {
+    this.enemies.push(new Enemy());
+    this.spawnTimer = 0;
+}
 
         // 3. Пули (идем с конца массива)
 for (let i = this.projectiles.length - 1; i >= 0; i--) {
@@ -565,11 +638,23 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
         if (this.player.lives <= 0) this.gameOver();
     }
 }
-        // 5. Частицы
-        this.particles.forEach((p, i) => {
-            p.update(dt); // Передаем dt
-            if (p.life <= 0) this.particles.splice(i, 1);
-        });
+        // 5. Универсальное обновление частиц и спецэффектов
+for (let i = this.particles.length - 1; i >= 0; i--) {
+    let p = this.particles[i];
+
+    // Вызываем обновление, если оно есть у объекта
+    if (typeof p.update === 'function') {
+        p.update(dt);
+    }
+
+    // Условие удаления (универсальное)
+    const isDead = (p.life !== undefined && p.life <= 0);
+    const isfaded = (p.alpha !== undefined && p.alpha <= 0);
+
+    if (isDead || isfaded) {
+        this.particles.splice(i, 1);
+    }
+}
 
         // Внутри класса GameEngine, метод update
 const heatFill = document.getElementById('heat-fill');
@@ -588,18 +673,93 @@ if (heatFill) {
 }
     }
 
-    handleBossDeath() {
-    this.player.score += 5000; // Жирный бонус
-    this.shake = 100; // Эпичный взрыв
-    
-    // Создаем кучу золотых частиц
-    for(let i=0; i<100; i++) {
-        this.particles.push(new Particle(this.boss.x, this.boss.y, '#fff'));
+handleBossDeath() {
+    // 1. Замедляем игру (Slow-mo эффект)
+    const originalDt = 1; 
+    this.shake = 100;
+
+    // 2. Спавним ОГРОМНОЕ количество частиц разных цветов
+    for (let i = 0; i < 150; i++) {
+        const color = i % 2 === 0 ? this.boss.color : '#ffffff';
+        const p = new Particle(this.boss.x, this.boss.y, color);
+        p.speedX *= 3; // Разлетаются быстрее
+        p.speedY *= 3;
+        this.particles.push(p);
     }
-    
-    this.boss = null; // Убираем босса
-    this.gameTime = 0; // Сбрасываем таймер для следующего цикла (или следующего босса)
+
+    // 3. Создаем "Кольцо взрыва" (Shockwave)
+    this.spawnShockwave(this.boss.x, this.boss.y);
+
+    // 4. Награда
+    this.player.score += 5000;
+    this.spawnLoot(this.boss.x, this.boss.y);
+
+    this.boss = null;
     this.bossSpawned = false;
+    this.gameTime = 0; // Таймер игры сбрасывается для следующего цикла
+    
+    // СБРОС ТАЙМЕРА СПАВНА:
+    // Даем игроку 2-3 секунды тишины после победы
+    this.spawnTimer = -180; // (минус 180 тиков даст задержку примерно в 3 секунды)
+}
+
+spawnShockwave(x, y) {
+    const wave = {
+        x: x, y: y,
+        radius: 0,
+        maxRadius: 500,
+        alpha: 1,
+        update: function(dt) {
+            this.radius += 500 * dt;
+            this.alpha -= 0.02 * 60 * dt;
+        },
+        draw: function(ctx) {
+            ctx.save();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = Math.max(0, this.alpha);
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
+    
+    // Добавляем в массив частиц, чтобы движок его отрисовал
+    // (Убедись, что в update частиц у тебя есть проверка на наличие метода update у объекта)
+    this.particles.push(wave);
+}
+
+spawnLoot(x, y) {
+    // Создаем объект "Аптечка" или "Усилитель"
+    const loot = {
+        x: x,
+        y: y,
+        size: 15,
+        type: 'repair', // Восстановление жизней
+        color: '#00ff44'
+    };
+    
+    // Добавим его в массив врагов, чтобы не плодить новые массивы, 
+    // но дадим ему отрицательную скорость, чтобы он падал как бонус
+    this.enemies.push({
+        ...loot,
+        hp: 999, // Чтобы случайно не подстрелить
+        speed: 1,
+        scoreValue: 0,
+        update: function(dt) { this.y += this.speed * 60 * dt; },
+        draw: function(ctx) {
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = this.color;
+            ctx.strokeStyle = this.color;
+            ctx.strokeRect(this.x - 7, this.y - 7, 14, 14);
+            ctx.fillStyle = this.color;
+            ctx.font = '10px Orbitron';
+            ctx.fillText("REPAIR", this.x - 20, this.y - 15);
+            ctx.restore();
+        }
+    });
 }
 
 draw() {
