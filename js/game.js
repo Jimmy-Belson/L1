@@ -631,13 +631,21 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
    // РАССТОЯНИЕ ДО ОБЪЕКТА
 const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
 
-// 1. Проверка на выход за экран
+// 1. Проверка на выход за нижнюю границу экрана
 if (e.y > canvas.height + 50) {
+    // ЕСЛИ это был враг (а не аптечка) и НЕ время паники — наказываем
+    if (e.type !== 'repair' && this.gameTime < 115) {
+        this.player.lives--;
+        this.shake = 10;
+        if (this.player.lives <= 0) this.gameOver();
+    }
+
     this.enemies.splice(i, 1);
-    continue;
+    continue; 
 }
 
-// 2. Проверка столкновения с игроком
+// 2. Проверка столкновения с игроком (этот блок оставляем как был)
+const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
 if (distToPlayer < 30) {
     if (e.type === 'repair') {
         // Если это аптечка — ЛЕЧИМ
