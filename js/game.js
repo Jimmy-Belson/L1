@@ -637,44 +637,66 @@ if (e.y > canvas.height + 50) {
     continue;
 }
 
-// --- ОБЪЕДИНЕННАЯ ЛОГИКА СТОЛКНОВЕНИЙ И ПРОПУСКОВ ---
+// 4. Враги
+for (let i = this.enemies.length - 1; i >= 0; i--) {
+    let e = this.enemies[i];
+    e.update(dt);
+    
+    // Считаем расстояние до игрока ОДИН раз в начале цикла
+    const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
 
-// 1. Считаем расстояние до игрока один раз
-const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-
-// 2. Проверка: Враг/Бонус улетел за нижний край экрана
-if (e.y > canvas.height + 50) {
-    // Если это НЕ аптечка и НЕ время паники перед боссом — отнимаем жизнь
-    if (e.type !== 'repair' && this.gameTime < 115) {
-        this.player.lives--;
-        this.shake = 10;
-        if (this.player.lives <= 0) this.gameOver();
-    }
-    // В любом случае удаляем объект из массива
-    this.enemies.splice(i, 1);
-    continue; 
-}
-
-// 3. Проверка: Столкновение игрока с объектом (враг или бонус)
-if (distToPlayer < 30) {
-    if (e.type === 'repair') {
-        // ЛОГИКА АПТЕЧКИ: Лечим (макс 5) и даем очки
-        this.player.lives = Math.min(this.player.lives + 1, 5);
-        this.player.score += 500;
-        this.shake = 5;
-        console.log("%c[SYSTEM] REPAIR_KIT_APPLIED", "color: #00ff44; font-weight: bold;");
-    } else {
-        // ЛОГИКА ВРАГА: Бьем, если не паника
-        if (this.gameTime < 115) {
-            this.player.lives--;
-            this.shake = 15;
-            if (this.player.lives <= 0) this.gameOver();
+    // Проверка столкновения врагов с ТВОИМИ пулями
+    for (let j = this.projectiles.length - 1; j >= 0; j--) {
+        let p = this.projectiles[j];
+        if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
+            if (e.type === 'repair') continue; // Пули летят сквозь аптечку
+            e.hp--;
+            this.projectiles.splice(j, 1);
+            if (e.hp <= 0) break;
         }
     }
-    
-    // Удаляем после контакта
-    this.enemies.splice(i, 1);
-    continue;
+
+    if (e.hp <= 0) {
+        this.player.score += e.scoreValue;
+        for(let j=0; j<8; j++) this.particles.push(new Particle(e.x, e.y, e.color));
+        this.enemies.splice(i, 1);
+        continue;
+    }
+
+    // --- ОБЪЕДИНЕННАЯ ЛОГИКА ПРОПУСКОВ И СТОЛКНОВЕНИЙ ---
+
+    // 1. Проверка: Объект улетел за нижний край экрана
+    if (e.y > canvas.height + 50) {
+        // Если пропустили врага (не аптечку) и не в режиме паники — минус жизнь
+        if (e.type !== 'repair' && this.gameTime < 115) {
+            this.player.lives--;
+            this.shake = 10;
+            if (this.player.lives <= 0) this.gameOver();
+        }
+        this.enemies.splice(i, 1);
+        continue; 
+    }
+
+    // 2. Проверка: Прямое столкновение игрока с объектом
+    if (distToPlayer < 30) {
+        if (e.type === 'repair') {
+            // Подобрали аптечку
+            this.player.lives = Math.min(this.player.lives + 1, 5);
+            this.player.score += 500;
+            this.shake = 5;
+            console.log("%c[SYSTEM] REPAIR_KIT_APPLIED", "color: #00ff44");
+        } else {
+            // Врезались во врага
+            if (this.gameTime < 115) {
+                this.player.lives--;
+                this.shake = 15;
+                if (this.player.lives <= 0) this.gameOver();
+            }
+        }
+        
+        this.enemies.splice(i, 1);
+        continue;
+    }
 }
 }
         // 5. Универсальное обновление частиц и спецэффектов
