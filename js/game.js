@@ -631,30 +631,40 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
    // РАССТОЯНИЕ ДО ОБЪЕКТА
 const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
 
-// 1. Проверка на выход за нижнюю границу экрана
+// 1. Проверка на выход за экран
 if (e.y > canvas.height + 50) {
-    // ЕСЛИ это был враг (а не аптечка) и НЕ время паники — наказываем
+    this.enemies.splice(i, 1);
+    continue;
+}
+
+// --- ОБЪЕДИНЕННАЯ ЛОГИКА СТОЛКНОВЕНИЙ И ПРОПУСКОВ ---
+
+// 1. Считаем расстояние до игрока один раз
+const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
+
+// 2. Проверка: Враг/Бонус улетел за нижний край экрана
+if (e.y > canvas.height + 50) {
+    // Если это НЕ аптечка и НЕ время паники перед боссом — отнимаем жизнь
     if (e.type !== 'repair' && this.gameTime < 115) {
         this.player.lives--;
         this.shake = 10;
         if (this.player.lives <= 0) this.gameOver();
     }
-
+    // В любом случае удаляем объект из массива
     this.enemies.splice(i, 1);
     continue; 
 }
 
-// 2. Проверка столкновения с игроком (этот блок оставляем как был)
-const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
+// 3. Проверка: Столкновение игрока с объектом (враг или бонус)
 if (distToPlayer < 30) {
     if (e.type === 'repair') {
-        // Если это аптечка — ЛЕЧИМ
-        this.player.lives = Math.min(this.player.lives + 1, 5); 
+        // ЛОГИКА АПТЕЧКИ: Лечим (макс 5) и даем очки
+        this.player.lives = Math.min(this.player.lives + 1, 5);
         this.player.score += 500;
         this.shake = 5;
-        console.log("REPAIR_KIT_PICKED_UP");
+        console.log("%c[SYSTEM] REPAIR_KIT_APPLIED", "color: #00ff44; font-weight: bold;");
     } else {
-        // Если это обычный враг — БЬЕМ (но только если не фаза паники)
+        // ЛОГИКА ВРАГА: Бьем, если не паника
         if (this.gameTime < 115) {
             this.player.lives--;
             this.shake = 15;
@@ -662,7 +672,7 @@ if (distToPlayer < 30) {
         }
     }
     
-    // В обоих случаях удаляем объект из игры
+    // Удаляем после контакта
     this.enemies.splice(i, 1);
     continue;
 }
