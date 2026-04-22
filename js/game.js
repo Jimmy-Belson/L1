@@ -477,6 +477,28 @@ update(dt) {
         this.boss.update(dt);
     }
 
+    // Обновление вражеских снарядов
+for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
+    let ep = this.enemyProjectiles[i];
+    ep.x += ep.vx * 60 * dt;
+    ep.y += ep.vy * 60 * dt;
+
+    // Проверка столкновения с игроком
+    const dist = Math.hypot(ep.x - this.player.x, ep.y - this.player.y);
+    if (dist < 25) {
+        this.player.lives--;
+        this.shake = 20;
+        this.enemyProjectiles.splice(i, 1);
+        if (this.player.lives <= 0) this.gameOver();
+        continue;
+    }
+
+    // Удаление за экраном
+    if (ep.y > canvas.height + 20 || ep.x < -20 || ep.x > canvas.width + 20) {
+        this.enemyProjectiles.splice(i, 1);
+    }
+}
+
 
         // 1. Обновляем игрока (передаем dt)
         this.player.update(dt);
@@ -566,6 +588,20 @@ if (heatFill) {
 }
     }
 
+    handleBossDeath() {
+    this.player.score += 5000; // Жирный бонус
+    this.shake = 100; // Эпичный взрыв
+    
+    // Создаем кучу золотых частиц
+    for(let i=0; i<100; i++) {
+        this.particles.push(new Particle(this.boss.x, this.boss.y, '#fff'));
+    }
+    
+    this.boss = null; // Убираем босса
+    this.gameTime = 0; // Сбрасываем таймер для следующего цикла (или следующего босса)
+    this.bossSpawned = false;
+}
+
 draw() {
     // 1. Чистим холст
     ctx.fillStyle = '#01050a';
@@ -582,6 +618,15 @@ draw() {
     // 3. Отрисовка игровых объектов
     this.particles.forEach(p => p.draw(ctx));
     this.enemies.forEach(e => e.draw(ctx));
+
+    this.enemyProjectiles.forEach(ep => {
+    ctx.fillStyle = '#ff0055';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ff0055';
+    ctx.beginPath();
+    ctx.arc(ep.x, ep.y, ep.size, 0, Math.PI * 2);
+    ctx.fill();
+});
 
      // --- ВСТАВИТЬ ЭТО ---
     if (this.boss) {
