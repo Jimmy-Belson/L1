@@ -283,12 +283,16 @@ class Enemy {
 class Boss {
     constructor() {
         this.x = canvas.width / 2;
-        this.y = -150;          // Появляется сверху за экраном
-        this.targetY = 120;     // Остановится на этой высоте
-        this.hp = 100;          // Жизни
+        this.y = -150;
+        this.targetY = 120;
+        this.hp = 100;
         this.maxHp = 100;
-        this.color = '#ff0055'; // Цвет первого босса (Кроваво-розовый)
-        this.angle = 0;         // Для вращения колец
+        
+        // ВОТ ЭТОЙ СТРОЧКИ НЕ ХВАТАЛО:
+        this.phase = 1; 
+
+        this.color = '#ff0055';
+        this.angle = 0;
         this.moveTimer = 0;
         this.shootTimer = 0;
     }
