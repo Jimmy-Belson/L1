@@ -673,6 +673,20 @@ if (heatFill) {
 }
     }
 
+    // Внутри класса GameEngine
+skipToBoss() {
+    console.log("%c[DEBUG] JUMPING_TO_BOSS_PHASE", "color: #00ffff; font-weight: bold;");
+    
+    // Прыгаем на 114-ю секунду (за 1 секунду до начала паники)
+    this.gameTime = 114; 
+    
+    // Очищаем текущих врагов, чтобы не мешались
+    this.enemies = []; 
+    
+    // Даем визуальный фидбек
+    this.shake = 30;
+}
+
 handleBossDeath() {
     // 1. Замедляем игру (Slow-mo эффект)
     const originalDt = 1; 
