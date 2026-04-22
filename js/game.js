@@ -330,25 +330,26 @@ class Boss {
 
 shoot() {
     if (this.phase === 1) {
-        // Старый веерный выстрел (как мы писали раньше)
+        // Первая фаза: обычный веер из 5 шаров вниз
         for (let i = -2; i <= 2; i++) {
             const angle = Math.PI / 2 + (i * 0.2);
             this.spawnProjectile(angle, 4);
         }
     } else {
-        // ФАЗА 2: Прицельный залп по игроку + веер
-        // 1. Считаем угол до игрока
-        const dx = engine.player.x - this.x;
-        const dy = engine.player.y - this.y;
-        const angleToPlayer = Math.atan2(dy, dx);
-
-        // 2. Пускаем 3 быстрых пули точно в игрока
-        for (let i = -1; i <= 1; i++) {
-            this.spawnProjectile(angleToPlayer + (i * 0.1), 7); // Скорость выше!
+        // ФАЗА 2: ХАОТИЧНЫЙ ОБСТРЕЛ (Chaos Mode)
+        // Выпускаем, например, 5 шаров за один раз в абсолютно случайных направлениях
+        for (let i = 0; i < 5; i++) {
+            // Случайный угол от 0 до 360 градусов (в радианах это 0...Math.PI * 2)
+            const randomAngle = Math.random() * Math.PI * 2;
+            
+            // Случайная скорость, чтобы шары летели неравномерно
+            const randomSpeed = 3 + Math.random() * 5; 
+            
+            // Спавним оранжевый шар (размер 8)
+            this.spawnProjectile(randomAngle, randomSpeed, 8, '#ffaa00');
         }
     }
 }
-
 // Вспомогательный метод, чтобы не дублировать код
 spawnProjectile(angle, speed) {
     engine.enemyProjectiles.push({
@@ -790,12 +791,16 @@ draw() {
     this.enemies.forEach(e => e.draw(ctx));
 
     this.enemyProjectiles.forEach(ep => {
-    ctx.fillStyle = '#ff0055';
+    ctx.save();
+    // Используем цвет из объекта снаряда, если он есть
+    ctx.fillStyle = ep.color || '#ff0055'; 
     ctx.shadowBlur = 10;
-    ctx.shadowColor = '#ff0055';
+    ctx.shadowColor = ep.color || '#ff0055';
+    
     ctx.beginPath();
     ctx.arc(ep.x, ep.y, ep.size, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 });
 
      // --- ВСТАВИТЬ ЭТО ---
