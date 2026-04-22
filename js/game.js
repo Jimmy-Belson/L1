@@ -906,6 +906,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. ПОТОМ создаем движок (теперь корабль заспавнится четко внизу по координате 600)
     engine = new GameEngine(); 
 
+    window.engine = new GameEngine();
+
     // 3. Запускаем игру
     engine.loop();
 });
