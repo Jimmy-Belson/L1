@@ -902,9 +902,13 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = 900;
     canvas.height = 600;
 
-    // Создаем ОДИН экземпляр и привязываем его везде
-    engine = new GameEngine(); 
-    window.engine = engine; // Теперь window.engine ссылается на ту же игру, что и engine
+    // 1. Создаем движок ОДИН раз
+    const gameInstance = new GameEngine(); 
 
+    // 2. Привязываем его к глобальным переменным
+    engine = gameInstance;         // для внутреннего кода (loop)
+    window.engine = gameInstance;  // для КОНСОЛИ (чтобы не было Uncaught ReferenceError)
+
+    // 3. Запускаем
     engine.loop();
 });
