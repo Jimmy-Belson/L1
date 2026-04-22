@@ -320,7 +320,7 @@ class Boss {
  // ОБНОВЛЕННАЯ ЛОГИКА СТРЕЛЬБЫ
     this.shootTimer += dt;
     
-    let interval = this.phase === 1 ? 1.5 : 0.4; // Во второй фазе стреляет почти в 2 раза чаще
+    let interval = this.phase === 1 ? 1.5 : 0.3; // Во второй фазе стреляет почти в 2 раза чаще
 
     if (this.shootTimer > interval) {
         this.shoot();
@@ -338,7 +338,7 @@ shoot() {
     } else {
         // ФАЗА 2: ХАОТИЧНЫЙ ОБСТРЕЛ (Chaos Mode)
         // Выпускаем, например, 5 шаров за один раз в абсолютно случайных направлениях
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 12; i++) {
             // Случайный угол от 0 до 360 градусов (в радианах это 0...Math.PI * 2)
             const randomAngle = Math.random() * Math.PI * 2;
             
@@ -628,12 +628,36 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
     }
 
     // Пропуск или смерть игрока
-    if (e.y > canvas.height + 50 || Math.hypot(e.x - this.player.x, e.y - this.player.y) < 30) {
-        this.enemies.splice(i, 1);
-        this.player.lives--;
-        this.shake = 15;
-        if (this.player.lives <= 0) this.gameOver();
+   // РАССТОЯНИЕ ДО ОБЪЕКТА
+const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
+
+// 1. Проверка на выход за экран
+if (e.y > canvas.height + 50) {
+    this.enemies.splice(i, 1);
+    continue;
+}
+
+// 2. Проверка столкновения с игроком
+if (distToPlayer < 30) {
+    if (e.type === 'repair') {
+        // Если это аптечка — ЛЕЧИМ
+        this.player.lives = Math.min(this.player.lives + 1, 5); 
+        this.player.score += 500;
+        this.shake = 5;
+        console.log("REPAIR_KIT_PICKED_UP");
+    } else {
+        // Если это обычный враг — БЬЕМ (но только если не фаза паники)
+        if (this.gameTime < 115) {
+            this.player.lives--;
+            this.shake = 15;
+            if (this.player.lives <= 0) this.gameOver();
+        }
     }
+    
+    // В обоих случаях удаляем объект из игры
+    this.enemies.splice(i, 1);
+    continue;
+}
 }
         // 5. Универсальное обновление частиц и спецэффектов
 for (let i = this.particles.length - 1; i >= 0; i--) {
