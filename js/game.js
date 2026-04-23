@@ -684,7 +684,7 @@ triggerMimicPrank() {
     }, 2000);
 }
 
-SetupListeners() {
+setupListeners() {
     // 1. Клики и стрельба
     window.addEventListener('mousedown', (e) => {
         if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
