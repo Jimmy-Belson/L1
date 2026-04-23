@@ -199,6 +199,9 @@ class Enemy {
     }
 
     update(dt) {
+
+         if (this.isGlitching) return; 
+
     if (engine.gameTime > 115 && engine.gameTime < 120 && !engine.bossSpawned) {
         // Улетают ВВЕРХ (минус speed) и в стороны от центра
         this.y -= this.speed * 100 * dt; 
@@ -686,7 +689,8 @@ class GameEngine {
         this.particles = [];
         this.spawnTimer = 0;
         this.shake = 0;
-         this.gameTime = 0;          // Таймер игры
+        this.enemiesExploded = false;
+        this.gameTime = 0;          // Таймер игры
         this.bossSpawned = false;    // Флаг, что босс уже вызван
         this.boss = null;    
         this.enemyProjectiles = [];   
@@ -862,21 +866,27 @@ if (this.gameTime >= 235 && this.gameTime < 238) {
     this.shake = 2; // Легкий гул
 }
 
-// 3. ФАЗА "ВЗРЫВА" (Ровно в 238 сек): Уничтожаем тех, кто заглючил
-if (this.gameTime >= 238 && this.gameTime < 238.2 && this.enemies.length > 0) {
+// 3. ФАЗА "ВЗРЫВА" (Ровно в 238 сек)
+if (this.gameTime >= 238 && !this.enemiesExploded) { 
     this.enemies.forEach(e => {
-        // Создаем частицы на месте каждого моба
+        // Создаем частицы взрыва
         for (let j = 0; j < 15; j++) {
             let p = new Particle(e.x, e.y, e.color);
-            p.speedX *= 3; p.speedY *= 3;
+            p.speedX *= 3; 
+            p.speedY *= 3;
             p.size = Math.random() * 6;
             this.particles.push(p);
         }
     });
-    this.enemies = []; // Очищаем экран навсегда перед боссом
-    this.shake = 50;   // Бабах!
+    
+    this.enemies = []; // Очищаем массив
+    this.enemiesExploded = true; // Флаг, чтобы не взрывать пустой массив каждый кадр
+    this.shake = 50; 
     this.player.invulTimer = 3; 
 }
+
+// Сбрось флаг где-нибудь в начале игры или при спавне Мимика
+// (добавь this.enemiesExploded = false в constructor GameEngine)
 
 // 4. БОСС №2: MIMIC (на 240 сек)
 if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
@@ -1218,7 +1228,7 @@ spawnLoot(x, y) {
     });
 }
 
-draw() {
+draw(ctx) {
     // 1. Чистим холст
     ctx.fillStyle = '#01050a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
