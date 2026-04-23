@@ -590,7 +590,7 @@ for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
 this.spawnTimer += dt * 60; 
 
 // Добавляем проверку !this.boss (восклицательный знак означает "НЕТ")
-if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL && !this.boss) {
+if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL && !this.boss && this.bossTitleTimer <= 0) {
     this.enemies.push(new Enemy());
     this.spawnTimer = 0;
 }
