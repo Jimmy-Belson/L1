@@ -283,126 +283,133 @@ class Enemy {
 class MimicBoss {
     constructor() {
         this.x = canvas.width / 2;
-        this.y = -150;
-        this.targetY = 140; // Он висит над нами
-        this.hp = 400;
-        this.maxHp = 400;
+        this.y = -100;
+        this.targetY = 140;
+        this.hp = 500;
+        this.maxHp = 500;
         
         this.type = 'mimic';
         this.hasResurrected = false;
-        
-        // Сильная задержка, чтобы игрок успевал "выскочить" из-под луча
-        this.followSpeed = 0.015; 
-        
-        this.state = 'follow'; 
-        this.stateTimer = 0;
         this.color = '#ff0055';
-        this.chargeProgress = 0; // Для визуализации зарядки луча
+        
+        // Настройки механик
+        this.followSpeed = 0.015; // Большая задержка
+        this.clones = []; // Массив для активных клонов
+        this.cloneTimer = 0;
+        this.inversionTimer = 0;
     }
 
     update(dt) {
-        if (this.y < this.targetY) this.y += 1 * 60 * dt;
-        this.stateTimer += dt;
+        if (this.y < this.targetY) this.y += 1.5 * 60 * dt;
 
-        // Переключение фаз
-        if (this.state === 'follow' && this.stateTimer > 4) {
-            this.state = 'charging';
-            this.stateTimer = 0;
-            this.chargeProgress = 0;
+        // 1. Основное преследование
+        let dx = engine.player.x - this.x;
+        this.x += dx * this.followSpeed * (60 * dt);
+
+        // 2. Логика Клонов
+        this.cloneTimer += dt;
+        if (this.cloneTimer > 6) { // Каждые 6 сек
+            this.spawnClone();
+            this.cloneTimer = 0;
         }
-
-        // --- ЛОГИКА ФАЗ ---
-        if (this.state === 'follow') {
-            // Он медленно плывет за игроком
-            const dx = engine.player.x - this.x;
-            this.x += dx * this.followSpeed * (60 * dt);
-        } 
         
-        if (this.state === 'charging') {
-            this.chargeProgress += dt;
-            // Во время зарядки он замирает на месте! Это шанс его бить.
-            if (this.chargeProgress >= 1.5) {
-                this.state = 'beam';
-                this.stateTimer = 0;
-                engine.shake = 20;
-            }
-        }
+        // Обновляем клонов (они просто следуют за игроком)
+        this.clones.forEach((c, index) => {
+            c.life -= dt;
+            let cdx = engine.player.x - c.x;
+            c.x += cdx * 0.05 * (60 * dt); // Клоны чуть быстрее самого босса
+            if (c.life <= 0) this.clones.splice(index, 1);
+        });
 
-        if (this.state === 'beam') {
-            // Луч бьет 2 секунды, потом возврат в follow
-            if (this.stateTimer > 2) {
-                this.state = 'follow';
-                this.stateTimer = 0;
-            }
+        // 3. Логика Инверсии
+        this.inversionTimer += dt;
+        if (this.inversionTimer > 10) {
+            this.triggerInversion();
+            this.inversionTimer = 0;
         }
     }
 
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        
-        // Зеркальная моделька (твоя отрисовка)
-        ctx.scale(1, -1);
-        
-        if (this.state === 'charging') {
-            // Эффект накопления энергии в носу корабля
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(0, -30, 10 * Math.sin(Date.now()/50), 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        this.renderMimicShip(ctx, this.color, 1.0);
-        ctx.restore();
-
-        // --- ОТРИСОВКА ЛУЧА (Вне scale) ---
-        if (this.state === 'beam') {
-            this.drawVerticalBeam(ctx);
-        }
-
-        this.drawUI(ctx);
+    spawnClone() {
+        // Клон появляется со смещением
+        this.clones.push({
+            x: this.x + (Math.random() > 0.5 ? 200 : -200),
+            y: this.y + 50,
+            life: 3.5 // Живет 3.5 секунды
+        });
+        engine.shake = 10;
     }
 
-    drawVerticalBeam(ctx) {
-        ctx.save();
-        const beamWidth = 60;
-        const gradient = ctx.createLinearGradient(this.x - beamWidth/2, 0, this.x + beamWidth/2, 0);
-        gradient.addColorStop(0, 'transparent');
-        gradient.addColorStop(0.5, this.color);
-        gradient.addColorStop(1, 'transparent');
-
-        ctx.fillStyle = gradient;
-        ctx.globalAlpha = 0.6 + Math.random() * 0.4;
-        // Луч идет от босса до самого низа экрана
-        ctx.fillRect(this.x - beamWidth/2, this.y, beamWidth, canvas.height);
+    triggerInversion() {
+        engine.player.isInverted = true;
+        engine.bossTitleText = "CRITICAL ERROR: INPUT REVERSED";
+        engine.bossTitleTimer = 2.0;
         
-        // Проверка урона (так как игрок только по X движется)
-        if (Math.abs(engine.player.x - this.x) < beamWidth/2) {
-            engine.player.hp -= 1; 
-            engine.shake = 5;
-        }
-        ctx.restore();
+        setTimeout(() => {
+            engine.player.isInverted = false;
+        }, 3000); // Инверсия на 3 секунды
     }
 
-    // Твой mirrorShot теперь выпускает "ошибки", которые стоят на пути
+    // Вызывается из GameEngine при клике игрока
     mirrorShot() {
-        if (this.state === 'beam') return;
-
-        // Создаем "статичную" пулю-мину
-        engine.enemyProjectiles.push({
-            x: this.x,
-            y: this.y + 30,
-            vx: 0,
-            vy: 3, // Медленно плывет вниз, преграждая путь
-            size: 8,
-            color: '#00f2ff',
-            isStatic: true // Можно добавить флаг, чтобы она мерцала как баг
+        // Стреляет сам босс
+        this.createProjectile(this.x, this.y);
+        
+        // Стреляют все живые клоны
+        this.clones.forEach(c => {
+            this.createProjectile(c.x, c.y);
         });
     }
 
-    // Твой renderMimicShip тут...
-    renderMimicShip(ctx, color, alpha) {
-        // (Тот код, который ты скинул, с корпусом, кабиной и двигателями)
+    createProjectile(x, y) {
+        engine.enemyProjectiles.push({
+            x: x,
+            y: y + 20,
+            vx: 0,
+            vy: 7,
+            size: 5,
+            color: '#ff0055'
+        });
+    }
+
+    draw(ctx) {
+        // Рисуем клонов (полупрозрачные)
+        this.clones.forEach(c => {
+            this.drawShipAt(ctx, c.x, c.y, 0.4);
+        });
+
+        // Рисуем основного босса
+        this.drawShipAt(ctx, this.x, this.y, 1.0);
+        
+        this.drawUI(ctx);
+    }
+
+    drawShipAt(ctx, x, y, alpha) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(1, -1); // Смотрит на игрока
+        ctx.globalAlpha = alpha;
+
+        // Используем твою геометрию Aegis
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+
+        ctx.beginPath();
+        ctx.moveTo(0, -25); ctx.lineTo(8, -10); ctx.lineTo(25, 15);
+        ctx.lineTo(10, 15); ctx.lineTo(0, 5); ctx.lineTo(-10, 15);
+        ctx.lineTo(-25, 15); ctx.lineTo(-8, -10);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Кабина и механизмы
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
     }
 
     drawUI(ctx) {
