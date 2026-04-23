@@ -299,7 +299,7 @@ class MimicBoss {
 
         // УВЕЛИЧЕННАЯ СКОРОСТЬ
         this.moveDir = 1;
-        this.vx = 8; // Было 3, теперь 8 — он носится очень быстро
+        this.vx = 5; // Было 3, теперь 8 — он носится очень быстро
     }
 
     update(dt) {
@@ -315,7 +315,7 @@ class MimicBoss {
             if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
 
             // УВЕЛИЧЕННАЯ ЧАСТОТА СТРЕЛЬБЫ (Шанс 10% каждый кадр)
-            if (Math.random() > 0.90) this.shootSmall();
+            if (Math.random() > 0.80) this.shootSmall();
 
             if (this.stateTimer > 3) { // Чаще меняет состояния
                 const rand = Math.random();
@@ -350,7 +350,7 @@ class MimicBoss {
 
         else if (this.state === 'barrage') {
             // УВЕЛИЧЕНО КОЛИЧЕСТВО ШАРОВ: выпускает по 3 за раз
-            for(let i = 0; i < 3; i++) {
+            for(let i = 0; i < 2; i++) {
                 this.shootBarrage();
             }
             if (this.stateTimer > 2.5) {
