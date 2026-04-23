@@ -303,103 +303,99 @@ class MimicBoss {
     }
 
     update(dt) {
+    // 1. Плавный въезд босса на экран (только если не в режиме тарана)
     if (this.y < this.targetY && this.state !== 'dash') {
         this.y += 2 * 60 * dt;
     }
 
     this.stateTimer += dt;
 
-    if (this.state === 'move') {
-        this.x += this.vx * this.moveDir * (60 * dt);
-        if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
-        if (Math.random() > 0.90) this.shootSmall();
+    // --- МАШИНА СОСТОЯНИЙ ---
+    switch (this.state) {
+        case 'move':
+            // Движение влево-вправо
+            this.x += this.vx * this.moveDir * (60 * dt);
+            if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
+            
+            // Обычная стрельба
+            if (Math.random() > 0.90) this.shootSmall();
 
-        if (this.stateTimer > 3) {
-            const rand = Math.random();
-            if (rand < 0.4) this.state = 'dash';
-            else if (rand < 0.7) this.state = 'barrage';
-            else this.state = 'grab';
-            this.stateTimer = 0;
-            this.hitDealt = false; // Сброс урона перед тараном
-        }
-    } 
+            // Переход в другие состояния
+            if (this.stateTimer > 3) {
+                const rand = Math.random();
+                if (rand < 0.3) this.state = 'dash';
+                else if (rand < 0.6) this.state = 'barrage';
+                else this.state = 'grab';
+                
+                this.stateTimer = 0;
+                this.hitDealt = false; // Сброс урона для тарана
+            }
+            break;
 
-else if (this.state === 'dash') {
-        if (this.stateTimer < 0.8) {
-            this.x += Math.sin(Date.now()) * 10;
-        } else {
-            let prevY = this.y; 
-            this.y += 40 * (60 * dt); // Скорость падения
+        case 'dash':
+            if (this.stateTimer < 0.8) {
+                this.x += Math.sin(Date.now() * 0.5) * 10; // Тряска перед броском
+            } else {
+                let prevY = this.y;
+                this.y += 40 * (60 * dt); // Полет вниз
 
-            // ПРОВЕРКА ТАРАНА
-            // 1. Проверяем, находится ли игрок под боссом по горизонтали
-            if (Math.abs(this.x - engine.player.x) < 80) {
-                // 2. Проверяем, пересек ли босс линию игрока по вертикали в этом кадре
-                if (prevY <= engine.player.y && this.y >= engine.player.y) {
-                    if (!this.hitDealt) {
-                        engine.player.lives--; // В твоем движке жизни называются lives, а не hp!
-                        engine.shake = 60;
-                        this.hitDealt = true; 
-                        console.log("MIMIC RAMMED YOU!");
+                // Проверка тарана (урон игроку)
+                if (Math.abs(this.x - engine.player.x) < 80) {
+                    if (prevY <= engine.player.y && this.y >= engine.player.y) {
+                        if (!this.hitDealt) {
+                            engine.player.lives--; // Минус жизнь
+                            engine.shake = 60;
+                            this.hitDealt = true;
+                        }
                     }
                 }
-            }
 
-            if (this.y > canvas.height + 200) {
-                this.y = -100; 
+                // Возврат босса сверху
+                if (this.y > canvas.height + 200) {
+                    this.y = -200;
+                    this.state = 'move';
+                    this.stateTimer = 0;
+                }
+            }
+            break;
+
+        case 'barrage':
+            // Шквал пуль (по 3 штуки за кадр)
+            for (let i = 0; i < 3; i++) {
+                this.shootBarrage();
+            }
+            if (this.stateTimer > 2.5) {
                 this.state = 'move';
                 this.stateTimer = 0;
-                this.hitDealt = false; // Сбрасываем для следующего раза
             }
-        }
-    }
+            break;
 
-    else if (this.state === 'grab') {
-        if (!this.isGrabbed) {
-            this.isGrabbed = true;
-            this.executionProjectileSpawned = false;
-            this.fPresses = 0;
-        }
-        
-        // Притягиваем игрока (но оставляем ему шанс дергаться)
-        engine.player.x += (this.x - engine.player.x) * 0.1;
-
-        if (this.stateTimer > 1.5 && !this.executionProjectileSpawned) {
-            this.shootExecution();
-            this.executionProjectileSpawned = true;
-        }
-
-        if (this.fPresses >= 3) {
-            this.isGrabbed = false;
-            this.state = 'move';
-            this.stateTimer = 0;
-        }
-    }
-
-        else if (this.state === 'grab') {
+        case 'grab':
             if (!this.isGrabbed) {
                 this.isGrabbed = true;
                 this.executionProjectileSpawned = false;
                 this.fPresses = 0;
             }
             
-            // Плавное притягивание
-            engine.player.x += (this.x - engine.player.x) * 0.1;
+            // Притягиваем игрока к центру босса
+            engine.player.x += (this.x - engine.player.x) * (0.1 * 60 * dt);
 
-            // ПУЛЯ-КАЗНЬ: если игрок не успел освободиться за 1.5 секунды
+            // Выстрел самонаводящейся пулей-казнью через 1.5 сек
             if (this.stateTimer > 1.5 && !this.executionProjectileSpawned) {
                 this.shootExecution();
                 this.executionProjectileSpawned = true;
             }
 
-            if (this.fPresses >= 3) {
+            // Условие освобождения (3 нажатия F) или автоматический конец фазы через 4 сек
+            if (this.fPresses >= 3 || this.stateTimer > 4) {
                 this.isGrabbed = false;
                 this.state = 'move';
                 this.stateTimer = 0;
                 engine.shake = 20;
             }
-        }
+            break;
     }
+}
 
     shootSmall() {
         engine.enemyProjectiles.push({ x: this.x, y: this.y + 20, vx: (Math.random()-0.5)*4, vy: 10, size: 5, color: this.color });
@@ -735,10 +731,6 @@ setupListeners() {
             if (this.player.heat >= 100) this.player.overheated = true;
             this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
 
-            // Зеркальный выстрел Мимика (оставь, если хочешь, чтобы он отвечал на клики в фазе движения)
-            if (this.boss && this.boss.type === 'mimic' && !this.boss.isGrabbed) {
-                this.boss.mirrorShot();
-            }
             
             this.shake = 2;
         }
