@@ -285,16 +285,15 @@ class MimicBoss {
         this.x = canvas.width / 2;
         this.y = -100;
         this.targetY = 140;
-        this.hp = 500;
-        this.maxHp = 500;
+        this.hp = 600; // Увеличил HP, так как босс финальный
+        this.maxHp = 600;
         
         this.type = 'mimic';
         this.hasResurrected = false;
         this.color = '#ff0055';
         
-        // Настройки механик
-        this.followSpeed = 0.015; // Большая задержка
-        this.clones = []; // Массив для активных клонов
+        this.followSpeed = 0.015; 
+        this.clones = []; 
         this.cloneTimer = 0;
         this.inversionTimer = 0;
     }
@@ -302,99 +301,105 @@ class MimicBoss {
     update(dt) {
         if (this.y < this.targetY) this.y += 1.5 * 60 * dt;
 
-        // 1. Основное преследование
+        // 1. Основное преследование (с задержкой)
         let dx = engine.player.x - this.x;
         this.x += dx * this.followSpeed * (60 * dt);
 
-        // 2. Логика Клонов
+        // 2. Логика 4-х Иллюзий
         this.cloneTimer += dt;
-        if (this.cloneTimer > 6) { // Каждые 6 сек
-            this.spawnClone();
+        if (this.cloneTimer > 8) { // Раз в 8 сек вызываем подмогу
+            this.spawnClones(4);
             this.cloneTimer = 0;
         }
         
-        // Обновляем клонов (они просто следуют за игроком)
         this.clones.forEach((c, index) => {
             c.life -= dt;
+            c.shootTimer -= dt;
+
+            // Иллюзии следуют за игроком чуть активнее
             let cdx = engine.player.x - c.x;
-            c.x += cdx * 0.05 * (60 * dt); // Клоны чуть быстрее самого босса
+            c.x += cdx * 0.04 * (60 * dt);
+
+            // АВТО-СТРЕЛЬБА КЛОНОВ (каждые 0.8 сек)
+            if (c.shootTimer <= 0) {
+                this.createProjectile(c.x, c.y, '#00f2ff'); // Клоны стреляют голубым
+                c.shootTimer = 0.8;
+            }
+
             if (c.life <= 0) this.clones.splice(index, 1);
         });
 
-        // 3. Логика Инверсии
+        // 3. Логика Инверсии (на 5 секунд)
         this.inversionTimer += dt;
-        if (this.inversionTimer > 10) {
+        if (this.inversionTimer > 12) {
             this.triggerInversion();
             this.inversionTimer = 0;
         }
     }
 
-    spawnClone() {
-        // Клон появляется со смещением
-        this.clones.push({
-            x: this.x + (Math.random() > 0.5 ? 200 : -200),
-            y: this.y + 50,
-            life: 3.5 // Живет 3.5 секунды
-        });
-        engine.shake = 10;
+    spawnClones(count) {
+        for (let i = 0; i < count; i++) {
+            this.clones.push({
+                // Раскидываем их веером
+                x: this.x + (i - 1.5) * 150, 
+                y: this.y + 40,
+                life: 4.0, // Живут 4 секунды
+                shootTimer: Math.random() // Рандомная задержка первого выстрела
+            });
+        }
+        engine.shake = 15;
     }
 
     triggerInversion() {
         engine.player.isInverted = true;
-        engine.bossTitleText = "CRITICAL ERROR: INPUT REVERSED";
+        engine.bossTitleText = "MOUSE_LOGIC_ERROR: INVERTED";
         engine.bossTitleTimer = 2.0;
         
         setTimeout(() => {
             engine.player.isInverted = false;
-        }, 3000); // Инверсия на 3 секунды
+        }, 5000); // Инверсия на 5 секунд
     }
 
-    // Вызывается из GameEngine при клике игрока
+    // Зеркальный выстрел (только для основного босса)
     mirrorShot() {
-        // Стреляет сам босс
-        this.createProjectile(this.x, this.y);
-        
-        // Стреляют все живые клоны
-        this.clones.forEach(c => {
-            this.createProjectile(c.x, c.y);
-        });
+        this.createProjectile(this.x, this.y, '#ff0055');
     }
 
-    createProjectile(x, y) {
+    createProjectile(x, y, color) {
         engine.enemyProjectiles.push({
             x: x,
             y: y + 20,
             vx: 0,
-            vy: 7,
+            vy: 6,
             size: 5,
-            color: '#ff0055'
+            color: color
         });
     }
 
     draw(ctx) {
-        // Рисуем клонов (полупрозрачные)
+        // Отрисовка иллюзий
         this.clones.forEach(c => {
-            this.drawShipAt(ctx, c.x, c.y, 0.4);
+            this.drawShipAt(ctx, c.x, c.y, 0.35, '#00f2ff');
         });
 
-        // Рисуем основного босса
-        this.drawShipAt(ctx, this.x, this.y, 1.0);
+        // Отрисовка основного Мимика
+        this.drawShipAt(ctx, this.x, this.y, 1.0, this.color);
         
         this.drawUI(ctx);
     }
 
-    drawShipAt(ctx, x, y, alpha) {
+    drawShipAt(ctx, x, y, alpha, color) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.scale(1, -1); // Смотрит на игрока
+        ctx.scale(1, -1);
         ctx.globalAlpha = alpha;
 
-        // Используем твою геометрию Aegis
-        ctx.strokeStyle = this.color;
+        ctx.strokeStyle = color;
         ctx.lineWidth = 2.5;
         ctx.shadowBlur = 15;
-        ctx.shadowColor = this.color;
+        ctx.shadowColor = color;
 
+        // Твоя геометрия Aegis
         ctx.beginPath();
         ctx.moveTo(0, -25); ctx.lineTo(8, -10); ctx.lineTo(25, 15);
         ctx.lineTo(10, 15); ctx.lineTo(0, 5); ctx.lineTo(-10, 15);
@@ -402,7 +407,7 @@ class MimicBoss {
         ctx.closePath();
         ctx.stroke();
 
-        // Кабина и механизмы
+        // Кабина
         ctx.fillStyle = '#fff';
         ctx.beginPath();
         ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
