@@ -361,7 +361,7 @@ class MimicBoss {
 
         case 'barrage':
             // Шквал пуль (по 3 штуки за кадр)
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 1; i++) {
                 this.shootBarrage();
             }
             if (this.stateTimer > 2.5) {
