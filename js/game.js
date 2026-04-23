@@ -303,77 +303,78 @@ class MimicBoss {
     }
 
     update(dt) {
-        if (this.y < this.targetY && this.state !== 'dash') {
-            this.y += 2 * 60 * dt;
+    if (this.y < this.targetY && this.state !== 'dash') {
+        this.y += 2 * 60 * dt;
+    }
+
+    this.stateTimer += dt;
+
+    if (this.state === 'move') {
+        this.x += this.vx * this.moveDir * (60 * dt);
+        if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
+        if (Math.random() > 0.90) this.shootSmall();
+
+        if (this.stateTimer > 3) {
+            const rand = Math.random();
+            if (rand < 0.4) this.state = 'dash';
+            else if (rand < 0.7) this.state = 'barrage';
+            else this.state = 'grab';
+            this.stateTimer = 0;
+            this.hitDealt = false; // Сброс урона перед тараном
         }
+    } 
 
-        this.stateTimer += dt;
+else if (this.state === 'dash') {
+        if (this.stateTimer < 0.8) {
+            this.x += Math.sin(Date.now()) * 10;
+        } else {
+            let prevY = this.y; 
+            this.y += 40 * (60 * dt); // Скорость падения
 
-        // --- МАШИНА СОСТОЯНИЙ ---
-        if (this.state === 'move') {
-            this.x += this.vx * this.moveDir * (60 * dt);
-            if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
-
-            // УВЕЛИЧЕННАЯ ЧАСТОТА СТРЕЛЬБЫ (Шанс 10% каждый кадр)
-            if (Math.random() > 0.84) this.shootSmall();
-
-            if (this.stateTimer > 3) { // Чаще меняет состояния
-                const rand = Math.random();
-                if (rand < 0.4) this.state = 'dash';
-                else if (rand < 0.7) this.state = 'barrage';
-                else this.state = 'grab';
-                this.stateTimer = 0;
-            }
-        } 
-
-        else if (this.state === 'dash') {
-            if (this.stateTimer < 0.8) {
-                // Подготовка: босс фиксирует X игрока, чтобы целиться точнее
-                this.dashTargetX = engine.player.x; 
-                this.x += Math.sin(Date.now()) * 10; 
-            } else {
-                // Полет вниз
-                this.y += 35 * (60 * dt); 
-
-                // --- УЛУЧШЕННАЯ ПРОВЕРКА СТОЛКНОВЕНИЯ ---
-                // Проверяем расстояние по X и Y отдельно (создаем "коробку" удара)
-                const hitBoxX = 70; // Ширина поражения
-                const hitBoxY = 50; // Высота поражения
-
-                const diffX = Math.abs(this.x - engine.player.x);
-                const diffY = Math.abs(this.y - engine.player.y);
-
-                // Если босс накрывает игрока своим корпусом
-                if (diffX < hitBoxX && diffY < hitBoxY) {
-                    // Чтобы жизнь не снималась каждый кадр пролета, 
-                    // проверяем, не получал ли игрок урон секунду назад
+            // ПРОВЕРКА ТАРАНА
+            // 1. Проверяем, находится ли игрок под боссом по горизонтали
+            if (Math.abs(this.x - engine.player.x) < 80) {
+                // 2. Проверяем, пересек ли босс линию игрока по вертикали в этом кадре
+                if (prevY <= engine.player.y && this.y >= engine.player.y) {
                     if (!this.hitDealt) {
-                        engine.player.hp -= 1; 
-                        engine.shake = 40;
-                        this.hitDealt = true; // Флаг, чтобы не убить мгновенно
-                        console.log("MIMIC HIT YOU!");
+                        engine.player.lives--; // В твоем движке жизни называются lives, а не hp!
+                        engine.shake = 60;
+                        this.hitDealt = true; 
+                        console.log("MIMIC RAMMED YOU!");
                     }
                 }
-
-                if (this.y > canvas.height + 200) {
-                    this.y = -100; 
-                    this.state = 'move';
-                    this.stateTimer = 0;
-                    this.hitDealt = false; // Сбрасываем флаг для следующего тарана
-                }
             }
-        }
 
-        else if (this.state === 'barrage') {
-            // УВЕЛИЧЕНО КОЛИЧЕСТВО ШАРОВ: выпускает по 3 за раз
-            for(let i = 0; i < 1.5; i++) {
-                this.shootBarrage();
-            }
-            if (this.stateTimer > 2.5) {
+            if (this.y > canvas.height + 200) {
+                this.y = -100; 
                 this.state = 'move';
                 this.stateTimer = 0;
+                this.hitDealt = false; // Сбрасываем для следующего раза
             }
         }
+    }
+
+    else if (this.state === 'grab') {
+        if (!this.isGrabbed) {
+            this.isGrabbed = true;
+            this.executionProjectileSpawned = false;
+            this.fPresses = 0;
+        }
+        
+        // Притягиваем игрока (но оставляем ему шанс дергаться)
+        engine.player.x += (this.x - engine.player.x) * 0.1;
+
+        if (this.stateTimer > 1.5 && !this.executionProjectileSpawned) {
+            this.shootExecution();
+            this.executionProjectileSpawned = true;
+        }
+
+        if (this.fPresses >= 3) {
+            this.isGrabbed = false;
+            this.state = 'move';
+            this.stateTimer = 0;
+        }
+    }
 
         else if (this.state === 'grab') {
             if (!this.isGrabbed) {
@@ -416,15 +417,17 @@ class MimicBoss {
 
     // Специальная пуля для фазы захвата
     shootExecution() {
-        engine.enemyProjectiles.push({
-            x: this.x,
-            y: this.y + 10,
-            vx: 0,
-            vy: 12, // Очень быстрая
-            size: 10, // Крупная
-            color: '#ff0000'
-        });
-    }
+    engine.enemyProjectiles.push({
+        x: this.x,
+        y: this.y + 20,
+        vx: 0,
+        vy: 5, // Начальная скорость небольшая
+        size: 12,
+        color: '#ff0000',
+        isHoming: true, // Флаг для самонаведения
+        target: engine.player
+    });
+}
 
     draw(ctx) {
         ctx.save();
@@ -829,21 +832,44 @@ if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
 
     
 
-    // Обновление вражеских снарядов
-for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
-    let ep = this.enemyProjectiles[i];
-    ep.x += ep.vx * 60 * dt;
-    ep.y += ep.vy * 60 * dt;
+// Обновление вражеских снарядов
+    for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
+        let ep = this.enemyProjectiles[i];
 
-    // Проверка столкновения с игроком
-    const dist = Math.hypot(ep.x - this.player.x, ep.y - this.player.y);
-    if (dist < 25) {
-        this.player.lives--;
-        this.shake = 20;
-        this.enemyProjectiles.splice(i, 1);
-        if (this.player.lives <= 0) this.gameOver();
-        continue;
-    }
+        // --- НОВАЯ ЛОГИКА МАГНИТА (САМОНАВЕДЕНИЯ) ---
+        if (ep.isHoming && ep.target) {
+            let dx = ep.target.x - ep.x;
+            let dy = ep.target.y - ep.y;
+            let dist = Math.hypot(dx, dy);
+            
+            if (dist > 1) {
+                // Плавно притягиваем вектор скорости к игроку
+                ep.vx += (dx / dist) * 0.4;
+                ep.vy += (dy / dist) * 0.4;
+                
+                // Ограничиваем скорость, чтобы пуля не стала слишком быстрой
+                const maxSpeed = 10;
+                let speed = Math.hypot(ep.vx, ep.vy);
+                if (speed > maxSpeed) {
+                    ep.vx = (ep.vx / speed) * maxSpeed;
+                    ep.vy = (ep.vy / speed) * maxSpeed;
+                }
+            }
+        }
+
+        // Обычное движение (твои старые строки)
+        ep.x += ep.vx * 60 * dt;
+        ep.y += ep.vy * 60 * dt;
+
+        // Проверка столкновения (твой старый код...)
+        const dist = Math.hypot(ep.x - this.player.x, ep.y - this.player.y);
+        if (dist < 25) {
+            this.player.lives--;
+            this.shake = 20;
+            this.enemyProjectiles.splice(i, 1);
+            if (this.player.lives <= 0) this.gameOver();
+            continue;
+        }
 
     // Удаление за экраном
     if (ep.y > canvas.height + 20 || ep.x < -20 || ep.x > canvas.width + 20) {
