@@ -283,56 +283,72 @@ class Enemy {
 class MimicBoss {
     constructor() {
         this.x = canvas.width / 2;
-        this.y = -100;
-        this.targetY = 150;
-        this.hp = 150;
-        this.maxHp = 150;
+        this.y = -150;
+        this.targetY = 140;
+        this.hp = 200;
+        this.maxHp = 200;
         
         this.type = 'mimic';
         this.hasResurrected = false;
-        this.color = '#ff0055';
         
-        // Настройка "задержки" преследования
-        // 0.05 — очень плавно (большая задержка), 1.0 — мгновенно.
-        this.followSpeed = 0.04; 
+        // УВЕЛИЧЕННАЯ ЗАДЕРЖКА: 0.025 делает его очень инертным
+        this.followSpeed = 0.025; 
+        
+        this.dashTimer = 0;
+        this.isDashing = false;
+        this.color = '#ff0055'; // Основной глитч-цвет
     }
 
     update(dt) {
-        if (this.y < this.targetY) this.y += 1.5 * 60 * dt;
+        if (this.y < this.targetY) this.y += 1 * 60 * dt;
 
-        // ЛОГИКА ПРЕСЛЕДОВАНИЯ С ЗАДЕРЖКОЙ
-        // Вместо мгновенного прыжка, он плавно "подтягивается" к игроку
+        // 1. ПРЕСЛЕДОВАНИЕ С БОЛЬШОЙ ЗАДЕРЖКОЙ
         const dx = engine.player.x - this.x;
         this.x += dx * this.followSpeed * (60 * dt);
+
+        // 2. ФИШКА: GHOST DASH (Рывок фантома)
+        this.dashTimer += dt;
+        if (this.dashTimer > 4) {
+            this.isDashing = true;
+            // Резко сокращает дистанцию наполовину
+            this.x += dx * 0.5; 
+            this.dashTimer = 0;
+            engine.shake = 10;
+            
+            setTimeout(() => { this.isDashing = false; }, 200);
+        }
     }
 
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // РАЗВОРОТ МОДЕЛЬКИ
-        // scale(1, -1) переворачивает всё, что рисуется ниже, по вертикали
+        // Зеркально разворачиваем, чтобы он смотрел вниз на игрока
         ctx.scale(1, -1); 
 
-        for (let i = 0; i < 3; i++) {
-            ctx.save();
-            const offset = (Math.random() - 0.5) * 10;
-            ctx.translate(offset, offset);
-            
-            ctx.strokeStyle = (i === 1) ? '#00f2ff' : (i === 2) ? '#fff' : this.color;
-            ctx.lineWidth = i === 0 ? 3 : 1;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = ctx.strokeStyle;
+        // Эффект глитча (если делает рывок — дрожит сильнее)
+        const glitchX = (this.isDashing || Math.random() > 0.95) ? (Math.random() * 10 - 5) : 0;
+        ctx.translate(glitchX, 0);
 
-            this.drawShipGeometry(ctx);
-            ctx.restore();
-        }
-        ctx.restore(); // Возвращаем контекст в норму, чтобы UI не перевернулся
+        // Рисуем 2 слоя: Тень и Основной
+        this.renderMimicShip(ctx, '#00f2ff', 0.3); // Фантомный слой
+        this.renderMimicShip(ctx, this.color, 1.0); // Основной слой
 
+        ctx.restore();
         this.drawUI(ctx);
     }
 
-    drawShipGeometry(ctx) {
+    // ПОЛНАЯ КОПИЯ ТВОЕЙ МОДЕЛЬКИ
+    renderMimicShip(ctx, color, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // 1. Основной корпус "Aegis"
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
+
         ctx.beginPath();
         ctx.moveTo(0, -25);     
         ctx.lineTo(8, -10);     
@@ -344,29 +360,51 @@ class MimicBoss {
         ctx.lineTo(-8, -10);    
         ctx.closePath();
         ctx.stroke();
+
+        // 2. Внутренние механизмы
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-8, 0); ctx.lineTo(8, 0);   
+        ctx.moveTo(0, -10); ctx.lineTo(0, 5);  
+        ctx.stroke();
+
+        // 3. Кабина
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 0.8 * alpha;
+        ctx.beginPath();
+        ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // 4. Двигатели (Инвертированные)
+        ctx.globalAlpha = 0.4 * alpha;
+        const enginePulse = Math.sin(Date.now() / 50) * 5;
+        ctx.fillStyle = color;
+        // Двигатели теперь "сверху" (так как моделька развернута)
+        ctx.fillRect(-18, 15, 6, 10 + enginePulse); 
+        ctx.fillRect(12, 15, 6, 10 + enginePulse);  
+        
+        ctx.restore();
     }
 
-    // Тот самый метод зеркальной стрельбы
     mirrorShot() {
+        // Ответный выстрел: Розовый ромб
         engine.enemyProjectiles.push({
             x: this.x,
             y: this.y + 20,
-            vx: 0,
-            vy: 8, // Скорость пули Мимика
-            size: 5,
+            vx: (Math.random() - 0.5) * 2, // Небольшой разброс
+            vy: 9, 
+            size: 6,
             color: '#ff0055'
         });
     }
 
     drawUI(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
         const barW = 200;
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(-barW/2, -60, barW, 4);
+        ctx.fillRect(this.x - barW/2, this.y - 70, barW, 4);
         ctx.fillStyle = this.color;
-        ctx.fillRect(-barW/2, -60, (this.hp/this.maxHp)*barW, 4);
-        ctx.restore();
+        ctx.fillRect(this.x - barW/2, this.y - 70, (this.hp/this.maxHp)*barW, 4);
     }
 }
 
@@ -627,6 +665,11 @@ setupListeners() {
             this.player.heat += 15; 
             if (this.player.heat >= 100) this.player.overheated = true;
             this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
+
+            // --- ДОБАВЬ ЭТИ СТРОЧКИ ---
+    if (this.boss && this.boss.type === 'mimic') {
+        this.boss.mirrorShot();
+    }
             
             // Тряска при выстреле
             this.shake = 2;
