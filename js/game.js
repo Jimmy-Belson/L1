@@ -1242,53 +1242,50 @@ draw() {
 
 
 
-    if (this.bossTitleTimer > 0) {
-    ctx.save();
-    
-    const textShakeX = Math.random() * 10 - 5;
-    const textShakeY = Math.random() * 10 - 5;
-    ctx.translate(canvas.width / 2 + textShakeX, canvas.height / 2 + textShakeY);
+if (this.bossTitleTimer > 0) {
+        ctx.save();
+        
+        const textShakeX = Math.random() * 10 - 5;
+        const textShakeY = Math.random() * 10 - 5;
+        ctx.translate(canvas.width / 2 + textShakeX, canvas.height / 2 + textShakeY);
 
-    ctx.font = 'bold 50px Orbitron';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+        // --- ДИНАМИЧЕСКИЙ РАЗМЕР ШРИФТА ---
+        // Если текст длиннее 20 символов, уменьшаем шрифт с 50 до 30
+        let fontSize = this.bossTitleText.length > 20 ? 30 : 50;
+        ctx.font = `bold ${fontSize}px Orbitron`;
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-    // --- 1. ГЛИТЧ-ПОДЛОЖКА (Всегда круто выглядит) ---
-    ctx.fillStyle = '#ff0055';
-    ctx.fillText(this.bossTitleText, 4, 4);
-    ctx.fillStyle = '#00f2ff';
-    ctx.fillText(this.bossTitleText, -4, -4);
+        // --- ГЛИТЧ-ПОДЛОЖКА ---
+        ctx.fillStyle = '#ff0055';
+        ctx.fillText(this.bossTitleText, 3, 3);
+        ctx.fillStyle = '#00f2ff';
+        ctx.fillText(this.bossTitleText, -3, -3);
 
-    // --- 2. ДИНАМИЧЕСКИЙ ЦВЕТ ОСНОВНОГО ТЕКСТА ---
-    let mainColor = '#fff'; // По умолчанию белый
-    let glowColor = '#fff';
+        // --- ЦВЕТ ОСНОВНОГО ТЕКСТА ---
+        let mainColor = '#fff';
+        if (this.bossTitleText.includes("WARNING")) {
+            mainColor = '#ffff00'; // Желтый для Мимика
+        }
 
-    if (this.bossTitleText === "JOKEEEE AHAHAHAAHH") {
-        // Безумный режим для Мимика
-        mainColor = Math.random() > 0.5 ? '#ff0000' : '#00ff00';
-        glowColor = mainColor;
-    } else if (this.bossTitleText.includes("WARNING") || this.bossTitleText.includes("CORRUPTION")) {
-        // Тревожный желтый для появления Мимика
-        mainColor = '#ffff00';
-        glowColor = '#ffff00';
+        ctx.fillStyle = mainColor;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = mainColor;
+        ctx.fillText(this.bossTitleText, 0, 0);
+
+        // --- ДЕКОРАТИВНЫЕ ЛИНИИ (подстраиваем под ширину текста) ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = mainColor;
+        ctx.beginPath();
+        // Линии теперь тоже зависят от размера шрифта
+        const lineOffset = fontSize < 40 ? 30 : 45; 
+        ctx.moveTo(-canvas.width/2 + 50, lineOffset); ctx.lineTo(canvas.width/2 - 50, lineOffset);
+        ctx.moveTo(-canvas.width/2 + 50, -lineOffset); ctx.lineTo(canvas.width/2 - 50, -lineOffset);
+        ctx.stroke();
+
+        ctx.restore();
     }
-
-    // Рисуем основной текст выбранным цветом
-    ctx.fillStyle = mainColor;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = glowColor;
-    ctx.fillText(this.bossTitleText, 0, 0);
-
-    // --- 3. ДЕКОРАТИВНЫЕ ЛИНИИ (В цвет текста) ---
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = mainColor; // Линии теперь тоже будут красными/зелеными/желтыми
-    ctx.beginPath();
-    ctx.moveTo(-300, 40); ctx.lineTo(300, 40);
-    ctx.moveTo(-300, -40); ctx.lineTo(300, -40);
-    ctx.stroke();
-
-    ctx.restore();
-}
 }
 
 async gameOver() {
