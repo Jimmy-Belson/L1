@@ -299,7 +299,7 @@ class MimicBoss {
 
         // УВЕЛИЧЕННАЯ СКОРОСТЬ
         this.moveDir = 1;
-        this.vx = 4; // Было 3, теперь 8 — он носится очень быстро
+        this.vx = 5; // Было 3, теперь 8 — он носится очень быстро
     }
 
     update(dt) {
@@ -315,7 +315,7 @@ class MimicBoss {
             if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
 
             // УВЕЛИЧЕННАЯ ЧАСТОТА СТРЕЛЬБЫ (Шанс 10% каждый кадр)
-            if (Math.random() > 0.80) this.shootSmall();
+            if (Math.random() > 0.84) this.shootSmall();
 
             if (this.stateTimer > 3) { // Чаще меняет состояния
                 const rand = Math.random();
@@ -328,22 +328,38 @@ class MimicBoss {
 
         else if (this.state === 'dash') {
             if (this.stateTimer < 0.8) {
-                this.x += Math.sin(Date.now()) * 10; // Трясется сильнее
+                // Подготовка: босс фиксирует X игрока, чтобы целиться точнее
+                this.dashTargetX = engine.player.x; 
+                this.x += Math.sin(Date.now()) * 10; 
             } else {
-                this.y += 30 * (60 * dt); // Скорость тарана выше
+                // Полет вниз
+                this.y += 35 * (60 * dt); 
 
-                // ПРОВЕРКА ПОПАДАНИЯ ТАРАНОМ
-                const dist = Math.hypot(this.x - engine.player.x, this.y - engine.player.y);
-                if (dist < 60) {
-                    engine.player.hp -= 1; // Сносит 1 HP
-                    engine.shake = 30;
-                    this.y = canvas.height + 300; // Пролетает мимо после удара
+                // --- УЛУЧШЕННАЯ ПРОВЕРКА СТОЛКНОВЕНИЯ ---
+                // Проверяем расстояние по X и Y отдельно (создаем "коробку" удара)
+                const hitBoxX = 70; // Ширина поражения
+                const hitBoxY = 50; // Высота поражения
+
+                const diffX = Math.abs(this.x - engine.player.x);
+                const diffY = Math.abs(this.y - engine.player.y);
+
+                // Если босс накрывает игрока своим корпусом
+                if (diffX < hitBoxX && diffY < hitBoxY) {
+                    // Чтобы жизнь не снималась каждый кадр пролета, 
+                    // проверяем, не получал ли игрок урон секунду назад
+                    if (!this.hitDealt) {
+                        engine.player.hp -= 1; 
+                        engine.shake = 40;
+                        this.hitDealt = true; // Флаг, чтобы не убить мгновенно
+                        console.log("MIMIC HIT YOU!");
+                    }
                 }
 
                 if (this.y > canvas.height + 200) {
                     this.y = -100; 
                     this.state = 'move';
                     this.stateTimer = 0;
+                    this.hitDealt = false; // Сбрасываем флаг для следующего тарана
                 }
             }
         }
