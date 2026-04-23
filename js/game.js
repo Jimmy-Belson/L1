@@ -70,6 +70,8 @@ class Player {
         // Позиционирование по центру канваса
         this.x = canvas.width / 2;
         this.y = canvas.height - 60; 
+         
+        this.invulTimer = 0;
 
         this.score = 0;
         this.lives = CONFIG.BALANCE.LIVES;
@@ -92,6 +94,11 @@ class Player {
         const velocity = (this.x - prevX) * 0.2;
         this.tilt = velocity * Math.PI / 180;
 
+        // Внутри Player.update(dt)
+if (this.invulTimer > 0) {
+    this.invulTimer -= dt;
+}
+
         // Логика перегрева
         if (this.overheated) {
             this.heat -= 0.5 * 60 * dt; 
@@ -107,7 +114,12 @@ class Player {
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.tilt); 
+        ctx.rotate(this.tilt);
+        
+        // В начале Player.draw(ctx)
+if (this.invulTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+    ctx.globalAlpha = 0.3; // Делаем полупрозрачным или мигающим
+}
 
         const color = this.overheated ? '#ff3300' : '#00f2ff';
 
@@ -387,14 +399,21 @@ class MimicBoss {
             }
 
             // Условие освобождения (3 нажатия F) или автоматический конец фазы через 4 сек
-            if (this.fPresses >= 3 || this.stateTimer > 4) {
-                this.isGrabbed = false;
-                this.state = 'move';
-                this.stateTimer = 0;
-                engine.shake = 20;
-           
-    // Это гарантирует, что движок сразу начнет слушать мышь, 
-    // а не пытаться "дотянуть" игрока к боссу.
+            // Внутри case 'grab':
+if (this.fPresses >= 3 || this.stateTimer > 4) {
+    this.isGrabbed = false;
+    this.fPresses = 0;
+    this.state = 'move';
+    this.stateTimer = 0;
+    engine.shake = 30;
+
+    // 1. Убираем старые пули, чтобы они не "кемпили" тебя на выходе
+    engine.enemyProjectiles = []; 
+
+    // 2. Даем игроку 1.5 секунды бессмертия, чтобы успеть отлететь
+    engine.player.invulTimer = 1.5; 
+
+    // 3. Синхронизируем прицел мыши с текущим положением корабля
     engine.player.targetX = engine.player.x; 
 }
 
@@ -861,6 +880,11 @@ if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
         // Проверка столкновения (твой старый код...)
         const dist = Math.hypot(ep.x - this.player.x, ep.y - this.player.y);
         if (dist < 25) {
+
+            if (this.player.invulTimer > 0) {
+        this.enemyProjectiles.splice(i, 1);
+        continue;
+    }
             this.player.lives--;
             this.shake = 20;
             this.enemyProjectiles.splice(i, 1);
