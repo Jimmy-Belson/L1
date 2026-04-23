@@ -284,38 +284,56 @@ class MimicBoss {
     constructor() {
         this.x = canvas.width / 2;
         this.y = -150;
-        this.targetY = 140;
-        this.hp = 200;
-        this.maxHp = 200;
+        this.targetY = 140; // Он висит над нами
+        this.hp = 400;
+        this.maxHp = 400;
         
         this.type = 'mimic';
         this.hasResurrected = false;
         
-        // УВЕЛИЧЕННАЯ ЗАДЕРЖКА: 0.025 делает его очень инертным
-        this.followSpeed = 0.025; 
+        // Сильная задержка, чтобы игрок успевал "выскочить" из-под луча
+        this.followSpeed = 0.015; 
         
-        this.dashTimer = 0;
-        this.isDashing = false;
-        this.color = '#ff0055'; // Основной глитч-цвет
+        this.state = 'follow'; 
+        this.stateTimer = 0;
+        this.color = '#ff0055';
+        this.chargeProgress = 0; // Для визуализации зарядки луча
     }
 
     update(dt) {
         if (this.y < this.targetY) this.y += 1 * 60 * dt;
+        this.stateTimer += dt;
 
-        // 1. ПРЕСЛЕДОВАНИЕ С БОЛЬШОЙ ЗАДЕРЖКОЙ
-        const dx = engine.player.x - this.x;
-        this.x += dx * this.followSpeed * (60 * dt);
+        // Переключение фаз
+        if (this.state === 'follow' && this.stateTimer > 4) {
+            this.state = 'charging';
+            this.stateTimer = 0;
+            this.chargeProgress = 0;
+        }
 
-        // 2. ФИШКА: GHOST DASH (Рывок фантома)
-        this.dashTimer += dt;
-        if (this.dashTimer > 4) {
-            this.isDashing = true;
-            // Резко сокращает дистанцию наполовину
-            this.x += dx * 0.5; 
-            this.dashTimer = 0;
-            engine.shake = 10;
-            
-            setTimeout(() => { this.isDashing = false; }, 200);
+        // --- ЛОГИКА ФАЗ ---
+        if (this.state === 'follow') {
+            // Он медленно плывет за игроком
+            const dx = engine.player.x - this.x;
+            this.x += dx * this.followSpeed * (60 * dt);
+        } 
+        
+        if (this.state === 'charging') {
+            this.chargeProgress += dt;
+            // Во время зарядки он замирает на месте! Это шанс его бить.
+            if (this.chargeProgress >= 1.5) {
+                this.state = 'beam';
+                this.stateTimer = 0;
+                engine.shake = 20;
+            }
+        }
+
+        if (this.state === 'beam') {
+            // Луч бьет 2 секунды, потом возврат в follow
+            if (this.stateTimer > 2) {
+                this.state = 'follow';
+                this.stateTimer = 0;
+            }
         }
     }
 
@@ -323,80 +341,68 @@ class MimicBoss {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Зеркально разворачиваем, чтобы он смотрел вниз на игрока
-        ctx.scale(1, -1); 
+        // Зеркальная моделька (твоя отрисовка)
+        ctx.scale(1, -1);
+        
+        if (this.state === 'charging') {
+            // Эффект накопления энергии в носу корабля
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, -30, 10 * Math.sin(Date.now()/50), 0, Math.PI*2);
+            ctx.fill();
+        }
 
-        // Эффект глитча (если делает рывок — дрожит сильнее)
-        const glitchX = (this.isDashing || Math.random() > 0.95) ? (Math.random() * 10 - 5) : 0;
-        ctx.translate(glitchX, 0);
-
-        // Рисуем 2 слоя: Тень и Основной
-        this.renderMimicShip(ctx, '#00f2ff', 0.3); // Фантомный слой
-        this.renderMimicShip(ctx, this.color, 1.0); // Основной слой
-
+        this.renderMimicShip(ctx, this.color, 1.0);
         ctx.restore();
+
+        // --- ОТРИСОВКА ЛУЧА (Вне scale) ---
+        if (this.state === 'beam') {
+            this.drawVerticalBeam(ctx);
+        }
+
         this.drawUI(ctx);
     }
 
-    // ПОЛНАЯ КОПИЯ ТВОЕЙ МОДЕЛЬКИ
-    renderMimicShip(ctx, color, alpha) {
+    drawVerticalBeam(ctx) {
         ctx.save();
-        ctx.globalAlpha = alpha;
+        const beamWidth = 60;
+        const gradient = ctx.createLinearGradient(this.x - beamWidth/2, 0, this.x + beamWidth/2, 0);
+        gradient.addColorStop(0, 'transparent');
+        gradient.addColorStop(0.5, this.color);
+        gradient.addColorStop(1, 'transparent');
 
-        // 1. Основной корпус "Aegis"
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2.5;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = color;
-
-        ctx.beginPath();
-        ctx.moveTo(0, -25);     
-        ctx.lineTo(8, -10);     
-        ctx.lineTo(25, 15);     
-        ctx.lineTo(10, 15);     
-        ctx.lineTo(0, 5);       
-        ctx.lineTo(-10, 15);    
-        ctx.lineTo(-25, 15);    
-        ctx.lineTo(-8, -10);    
-        ctx.closePath();
-        ctx.stroke();
-
-        // 2. Внутренние механизмы
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-8, 0); ctx.lineTo(8, 0);   
-        ctx.moveTo(0, -10); ctx.lineTo(0, 5);  
-        ctx.stroke();
-
-        // 3. Кабина
-        ctx.fillStyle = '#fff';
-        ctx.globalAlpha = 0.8 * alpha;
-        ctx.beginPath();
-        ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
-        ctx.closePath();
-        ctx.fill();
-
-        // 4. Двигатели (Инвертированные)
-        ctx.globalAlpha = 0.4 * alpha;
-        const enginePulse = Math.sin(Date.now() / 50) * 5;
-        ctx.fillStyle = color;
-        // Двигатели теперь "сверху" (так как моделька развернута)
-        ctx.fillRect(-18, 15, 6, 10 + enginePulse); 
-        ctx.fillRect(12, 15, 6, 10 + enginePulse);  
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+        // Луч идет от босса до самого низа экрана
+        ctx.fillRect(this.x - beamWidth/2, this.y, beamWidth, canvas.height);
         
+        // Проверка урона (так как игрок только по X движется)
+        if (Math.abs(engine.player.x - this.x) < beamWidth/2) {
+            engine.player.hp -= 1; 
+            engine.shake = 5;
+        }
         ctx.restore();
     }
 
+    // Твой mirrorShot теперь выпускает "ошибки", которые стоят на пути
     mirrorShot() {
-        // Ответный выстрел: Розовый ромб
+        if (this.state === 'beam') return;
+
+        // Создаем "статичную" пулю-мину
         engine.enemyProjectiles.push({
             x: this.x,
-            y: this.y + 20,
-            vx: (Math.random() - 0.5) * 2, // Небольшой разброс
-            vy: 9, 
-            size: 6,
-            color: '#ff0055'
+            y: this.y + 30,
+            vx: 0,
+            vy: 3, // Медленно плывет вниз, преграждая путь
+            size: 8,
+            color: '#00f2ff',
+            isStatic: true // Можно добавить флаг, чтобы она мерцала как баг
         });
+    }
+
+    // Твой renderMimicShip тут...
+    renderMimicShip(ctx, color, alpha) {
+        // (Тот код, который ты скинул, с корпусом, кабиной и двигателями)
     }
 
     drawUI(ctx) {
