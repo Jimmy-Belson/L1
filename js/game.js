@@ -210,7 +210,20 @@ class Enemy {
     }
 }
     draw(ctx) {
-        ctx.save();
+    ctx.save();
+    
+    // ЭФФЕКТ ГЛЮКА ПЕРЕД МИМИКОМ
+    let renderX = this.x;
+    let renderY = this.y;
+    
+    // Если в игре фаза появления Мимика (235-240 сек)
+    if (engine.gameTime > 235 && engine.gameTime < 240 && !engine.bossSpawned) {
+        if (Math.random() > 0.8) {
+            renderX += Math.random() * 20 - 10; // Дерганье по X
+            ctx.globalAlpha = Math.random();     // Мерцание
+            this.color = Math.random() > 0.5 ? '#00f2ff' : '#ff0055'; // Смена цветов вируса
+        }
+    }
         ctx.translate(this.x, this.y);
 
         ctx.shadowBlur = 20;
@@ -822,6 +835,8 @@ if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
     this.shake = Math.max(this.shake, (this.gameTime - 115) * 2);
 }
 
+
+
 // --- СИСТЕМА СПАВНА БОССОВ ---
 
 // 1. БОСС №1: SENTINEL (2-я минута / 120 сек)
@@ -833,6 +848,31 @@ if (this.gameTime >= 120 && this.gameTime < 130 && !this.bossSpawned) {
 // Проверяем, что Sentinel уже побежден (this.boss === null) и пришло время
 if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
     this.spawnBossSequence("WARNING: SYSTEM CORRUPTION // MIMIC", () => new MimicBoss());
+}
+
+// --- ЛОГИКА ПЕРЕД ПОЯВЛЕНИЕМ МИМИКА (235 - 240 сек) ---
+if (this.gameTime >= 235 && this.gameTime < 240 && !this.bossSpawned) {
+    this.shake = 5; // Постоянная мелкая тряска
+
+    this.enemies.forEach((e, index) => {
+        // Враги замирают и начинают вибрировать
+        e.speed = 0; 
+        
+        // В последние полсекунды перед титрами враги взрываются
+        if (this.gameTime > 239.5) {
+            // Создаем частицы "битых пикселей"
+            for (let j = 0; j < 10; j++) {
+                let p = new Particle(e.x, e.y, e.color);
+                p.speedX *= 2; 
+                p.speedY *= 2;
+                p.size = Math.random() * 5; // Крупные частицы-квадраты
+                this.particles.push(p);
+            }
+            // Удаляем врага
+            this.enemies.splice(index, 1);
+            this.shake = 20; // Сильный импульс при взрыве толпы
+        }
+    });
 }
 
 
