@@ -846,61 +846,47 @@ if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
 
 // --- СИСТЕМА СПАВНА БОССОВ ---
 
-// 1. БОСС №1: SENTINEL (2-я минута / 120 сек)
+// --- СИСТЕМА СПАВНА БОССОВ (ОПТИМИЗИРОВАННАЯ) ---
+
+// 1. БОСС №1: SENTINEL (120 сек)
 if (this.gameTime >= 120 && this.gameTime < 130 && !this.bossSpawned) {
     this.spawnBossSequence("SENTINEL-01: ARCHITECT", () => new Boss());
 }
 
-// 2. БОСС №2: MIMIC (4-я минута / 240 сек)
-// Проверяем, что Sentinel уже побежден (this.boss === null) и пришло время
-if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
-    this.spawnBossSequence("WARNING: SYSTEM CORRUPTION // MIMIC", () => new MimicBoss());
-}
-
-// 1. Фаза "Глюка" (с 235 до 238 секунды)
+// 2. ФАЗА "ГЛЮКА" (235 - 238 сек): Враги замирают, когда Мимик начинает взламывать систему
 if (this.gameTime >= 235 && this.gameTime < 238 && !this.bossSpawned) {
     this.enemies.forEach(e => {
-        e.speed = 0;           // Враги замирают на месте
-        e.isGlitching = true;  // Включаем тряску из шага №1
+        e.speed = 0;           
+        e.isGlitching = true;  
     });
-    this.shake = 2; // Легкий гул системы
+    this.shake = 2;
 }
 
-// 2. Фаза "Аннигиляции" (ровно в 238 секунд)
+// 3. ФАЗА "ВЗРЫВА" (238 сек): Очистка экрана перед титрами
 if (this.gameTime >= 238 && this.gameTime < 238.1 && !this.bossSpawned && this.enemies.length > 0) {
     this.enemies.forEach(e => {
-        // Создаем взрыв из битых пикселей (квадратные частицы)
         for (let j = 0; j < 15; j++) {
             let p = new Particle(e.x, e.y, e.color);
-            p.speedX *= 3; 
-            p.speedY *= 3;
-            p.size = Math.random() * 6; // Делаем их крупнее обычных
+            p.speedX *= 3; p.speedY *= 3;
+            p.size = Math.random() * 6;
             this.particles.push(p);
         }
     });
-    
-    this.enemies = []; // Мгновенно удаляем всех врагов
-    this.shake = 50;   // Мощный визуальный удар
-    this.player.invulTimer = 3; // Даем игроку бессмертие, чтобы частицы не убили
+    this.enemies = []; 
+    this.shake = 50;   
+    this.player.invulTimer = 3; 
     console.log("%c[SYSTEM] ALL_ENTITIES_PURGED", "color: #ff0055");
 }
 
-// 3. Появление босса (на 240 секунде, через 2 сек после взрыва)
+// 4. БОСС №2: MIMIC (240 сек) - Запуск титров только на пустом экране
 if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
     this.spawnBossSequence("WARNING: SYSTEM CORRUPTION // MIMIC", () => new MimicBoss());
 }
 
-
-
-
-// Вспомогательный метод внутри GameEngine для запуска заставки
-// (Если вставляешь прямо в update, можно вынести функцию наружу или оставить так)
-
-    // Если босс на экране, обновляем его
-    if (this.boss) {
-        this.boss.update(dt);
-    }
-
+// 5. ОБНОВЛЕНИЕ БОССА (если он уже заспавнился)
+if (this.boss) {
+    this.boss.update(dt);
+}
     
 
 // Обновление вражеских снарядов
