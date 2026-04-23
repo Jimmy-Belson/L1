@@ -456,7 +456,9 @@ class GameEngine {
          this.gameTime = 0;          // Таймер игры
         this.bossSpawned = false;    // Флаг, что босс уже вызван
         this.boss = null;    
-        this.enemyProjectiles = [];        // Ссылка на объект босса
+        this.enemyProjectiles = [];   
+        this.bossTitleTimer = 0; // Таймер показа текста
+this.bossTitleText = "";  // Текст названия     // Ссылка на объект босса
         
         this.setupListeners();
         
@@ -535,12 +537,20 @@ if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
     this.shake = Math.max(this.shake, (this.gameTime - 115) * 2);
 }
 
-// Появление самого босса (на 120-й секунде)
+// Появление самого босса
 if (this.gameTime >= 120 && !this.bossSpawned) {
     this.bossSpawned = true;
-    this.enemies = []; // Очищаем остатки
+    this.enemies = []; 
     this.shake = 50;
-    this.boss = new Boss();
+    
+    // Включаем титр на 3 секунды
+    this.bossTitleTimer = 3.0; 
+    this.bossTitleText = "SENTINEL-01: ARCHITECT";
+
+    // А самого босса создаем с задержкой (через setTimeout)
+    setTimeout(() => {
+        this.boss = new Boss();
+    }, 2500); 
 }
 
     // Если босс на экране, обновляем его
@@ -623,6 +633,10 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
             if (e.hp <= 0) break;
         }
     }
+
+    if (this.bossTitleTimer > 0) {
+    this.bossTitleTimer -= dt;
+}
 
     if (e.hp <= 0) {
         this.player.score += e.scoreValue;
@@ -881,6 +895,44 @@ draw() {
     ctx.shadowColor = rank.color;
     ctx.fillText(`RANK: ${rank.name}`, 20, 65);
     ctx.restore();
+
+
+
+    if (this.bossTitleTimer > 0) {
+    ctx.save();
+    
+    // Эффект дрожания только для текста
+    const textShakeX = Math.random() * 10 - 5;
+    const textShakeY = Math.random() * 10 - 5;
+    ctx.translate(canvas.width / 2 + textShakeX, canvas.height / 2 + textShakeY);
+
+    // Стиль текста
+    ctx.font = 'bold 50px Orbitron';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 1. Рисуем "Глитч" подложку (красную и синюю)
+    ctx.fillStyle = '#ff0055';
+    ctx.fillText(this.bossTitleText, 4, 4);
+    ctx.fillStyle = '#00f2ff';
+    ctx.fillText(this.bossTitleText, -4, -4);
+
+    // 2. Основной белый текст
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#fff';
+    ctx.fillText(this.bossTitleText, 0, 0);
+
+    // 3. Декоративные линии
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(-300, 40); ctx.lineTo(300, 40);
+    ctx.moveTo(-300, -40); ctx.lineTo(300, -40);
+    ctx.stroke();
+
+    ctx.restore();
+}
 }
 
 async gameOver() {
