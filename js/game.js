@@ -284,142 +284,155 @@ class MimicBoss {
     constructor() {
         this.x = canvas.width / 2;
         this.y = -100;
-        this.targetY = 140;
-        this.hp = 600; // Увеличил HP, так как босс финальный
-        this.maxHp = 600;
+        this.targetY = 150;
+        this.hp = 800;
+        this.maxHp = 800;
         
         this.type = 'mimic';
-        this.hasResurrected = false;
+        this.state = 'move'; // move, dash, barrage, grab
+        this.stateTimer = 0;
         this.color = '#ff0055';
-        
-        this.followSpeed = 0.015; 
-        this.clones = []; 
-        this.cloneTimer = 0;
-        this.inversionTimer = 0;
+
+        // Для захвата
+        this.fPresses = 0;
+        this.isGrabbed = false;
+
+        // Для движения
+        this.moveDir = 1;
+        this.vx = 3;
     }
 
     update(dt) {
-        if (this.y < this.targetY) this.y += 1.5 * 60 * dt;
-
-        // 1. Основное преследование (с задержкой)
-        let dx = engine.player.x - this.x;
-        this.x += dx * this.followSpeed * (60 * dt);
-
-        // 2. Логика 4-х Иллюзий
-        this.cloneTimer += dt;
-        if (this.cloneTimer > 8) { // Раз в 8 сек вызываем подмогу
-            this.spawnClones(4);
-            this.cloneTimer = 0;
+        if (this.y < this.targetY && this.state !== 'dash') {
+            this.y += 2 * 60 * dt;
         }
-        
-        this.clones.forEach((c, index) => {
-            c.life -= dt;
-            c.shootTimer -= dt;
 
-            // Иллюзии следуют за игроком чуть активнее
-            let cdx = engine.player.x - c.x;
-            c.x += cdx * 0.04 * (60 * dt);
+        this.stateTimer += dt;
 
-            // АВТО-СТРЕЛЬБА КЛОНОВ (каждые 0.8 сек)
-            if (c.shootTimer <= 0) {
-                this.createProjectile(c.x, c.y, '#00f2ff'); // Клоны стреляют голубым
-                c.shootTimer = 0.8;
+        // --- МАШИНА СОСТОЯНИЙ ---
+        if (this.state === 'move') {
+            // Обычное движение влево-вправо
+            this.x += this.vx * this.moveDir * (60 * dt);
+            if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
+
+            // Стрельба в движении
+            if (Math.random() > 0.96) this.shootSmall();
+
+            // Смена состояния
+            if (this.stateTimer > 4) {
+                const rand = Math.random();
+                if (rand < 0.4) this.state = 'dash';
+                else if (rand < 0.7) this.state = 'barrage';
+                else this.state = 'grab';
+                this.stateTimer = 0;
             }
+        } 
 
-            if (c.life <= 0) this.clones.splice(index, 1);
-        });
+        else if (this.state === 'dash') {
+            // ТАРАН
+            if (this.stateTimer < 1) {
+                // Подготовка (дрожание)
+                this.x += Math.sin(Date.now()) * 5;
+            } else {
+                // Полет вниз
+                this.y += 25 * (60 * dt);
+                if (this.y > canvas.height + 200) {
+                    this.y = -100; // Респаун сверху
+                    this.state = 'move';
+                    this.stateTimer = 0;
+                }
+            }
+        }
 
-        // 3. Логика Инверсии (на 5 секунд)
-        this.inversionTimer += dt;
-        if (this.inversionTimer > 12) {
-            this.triggerInversion();
-            this.inversionTimer = 0;
+        else if (this.state === 'barrage') {
+            // ШКВАЛ ПУЛЬ
+            if (Math.random() > 0.5) {
+                this.shootBarrage();
+            }
+            if (this.stateTimer > 3) {
+                this.state = 'move';
+                this.stateTimer = 0;
+            }
+        }
+
+        else if (this.state === 'grab') {
+            // ЗАХВАТ
+            if (!this.isGrabbed) {
+                this.isGrabbed = true;
+                engine.player.locked = true; // Блокируем игрока
+                this.fPresses = 0;
+            }
+            
+            // Притягиваем игрока к себе для визуального эффекта
+            engine.player.x += (this.x - engine.player.x) * 0.1;
+            engine.player.hp -= 0.1; // Постепенный урон при захвате
+
+            if (this.fPresses >= 3) {
+                this.isGrabbed = false;
+                engine.player.locked = false;
+                this.state = 'move';
+                this.stateTimer = 0;
+                engine.shake = 20;
+            }
         }
     }
 
-    spawnClones(count) {
-    for (let i = 0; i < count; i++) {
-        this.clones.push({
-            // Начальная позиция врассыпную
-            x: Math.random() * canvas.width,
-            y: this.y + 50,
-            life: 4.0,
-            shootTimer: Math.random(),
-            // КЛЮЧЕВОЙ МОМЕНТ: каждый клон "хочет" быть в своем месте относительно игрока
-            // Первый слева (-300), второй чуть левее (-100), и т.д.
-            offsetX: (i - (count - 1) / 2) * 200 
-        });
-    }
-    engine.shake = 15;
-}
-
-    triggerInversion() {
-        engine.player.isInverted = true;
-        engine.bossTitleText = "MOUSE_LOGIC_ERROR: INVERTED";
-        engine.bossTitleTimer = 2.0;
-        
-        setTimeout(() => {
-            engine.player.isInverted = false;
-        }, 5000); // Инверсия на 5 секунд
+    shootSmall() {
+        engine.enemyProjectiles.push({ x: this.x, y: this.y + 20, vx: 0, vy: 7, size: 5, color: this.color });
     }
 
-    // Зеркальный выстрел (только для основного босса)
-    mirrorShot() {
-        this.createProjectile(this.x, this.y, '#ff0055');
-    }
-
-    createProjectile(x, y, color) {
+    shootBarrage() {
+        const angle = Math.random() * Math.PI * 2;
         engine.enemyProjectiles.push({
-            x: x,
-            y: y + 20,
-            vx: 0,
-            vy: 6,
-            size: 5,
-            color: color
+            x: this.x, y: this.y,
+            vx: Math.cos(angle) * 5,
+            vy: Math.sin(angle) * 5,
+            size: 4, color: '#00f2ff'
         });
     }
 
     draw(ctx) {
-        // Отрисовка иллюзий
-        this.clones.forEach(c => {
-            let targetX = engine.player.x + c.offsetX; // Каждый клон летит в свою точку
-let cdx = targetX - c.x;
-c.x += cdx * 0.05 * (60 * dt);
-            this.drawShipAt(ctx, c.x, c.y, 0.35, '#00f2ff');
-        });
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(1, -1);
 
-        // Отрисовка основного Мимика
-        this.drawShipAt(ctx, this.x, this.y, 1.0, this.color);
+        // Красный силуэт при таране
+        const drawColor = (this.state === 'dash' && this.stateTimer > 1) ? '#ff0000' : this.color;
+        this.renderMimicShip(ctx, drawColor, 1.0);
+        
+        ctx.restore();
+
+        if (this.isGrabbed) {
+            this.drawGrabUI(ctx);
+        }
         
         this.drawUI(ctx);
     }
 
-    drawShipAt(ctx, x, y, alpha, color) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(1, -1);
-        ctx.globalAlpha = alpha;
+    drawGrabUI(ctx) {
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 40px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText("SYSTEM LOCK!", canvas.width/2, canvas.height/2 - 50);
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px Orbitron';
+        ctx.fillText(`PRESS [F] TO REBOOT: ${this.fPresses}/3`, canvas.width/2, canvas.height/2);
+    }
 
+    // Твой метод отрисовки корабля (Aegis)
+    renderMimicShip(ctx, color, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
         ctx.strokeStyle = color;
         ctx.lineWidth = 2.5;
         ctx.shadowBlur = 15;
         ctx.shadowColor = color;
-
-        // Твоя геометрия Aegis
         ctx.beginPath();
         ctx.moveTo(0, -25); ctx.lineTo(8, -10); ctx.lineTo(25, 15);
         ctx.lineTo(10, 15); ctx.lineTo(0, 5); ctx.lineTo(-10, 15);
         ctx.lineTo(-25, 15); ctx.lineTo(-8, -10);
         ctx.closePath();
         ctx.stroke();
-
-        // Кабина
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
-        ctx.closePath();
-        ctx.fill();
-        
         ctx.restore();
     }
 
@@ -671,54 +684,69 @@ triggerMimicPrank() {
     }, 2000);
 }
 
-setupListeners() {
-    // МЕНЯЕМ canvas на window, чтобы клики не блокировались интерфейсом
+SetupListeners() {
+    // 1. Клики и стрельба
     window.addEventListener('mousedown', (e) => {
-        // Игнорируем клики по кнопкам интерфейса (чтобы не стрелял, когда жмешь "Назад")
         if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
-        
         if (!window.gameActive) return;
         
-        // Попытка захвата при каждом клике (Прячет курсор системы)
+        // БЛОКИРОВКА СТРЕЛЬБЫ ПРИ ЗАХВАТЕ: Если игрока схватили, он не может стрелять
+        if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) return;
+
         if (document.pointerLockElement !== canvas) {
             this.requestPointerLock();
         }
 
-        // Логика стрельбы
         if (!this.player.overheated) {
             this.player.heat += 15; 
             if (this.player.heat >= 100) this.player.overheated = true;
             this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
 
-            // --- ДОБАВЬ ЭТИ СТРОЧКИ ---
-    if (this.boss && this.boss.type === 'mimic') {
-        this.boss.mirrorShot();
-    }
+            // Зеркальный выстрел Мимика (оставь, если хочешь, чтобы он отвечал на клики в фазе движения)
+            if (this.boss && this.boss.type === 'mimic' && !this.boss.isGrabbed) {
+                this.boss.mirrorShot();
+            }
             
-            // Тряска при выстреле
             this.shake = 2;
         }
     });
 
-    // 2. Движение
+    // 2. Движение (С ПРОВЕРКОЙ БЛОКИРОВКИ)
     window.addEventListener('mousemove', (e) => {
         if (!window.gameActive) return;
+        
+        // БЛОКИРОВКА ДВИЖЕНИЯ: Если активен захват Мимика, движение игнорируется
+        if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) return;
 
         if (document.pointerLockElement === canvas) {
-            // Режим захвата (курсор невидим, корабль двигается плавно)
             this.player.targetX += e.movementX * 1.5;
         } else {
-            // Режим обычный (если игрок нажал ESC и сбросил захват)
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             this.player.targetX = (e.clientX - rect.left) * scaleX;
         }
 
-        // Ограничиваем края 
         const margin = 40; 
         if (this.player.targetX < margin) this.player.targetX = margin;
         if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
     });
+
+    // 3. НОВЫЙ ЛИСТЕНЕР ДЛЯ КЛАВИШИ [F]
+    window.addEventListener('keydown', (e) => {
+        if (!window.gameActive) return;
+
+        // Проверяем нажатие F (английскую и русскую раскладку)
+        if (e.code === 'KeyF' || e.key === 'f' || e.key === 'а' || e.key === 'А') {
+            if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) {
+                this.boss.fPresses++; // Увеличиваем счетчик нажатий в классе босса
+                this.shake = 8;       // Визуальный отклик на нажатие
+                
+                // Звуковой эффект или лог (по желанию)
+                console.log(`Rebooting system... ${this.boss.fPresses}/3`);
+            }
+        }
+    });
+
 }
 update(dt) {
         if (!window.gameActive) return;
