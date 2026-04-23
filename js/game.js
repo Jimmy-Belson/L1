@@ -539,17 +539,21 @@ if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
 
 // Появление самого босса
 if (this.gameTime >= 120 && !this.bossSpawned) {
-    this.bossSpawned = true;
+    this.bossSpawned = true; // СРАЗУ ставим флаг в true, чтобы этот блок больше не заходил сюда
     this.enemies = []; 
+    this.projectiles = []; // Чистим экран для красоты
     this.shake = 50;
     
-    // Включаем титр на 3 секунды
-    this.bossTitleTimer = 3.0; 
+    this.bossTitleTimer = 3.0; // Задаем время жизни надписи
     this.bossTitleText = "SENTINEL-01: ARCHITECT";
 
-    // А самого босса создаем с задержкой (через setTimeout)
+    console.log("BOSS_SEQUENCE_STARTED");
+
     setTimeout(() => {
-        this.boss = new Boss();
+        if (window.gameActive) {
+            this.boss = new Boss();
+            console.log("BOSS_SPAWNED");
+        }
     }, 2500); 
 }
 
