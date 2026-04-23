@@ -289,17 +289,17 @@ class MimicBoss {
         this.maxHp = 800;
         
         this.type = 'mimic';
-        this.state = 'move'; // move, dash, barrage, grab
+        this.state = 'move'; 
         this.stateTimer = 0;
         this.color = '#ff0055';
 
-        // Для захвата
         this.fPresses = 0;
         this.isGrabbed = false;
+        this.executionProjectileSpawned = false; // Флаг для пули-казни
 
-        // Для движения
+        // УВЕЛИЧЕННАЯ СКОРОСТЬ
         this.moveDir = 1;
-        this.vx = 3;
+        this.vx = 8; // Было 3, теперь 8 — он носится очень быстро
     }
 
     update(dt) {
@@ -311,15 +311,13 @@ class MimicBoss {
 
         // --- МАШИНА СОСТОЯНИЙ ---
         if (this.state === 'move') {
-            // Обычное движение влево-вправо
             this.x += this.vx * this.moveDir * (60 * dt);
             if (this.x > canvas.width - 100 || this.x < 100) this.moveDir *= -1;
 
-            // Стрельба в движении
-            if (Math.random() > 0.96) this.shootSmall();
+            // УВЕЛИЧЕННАЯ ЧАСТОТА СТРЕЛЬБЫ (Шанс 10% каждый кадр)
+            if (Math.random() > 0.90) this.shootSmall();
 
-            // Смена состояния
-            if (this.stateTimer > 4) {
+            if (this.stateTimer > 3) { // Чаще меняет состояния
                 const rand = Math.random();
                 if (rand < 0.4) this.state = 'dash';
                 else if (rand < 0.7) this.state = 'barrage';
@@ -329,15 +327,21 @@ class MimicBoss {
         } 
 
         else if (this.state === 'dash') {
-            // ТАРАН
-            if (this.stateTimer < 1) {
-                // Подготовка (дрожание)
-                this.x += Math.sin(Date.now()) * 5;
+            if (this.stateTimer < 0.8) {
+                this.x += Math.sin(Date.now()) * 10; // Трясется сильнее
             } else {
-                // Полет вниз
-                this.y += 25 * (60 * dt);
+                this.y += 30 * (60 * dt); // Скорость тарана выше
+
+                // ПРОВЕРКА ПОПАДАНИЯ ТАРАНОМ
+                const dist = Math.hypot(this.x - engine.player.x, this.y - engine.player.y);
+                if (dist < 60) {
+                    engine.player.hp -= 1; // Сносит 1 HP
+                    engine.shake = 30;
+                    this.y = canvas.height + 300; // Пролетает мимо после удара
+                }
+
                 if (this.y > canvas.height + 200) {
-                    this.y = -100; // Респаун сверху
+                    this.y = -100; 
                     this.state = 'move';
                     this.stateTimer = 0;
                 }
@@ -345,31 +349,34 @@ class MimicBoss {
         }
 
         else if (this.state === 'barrage') {
-            // ШКВАЛ ПУЛЬ
-            if (Math.random() > 0.5) {
+            // УВЕЛИЧЕНО КОЛИЧЕСТВО ШАРОВ: выпускает по 3 за раз
+            for(let i = 0; i < 3; i++) {
                 this.shootBarrage();
             }
-            if (this.stateTimer > 3) {
+            if (this.stateTimer > 2.5) {
                 this.state = 'move';
                 this.stateTimer = 0;
             }
         }
 
         else if (this.state === 'grab') {
-            // ЗАХВАТ
             if (!this.isGrabbed) {
                 this.isGrabbed = true;
-                engine.player.locked = true; // Блокируем игрока
+                this.executionProjectileSpawned = false;
                 this.fPresses = 0;
             }
             
-            // Притягиваем игрока к себе для визуального эффекта
+            // Плавное притягивание
             engine.player.x += (this.x - engine.player.x) * 0.1;
-            engine.player.hp -= 0.1; // Постепенный урон при захвате
+
+            // ПУЛЯ-КАЗНЬ: если игрок не успел освободиться за 1.5 секунды
+            if (this.stateTimer > 1.5 && !this.executionProjectileSpawned) {
+                this.shootExecution();
+                this.executionProjectileSpawned = true;
+            }
 
             if (this.fPresses >= 3) {
                 this.isGrabbed = false;
-                engine.player.locked = false;
                 this.state = 'move';
                 this.stateTimer = 0;
                 engine.shake = 20;
@@ -378,16 +385,28 @@ class MimicBoss {
     }
 
     shootSmall() {
-        engine.enemyProjectiles.push({ x: this.x, y: this.y + 20, vx: 0, vy: 7, size: 5, color: this.color });
+        engine.enemyProjectiles.push({ x: this.x, y: this.y + 20, vx: (Math.random()-0.5)*4, vy: 10, size: 5, color: this.color });
     }
 
     shootBarrage() {
         const angle = Math.random() * Math.PI * 2;
         engine.enemyProjectiles.push({
             x: this.x, y: this.y,
-            vx: Math.cos(angle) * 5,
-            vy: Math.sin(angle) * 5,
+            vx: Math.cos(angle) * 6,
+            vy: Math.sin(angle) * 6,
             size: 4, color: '#00f2ff'
+        });
+    }
+
+    // Специальная пуля для фазы захвата
+    shootExecution() {
+        engine.enemyProjectiles.push({
+            x: this.x,
+            y: this.y + 10,
+            vx: 0,
+            vy: 12, // Очень быстрая
+            size: 10, // Крупная
+            color: '#ff0000'
         });
     }
 
@@ -395,31 +414,16 @@ class MimicBoss {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.scale(1, -1);
-
-        // Красный силуэт при таране
-        const drawColor = (this.state === 'dash' && this.stateTimer > 1) ? '#ff0000' : this.color;
-        this.renderMimicShip(ctx, drawColor, 1.0);
-        
+        this.renderMimicShip(ctx, this.color, 1.0);
         ctx.restore();
 
         if (this.isGrabbed) {
             this.drawGrabUI(ctx);
         }
-        
         this.drawUI(ctx);
     }
 
-    drawGrabUI(ctx) {
-        ctx.fillStyle = '#ff0000';
-        ctx.font = 'bold 40px Orbitron';
-        ctx.textAlign = 'center';
-        ctx.fillText("SYSTEM LOCK!", canvas.width/2, canvas.height/2 - 50);
-        ctx.fillStyle = '#fff';
-        ctx.font = '20px Orbitron';
-        ctx.fillText(`PRESS [F] TO REBOOT: ${this.fPresses}/3`, canvas.width/2, canvas.height/2);
-    }
-
-    // Твой метод отрисовки корабля (Aegis)
+    // Твой метод отрисовки (Aegis)
     renderMimicShip(ctx, color, alpha) {
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -434,6 +438,16 @@ class MimicBoss {
         ctx.closePath();
         ctx.stroke();
         ctx.restore();
+    }
+
+    drawGrabUI(ctx) {
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 40px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText("SYSTEM LOCK!", canvas.width/2, canvas.height/2 - 50);
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px Orbitron';
+        ctx.fillText(`PRESS [F] TO REBOOT: ${this.fPresses}/3`, canvas.width/2, canvas.height/2);
     }
 
     drawUI(ctx) {
