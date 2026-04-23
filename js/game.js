@@ -522,6 +522,10 @@ update(dt) {
 // Внутри GameEngine -> update(dt)
 this.gameTime += dt;
 
+ if (this.bossTitleTimer > 0) {
+    this.bossTitleTimer -= dt;
+}
+
 // За 5 секунд до босса включаем "Панику"
 if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
     this.enemies.forEach(e => {
@@ -638,9 +642,7 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
         }
     }
 
-    if (this.bossTitleTimer > 0) {
-    this.bossTitleTimer -= dt;
-}
+   
 
     if (e.hp <= 0) {
         this.player.score += e.scoreValue;
