@@ -285,8 +285,8 @@ class MimicBoss {
         this.x = canvas.width / 2;
         this.y = -100;
         this.targetY = 150;
-        this.hp = 100;
-        this.maxHp = 100;
+        this.hp = 60;
+        this.maxHp = 60;
         
         this.type = 'mimic';
         this.state = 'move'; 
@@ -392,7 +392,12 @@ class MimicBoss {
                 this.state = 'move';
                 this.stateTimer = 0;
                 engine.shake = 20;
-            }
+           
+    // Это гарантирует, что движок сразу начнет слушать мышь, 
+    // а не пытаться "дотянуть" игрока к боссу.
+    engine.player.targetX = engine.player.x; 
+}
+
             break;
     }
 }
