@@ -886,6 +886,7 @@ if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
         continue;
     }
             this.player.lives--;
+            this.player.invulTimer = 1.5; // Даем 1.5 сек бессмертия после удара
             this.shake = 20;
             this.enemyProjectiles.splice(i, 1);
             if (this.player.lives <= 0) this.gameOver();
@@ -1003,6 +1004,7 @@ if (e.y > canvas.height + 50) {
             console.log("%c[SYSTEM] REPAIR_KIT_APPLIED", "color: #00ff44");
         } else {
             // Врезались во врага
+            this.player.invulTimer = 1.5; // Даем 1.5 сек бессмертия после удара
             if (this.gameTime < 115) {
                 this.player.lives--;
                 this.shake = 15;
