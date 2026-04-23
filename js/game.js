@@ -338,17 +338,20 @@ class MimicBoss {
     }
 
     spawnClones(count) {
-        for (let i = 0; i < count; i++) {
-            this.clones.push({
-                // Раскидываем их веером
-                x: this.x + (i - 1.5) * 150, 
-                y: this.y + 40,
-                life: 4.0, // Живут 4 секунды
-                shootTimer: Math.random() // Рандомная задержка первого выстрела
-            });
-        }
-        engine.shake = 15;
+    for (let i = 0; i < count; i++) {
+        this.clones.push({
+            // Начальная позиция врассыпную
+            x: Math.random() * canvas.width,
+            y: this.y + 50,
+            life: 4.0,
+            shootTimer: Math.random(),
+            // КЛЮЧЕВОЙ МОМЕНТ: каждый клон "хочет" быть в своем месте относительно игрока
+            // Первый слева (-300), второй чуть левее (-100), и т.д.
+            offsetX: (i - (count - 1) / 2) * 200 
+        });
     }
+    engine.shake = 15;
+}
 
     triggerInversion() {
         engine.player.isInverted = true;
@@ -379,6 +382,9 @@ class MimicBoss {
     draw(ctx) {
         // Отрисовка иллюзий
         this.clones.forEach(c => {
+            let targetX = engine.player.x + c.offsetX; // Каждый клон летит в свою точку
+let cdx = targetX - c.x;
+c.x += cdx * 0.05 * (60 * dt);
             this.drawShipAt(ctx, c.x, c.y, 0.35, '#00f2ff');
         });
 
