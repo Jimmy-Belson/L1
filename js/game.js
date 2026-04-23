@@ -209,22 +209,22 @@ class Enemy {
         this.y += this.speed * 60 * dt;
     }
 }
-    draw(ctx) {
-    ctx.save();
-    
-    // ЭФФЕКТ ГЛЮКА ПЕРЕД МИМИКОМ
+draw(ctx) {
     let renderX = this.x;
     let renderY = this.y;
     
-    // Если в игре фаза появления Мимика (235-240 сек)
-    if (engine.gameTime > 235 && engine.gameTime < 240 && !engine.bossSpawned) {
-        if (Math.random() > 0.8) {
-            renderX += Math.random() * 20 - 10; // Дерганье по X
-            ctx.globalAlpha = Math.random();     // Мерцание
-            this.color = Math.random() > 0.5 ? '#00f2ff' : '#ff0055'; // Смена цветов вируса
-        }
+    // ЭФФЕКТ ГЛЮКА (вибрация и инверсия цвета)
+    if (this.isGlitching) {
+        renderX += Math.random() * 14 - 7; // Сильная тряска
+        renderY += Math.random() * 14 - 7;
+        if (Math.random() > 0.5) ctx.filter = 'invert(100%)'; // Глючный негатив
     }
-        ctx.translate(this.x, this.y);
+
+    ctx.save();
+    ctx.translate(renderX, renderY);
+    // ... далее твой switch(this.type) ...
+    
+
 
         ctx.shadowBlur = 20;
         ctx.shadowColor = this.color;
@@ -297,6 +297,8 @@ class Enemy {
                 ctx.fill();
                 break;
         }
+        
+    ctx.filter = 'none'; // СБРОС ФИЛЬТРА ОБЯЗАТЕЛЕН
 
         ctx.restore();
     }
@@ -775,14 +777,19 @@ setupListeners() {
 
     // 2. Движение (С ПРОВЕРКОЙ БЛОКИРОВКИ)
     window.addEventListener('mousemove', (e) => {
-        if (!window.gameActive) return;
-        
-        // БЛОКИРОВКА ДВИЖЕНИЯ: Если активен захват Мимика, движение игнорируется
-        if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) return;
+    if (!window.gameActive) return;
+    
+    // БЛОКИРОВКА ДВИЖЕНИЯ: Если активен захват
+    if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) {
+        // ВАЖНО: постоянно приравниваем цель к текущей позиции, 
+        // чтобы после отпускания корабль не летел в старую точку мыши
+        this.player.targetX = this.player.x; 
+        return;
+    }
 
-        if (document.pointerLockElement === canvas) {
-            this.player.targetX += e.movementX * 1.5;
-        } else {
+    if (document.pointerLockElement === canvas) {
+        this.player.targetX += e.movementX * 1.5;
+    } else {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             this.player.targetX = (e.clientX - rect.left) * scaleX;
@@ -850,29 +857,37 @@ if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
     this.spawnBossSequence("WARNING: SYSTEM CORRUPTION // MIMIC", () => new MimicBoss());
 }
 
-// --- ЛОГИКА ПЕРЕД ПОЯВЛЕНИЕМ МИМИКА (235 - 240 сек) ---
-if (this.gameTime >= 235 && this.gameTime < 240 && !this.bossSpawned) {
-    this.shake = 5; // Постоянная мелкая тряска
+// 1. Фаза "Глюка" (с 235 до 238 секунды)
+if (this.gameTime >= 235 && this.gameTime < 238 && !this.bossSpawned) {
+    this.enemies.forEach(e => {
+        e.speed = 0;           // Враги замирают на месте
+        e.isGlitching = true;  // Включаем тряску из шага №1
+    });
+    this.shake = 2; // Легкий гул системы
+}
 
-    this.enemies.forEach((e, index) => {
-        // Враги замирают и начинают вибрировать
-        e.speed = 0; 
-        
-        // В последние полсекунды перед титрами враги взрываются
-        if (this.gameTime > 239.5) {
-            // Создаем частицы "битых пикселей"
-            for (let j = 0; j < 10; j++) {
-                let p = new Particle(e.x, e.y, e.color);
-                p.speedX *= 2; 
-                p.speedY *= 2;
-                p.size = Math.random() * 5; // Крупные частицы-квадраты
-                this.particles.push(p);
-            }
-            // Удаляем врага
-            this.enemies.splice(index, 1);
-            this.shake = 20; // Сильный импульс при взрыве толпы
+// 2. Фаза "Аннигиляции" (ровно в 238 секунд)
+if (this.gameTime >= 238 && this.gameTime < 238.1 && !this.bossSpawned && this.enemies.length > 0) {
+    this.enemies.forEach(e => {
+        // Создаем взрыв из битых пикселей (квадратные частицы)
+        for (let j = 0; j < 15; j++) {
+            let p = new Particle(e.x, e.y, e.color);
+            p.speedX *= 3; 
+            p.speedY *= 3;
+            p.size = Math.random() * 6; // Делаем их крупнее обычных
+            this.particles.push(p);
         }
     });
+    
+    this.enemies = []; // Мгновенно удаляем всех врагов
+    this.shake = 50;   // Мощный визуальный удар
+    this.player.invulTimer = 3; // Даем игроку бессмертие, чтобы частицы не убили
+    console.log("%c[SYSTEM] ALL_ENTITIES_PURGED", "color: #ff0055");
+}
+
+// 3. Появление босса (на 240 секунде, через 2 сек после взрыва)
+if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
+    this.spawnBossSequence("WARNING: SYSTEM CORRUPTION // MIMIC", () => new MimicBoss());
 }
 
 
