@@ -285,104 +285,77 @@ class MimicBoss {
         this.x = canvas.width / 2;
         this.y = -100;
         this.targetY = 150;
-        this.hp = 150;
-        this.maxHp = 150;
-        this.hasResurrected = false; // Воскресал ли он уже?
+        this.hp = 100;
+        this.maxHp = 100;
         
         this.type = 'mimic';
-        this.phase = 1; 
-        this.timer = 0;
-        this.glitchTimer = 0;
-        this.isMirageActive = false;
-        
-        // Позиции для фантомов (Мираж)
-        this.mirages = [{x: 0, y: 0}, {x: 0, y: 0}]; 
+        this.hasResurrected = false;
+        this.color = '#00ff44'; // Изначально ядовито-зеленый (цвет кода)
+        this.angle = 0;
     }
 
     update(dt) {
-        // Плавное появление
-        if (this.y < this.targetY) this.y += 1 * 60 * dt;
-
-        this.timer += dt;
-        this.glitchTimer += dt;
-
-        // Движение: резкие телепорты вместо плавного скольжения
-        if (Math.sin(this.timer * 2) > 0.98) {
-            this.x = Math.random() * (canvas.width - 200) + 100;
-        }
-
-        // МЕХАНИКА 1: Инверсия управления (каждые 8 секунд)
-        if (Math.floor(this.timer) % 8 === 0 && !engine.player.isInverted) {
-            this.triggerInversion();
-        }
-
-        // МЕХАНИКА 2: Мираж (на второй фазе)
-        if (this.hp < this.maxHp / 2) {
-            this.phase = 2;
-            this.isMirageActive = true;
-            this.updateMirages();
-        }
-    }
-
-    triggerInversion() {
-        engine.player.isInverted = true;
-        engine.shake = 30;
-        // Текст-предупреждение
-        engine.bossTitleText = "CRITICAL ERROR: INPUT REVERSED";
-        engine.bossTitleTimer = 2.0;
-
-        setTimeout(() => {
-            engine.player.isInverted = false;
-        }, 4000); // Инверсия на 4 секунды
-    }
-
-    updateMirages() {
-        // Ложные цели смещаются относительно босса
-        this.mirages[0].x = this.x + Math.sin(this.timer * 3) * 200;
-        this.mirages[1].x = this.x - Math.sin(this.timer * 3) * 200;
+        if (this.y < this.targetY) this.y += 2 * 60 * dt;
+        this.angle += dt * 2;
+        // Он не атакует, но он может хаотично дергаться на месте
+        this.x += Math.sin(Date.now() / 100) * 2;
     }
 
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // Рисуем глитч-эффект (расслоение)
-        for(let i = 0; i < 3; i++) {
-            ctx.strokeStyle = i === 0 ? '#00ff44' : '#ff00ff';
-            ctx.lineWidth = 3;
-            let offset = Math.random() * 10 - 5;
+        // --- ЭФФЕКТ "РАССЛОЕНИЯ" (Глитч-визуал) ---
+        // Рисуем 3 контура квадрата, которые постоянно смещаются
+        for (let i = 0; i < 3; i++) {
+            ctx.save();
             
-            ctx.strokeRect(-40 + offset, -40 + offset, 80, 80);
-            ctx.strokeRect(-20 - offset, -20 - offset, 40, 40);
-        }
+            // Каждый слой дрожит по-своему
+            const offset = (Math.random() - 0.5) * 15;
+            ctx.translate(offset, offset);
+            
+            // Цвет слоев: основной, розовый и синий глитч
+            if (i === 1) ctx.strokeStyle = '#ff0055';
+            else if (i === 2) ctx.strokeStyle = '#00f2ff';
+            else ctx.strokeStyle = this.color;
 
-        // Отрисовка миражей, если активны
-        if (this.isMirageActive) {
+            ctx.lineWidth = i === 0 ? 4 : 1;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ctx.strokeStyle;
+
+            // Рисуем основной квадрат
+            ctx.strokeRect(-45, -45, 90, 90);
+
+            // Добавляем "мусорные" пиксели вокруг (артефакты сжатия)
+            if (Math.random() > 0.7) {
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.fillRect(Math.random() * 100 - 50, Math.random() * 100 - 50, 10, 2);
+            }
+
             ctx.restore();
-            this.mirages.forEach(m => {
-                ctx.save();
-                ctx.globalAlpha = 0.3; // Полупрозрачные
-                ctx.translate(m.x, this.y);
-                ctx.strokeStyle = '#fff';
-                ctx.strokeRect(-40, -40, 80, 80);
-                ctx.restore();
-            });
-            ctx.save(); // Возвращаем контекст для UI
-            ctx.translate(this.x, this.y);
         }
 
+        // --- ВНУТРЕННИЙ СИМВОЛ "ОШИБКИ" ---
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Рисуем большой "X" внутри
+        ctx.moveTo(-30, -30); ctx.lineTo(30, 30);
+        ctx.moveTo(30, -30); ctx.lineTo(-30, 30);
+        ctx.stroke();
+
+        // Полоска HP (рисуется относительно gx, gy)
         this.drawUI(ctx);
+
         ctx.restore();
     }
 
     drawUI(ctx) {
-        const barW = 300;
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(-barW/2, -80, barW, 4);
-        ctx.fillStyle = '#00ff44';
-        ctx.fillRect(-barW/2, -80, (this.hp/this.maxHp)*barW, 4);
-        ctx.font = '12px Orbitron';
-        ctx.fillText("SYSTEM_MIMIC // SHADOW", 0, -90);
+        const barW = 200;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(-barW/2, -80, barW, 6);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-barW/2, -80, (this.hp/this.maxHp)*barW, 6);
     }
 }
 
