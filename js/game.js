@@ -282,80 +282,115 @@ class Enemy {
 // ==========================================
 class MimicBoss {
     constructor() {
+        // Появляется сверху по центру
         this.x = canvas.width / 2;
         this.y = -100;
-        this.targetY = 150;
-        this.hp = 100;
-        this.maxHp = 100;
+        this.targetY = 150; // Высота, на которой он зависнет
+
+        this.hp = 150;
+        this.maxHp = 150;
         
         this.type = 'mimic';
-        this.hasResurrected = false;
-        this.color = '#00ff44'; // Изначально ядовито-зеленый (цвет кода)
-        this.angle = 0;
+        this.hasResurrected = false; // Флаг для пранка
+        
+        // Базовый цвет двойника (искаженный голубой игрока)
+        this.color = '#ff0055'; // Розовый глитч
+        this.glitchTimer = 0;
     }
 
     update(dt) {
-        if (this.y < this.targetY) this.y += 2 * 60 * dt;
-        this.angle += dt * 2;
-        // Он не атакует, но он может хаотично дергаться на месте
-        this.x += Math.sin(Date.now() / 100) * 2;
+        // 1. Плавный въезд на арену
+        if (this.y < this.targetY) {
+            this.y += 1.5 * 60 * dt;
+        }
+
+        // 2. МЕХАНИКА ПРЕСЛЕДОВАНИЯ (Зеркальное движение)
+        // Он плавно стремится занять ту же X-координату, что и игрок
+        const targetX = engine.player.x;
+        this.x += (targetX - this.x) * (0.1 * dt * 60); // Чуть медленнее игрока
+        
+        // 3. Глитч-таймер для анимации
+        this.glitchTimer += dt;
     }
 
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
+        
+        // Вторая фаза (после воскрешения) — он дергается сильнее
+        if (this.hasResurrected) {
+            ctx.translate(Math.random() * 6 - 3, Math.random() * 6 - 3);
+        }
 
-        // --- ЭФФЕКТ "РАССЛОЕНИЯ" (Глитч-визуал) ---
-        // Рисуем 3 контура квадрата, которые постоянно смещаются
+        // --- ЭФФЕКТ "ИСКАЖЕННОГО ОТРАЖЕНИЯ" ---
+        
+        // Рисуем 3 слоя геометрии корабля с разными смещениями и цветами
         for (let i = 0; i < 3; i++) {
             ctx.save();
             
-            // Каждый слой дрожит по-своему
-            const offset = (Math.random() - 0.5) * 15;
+            // Каждый слой глитчит по-своему
+            const offset = (Math.random() - 0.5) * 10;
             ctx.translate(offset, offset);
             
-            // Цвет слоев: основной, розовый и синий глитч
-            if (i === 1) ctx.strokeStyle = '#ff0055';
-            else if (i === 2) ctx.strokeStyle = '#00f2ff';
-            else ctx.strokeStyle = this.color;
+            // Цвета глитча (розовый, синий, основной)
+            if (i === 1) ctx.strokeStyle = '#00f2ff'; // Голубой глитч
+            else if (i === 2) ctx.strokeStyle = '#fff';     // Белый глитч
+            else ctx.strokeStyle = this.color;              // Основной розовый
 
-            ctx.lineWidth = i === 0 ? 4 : 1;
-            ctx.shadowBlur = 15;
+            ctx.lineWidth = i === 0 ? 3 : 1;
+            ctx.shadowBlur = 20;
             ctx.shadowColor = ctx.strokeStyle;
 
-            // Рисуем основной квадрат
-            ctx.strokeRect(-45, -45, 90, 90);
-
-            // Добавляем "мусорные" пиксели вокруг (артефакты сжатия)
-            if (Math.random() > 0.7) {
+            // !!! ГЛАВНОЕ: РИСУЕМ ТОЧНУЮ ГЕОМЕТРИЮ КОРАБЛЯ ИГРОКА !!!
+            this.drawShipGeometry(ctx);
+            
+            // Случайные "цифровые артефакты" (битые пиксели)
+            if (Math.random() > 0.8) {
                 ctx.fillStyle = ctx.strokeStyle;
-                ctx.fillRect(Math.random() * 100 - 50, Math.random() * 100 - 50, 10, 2);
+                ctx.fillRect(Math.random() * 80 - 40, Math.random() * 80 - 40, 15, 3);
             }
 
             ctx.restore();
         }
 
-        // --- ВНУТРЕННИЙ СИМВОЛ "ОШИБКИ" ---
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
+        // Ядро двойника (всегда белое и яркое, как баг)
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = '#fff';
         ctx.beginPath();
-        // Рисуем большой "X" внутри
-        ctx.moveTo(-30, -30); ctx.lineTo(30, 30);
-        ctx.moveTo(30, -30); ctx.lineTo(-30, 30);
-        ctx.stroke();
+        // Ромб в центре
+        ctx.moveTo(0, -10); ctx.lineTo(10, 0); ctx.lineTo(0, 10); ctx.lineTo(-10, 0);
+        ctx.closePath();
+        ctx.fill();
 
-        // Полоска HP (рисуется относительно gx, gy)
+        // Полоска HP (рисуется относительно x, y)
         this.drawUI(ctx);
 
         ctx.restore();
     }
 
+    // Точная копия геометрии из класса Player.draw()
+    drawShipGeometry(ctx) {
+        ctx.beginPath();
+        ctx.moveTo(0, -25);     
+        ctx.lineTo(8, -10);     
+        ctx.lineTo(25, 15);     
+        ctx.lineTo(10, 15);     
+        ctx.lineTo(0, 5);       
+        ctx.lineTo(-10, 15);    
+        ctx.lineTo(-25, 15);    
+        ctx.lineTo(-8, -10);    
+        ctx.closePath();
+        ctx.stroke();
+    }
+
     drawUI(ctx) {
         const barW = 200;
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(-barW/2, -80, barW, 6);
+        ctx.fillRect(-barW/2, -60, barW, 4);
+        // Полоска жизни Мимика тоже розовая
         ctx.fillStyle = this.color;
-        ctx.fillRect(-barW/2, -80, (this.hp/this.maxHp)*barW, 6);
+        ctx.fillRect(-barW/2, -60, (this.hp/this.maxHp)*barW, 4);
     }
 }
 
