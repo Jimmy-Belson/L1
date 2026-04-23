@@ -853,18 +853,19 @@ if (this.gameTime >= 120 && this.gameTime < 130 && !this.bossSpawned) {
     this.spawnBossSequence("SENTINEL-01: ARCHITECT", () => new Boss());
 }
 
-// 2. ФАЗА "ГЛЮКА" (235 - 238 сек): Враги замирают, когда Мимик начинает взламывать систему
-if (this.gameTime >= 235 && this.gameTime < 238 && !this.bossSpawned) {
+// 2. ФАЗА "ГЛЮКА" (235 - 238 сек): Те, кто УЖЕ на экране, замирают и трясутся
+if (this.gameTime >= 235 && this.gameTime < 238) {
     this.enemies.forEach(e => {
         e.speed = 0;           
         e.isGlitching = true;  
     });
-    this.shake = 2;
+    this.shake = 2; // Легкий гул
 }
 
-// 3. ФАЗА "ВЗРЫВА" (238 сек): Очистка экрана перед титрами
-if (this.gameTime >= 238 && this.gameTime < 238.1 && !this.bossSpawned && this.enemies.length > 0) {
+// 3. ФАЗА "ВЗРЫВА" (Ровно в 238 сек): Уничтожаем тех, кто заглючил
+if (this.gameTime >= 238 && this.gameTime < 238.1 && this.enemies.length > 0) {
     this.enemies.forEach(e => {
+        // Создаем частицы на месте каждого моба
         for (let j = 0; j < 15; j++) {
             let p = new Particle(e.x, e.y, e.color);
             p.speedX *= 3; p.speedY *= 3;
@@ -872,13 +873,12 @@ if (this.gameTime >= 238 && this.gameTime < 238.1 && !this.bossSpawned && this.e
             this.particles.push(p);
         }
     });
-    this.enemies = []; 
-    this.shake = 50;   
+    this.enemies = []; // Очищаем экран навсегда перед боссом
+    this.shake = 50;   // Бабах!
     this.player.invulTimer = 3; 
-    console.log("%c[SYSTEM] ALL_ENTITIES_PURGED", "color: #ff0055");
 }
 
-// 4. БОСС №2: MIMIC (240 сек) - Запуск титров только на пустом экране
+// 4. БОСС №2: MIMIC (на 240 сек)
 if (this.gameTime >= 240 && !this.bossSpawned && !this.boss) {
     this.spawnBossSequence("WARNING: SYSTEM CORRUPTION // MIMIC", () => new MimicBoss());
 }
@@ -946,11 +946,13 @@ if (this.boss) {
         
        // Внутри GameEngine -> update(dt)
 
-// 2. Спавн врагов (с защитой от боссфайта)
+// 2. Спавн врагов
 this.spawnTimer += dt * 60; 
 
-// Добавляем проверку !this.boss (восклицательный знак означает "НЕТ")
-if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL && !this.boss && this.bossTitleTimer <= 0) {
+// Добавляем проверку: не спавнить, если до Мимика осталось менее 5 сек (с 235-й секунды)
+const prepPhase = (this.gameTime >= 235 && this.gameTime < 240);
+
+if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL && !this.boss && this.bossTitleTimer <= 0 && !prepPhase) {
     this.enemies.push(new Enemy());
     this.spawnTimer = 0;
 }
