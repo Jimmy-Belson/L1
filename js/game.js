@@ -863,7 +863,7 @@ if (this.gameTime >= 235 && this.gameTime < 238) {
 }
 
 // 3. ФАЗА "ВЗРЫВА" (Ровно в 238 сек): Уничтожаем тех, кто заглючил
-if (this.gameTime >= 238 && this.gameTime < 238.1 && this.enemies.length > 0) {
+if (this.gameTime >= 238 && this.gameTime < 238.2 && this.enemies.length > 0) {
     this.enemies.forEach(e => {
         // Создаем частицы на месте каждого моба
         for (let j = 0; j < 15; j++) {
