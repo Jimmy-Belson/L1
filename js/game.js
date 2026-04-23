@@ -350,7 +350,7 @@ class MimicBoss {
 
         else if (this.state === 'barrage') {
             // УВЕЛИЧЕНО КОЛИЧЕСТВО ШАРОВ: выпускает по 3 за раз
-            for(let i = 0; i < 2; i++) {
+            for(let i = 0; i < 1.5; i++) {
                 this.shootBarrage();
             }
             if (this.stateTimer > 2.5) {
