@@ -282,94 +282,56 @@ class Enemy {
 // ==========================================
 class MimicBoss {
     constructor() {
-        // Появляется сверху по центру
         this.x = canvas.width / 2;
         this.y = -100;
-        this.targetY = 150; // Высота, на которой он зависнет
-
+        this.targetY = 150;
         this.hp = 150;
         this.maxHp = 150;
         
         this.type = 'mimic';
-        this.hasResurrected = false; // Флаг для пранка
+        this.hasResurrected = false;
+        this.color = '#ff0055';
         
-        // Базовый цвет двойника (искаженный голубой игрока)
-        this.color = '#ff0055'; // Розовый глитч
-        this.glitchTimer = 0;
+        // Настройка "задержки" преследования
+        // 0.05 — очень плавно (большая задержка), 1.0 — мгновенно.
+        this.followSpeed = 0.04; 
     }
 
     update(dt) {
-        // 1. Плавный въезд на арену
-        if (this.y < this.targetY) {
-            this.y += 1.5 * 60 * dt;
-        }
+        if (this.y < this.targetY) this.y += 1.5 * 60 * dt;
 
-        // 2. МЕХАНИКА ПРЕСЛЕДОВАНИЯ (Зеркальное движение)
-        // Он плавно стремится занять ту же X-координату, что и игрок
-        const targetX = engine.player.x;
-        this.x += (targetX - this.x) * (0.1 * dt * 60); // Чуть медленнее игрока
-        
-        // 3. Глитч-таймер для анимации
-        this.glitchTimer += dt;
+        // ЛОГИКА ПРЕСЛЕДОВАНИЯ С ЗАДЕРЖКОЙ
+        // Вместо мгновенного прыжка, он плавно "подтягивается" к игроку
+        const dx = engine.player.x - this.x;
+        this.x += dx * this.followSpeed * (60 * dt);
     }
 
     draw(ctx) {
         ctx.save();
         ctx.translate(this.x, this.y);
         
-        // Вторая фаза (после воскрешения) — он дергается сильнее
-        if (this.hasResurrected) {
-            ctx.translate(Math.random() * 6 - 3, Math.random() * 6 - 3);
-        }
+        // РАЗВОРОТ МОДЕЛЬКИ
+        // scale(1, -1) переворачивает всё, что рисуется ниже, по вертикали
+        ctx.scale(1, -1); 
 
-        // --- ЭФФЕКТ "ИСКАЖЕННОГО ОТРАЖЕНИЯ" ---
-        
-        // Рисуем 3 слоя геометрии корабля с разными смещениями и цветами
         for (let i = 0; i < 3; i++) {
             ctx.save();
-            
-            // Каждый слой глитчит по-своему
             const offset = (Math.random() - 0.5) * 10;
             ctx.translate(offset, offset);
             
-            // Цвета глитча (розовый, синий, основной)
-            if (i === 1) ctx.strokeStyle = '#00f2ff'; // Голубой глитч
-            else if (i === 2) ctx.strokeStyle = '#fff';     // Белый глитч
-            else ctx.strokeStyle = this.color;              // Основной розовый
-
+            ctx.strokeStyle = (i === 1) ? '#00f2ff' : (i === 2) ? '#fff' : this.color;
             ctx.lineWidth = i === 0 ? 3 : 1;
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 15;
             ctx.shadowColor = ctx.strokeStyle;
 
-            // !!! ГЛАВНОЕ: РИСУЕМ ТОЧНУЮ ГЕОМЕТРИЮ КОРАБЛЯ ИГРОКА !!!
             this.drawShipGeometry(ctx);
-            
-            // Случайные "цифровые артефакты" (битые пиксели)
-            if (Math.random() > 0.8) {
-                ctx.fillStyle = ctx.strokeStyle;
-                ctx.fillRect(Math.random() * 80 - 40, Math.random() * 80 - 40, 15, 3);
-            }
-
             ctx.restore();
         }
+        ctx.restore(); // Возвращаем контекст в норму, чтобы UI не перевернулся
 
-        // Ядро двойника (всегда белое и яркое, как баг)
-        ctx.fillStyle = '#fff';
-        ctx.shadowBlur = 40;
-        ctx.shadowColor = '#fff';
-        ctx.beginPath();
-        // Ромб в центре
-        ctx.moveTo(0, -10); ctx.lineTo(10, 0); ctx.lineTo(0, 10); ctx.lineTo(-10, 0);
-        ctx.closePath();
-        ctx.fill();
-
-        // Полоска HP (рисуется относительно x, y)
         this.drawUI(ctx);
-
-        ctx.restore();
     }
 
-    // Точная копия геометрии из класса Player.draw()
     drawShipGeometry(ctx) {
         ctx.beginPath();
         ctx.moveTo(0, -25);     
@@ -384,13 +346,27 @@ class MimicBoss {
         ctx.stroke();
     }
 
+    // Тот самый метод зеркальной стрельбы
+    mirrorShot() {
+        engine.enemyProjectiles.push({
+            x: this.x,
+            y: this.y + 20,
+            vx: 0,
+            vy: 8, // Скорость пули Мимика
+            size: 5,
+            color: '#ff0055'
+        });
+    }
+
     drawUI(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
         const barW = 200;
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(-barW/2, -60, barW, 4);
-        // Полоска жизни Мимика тоже розовая
         ctx.fillStyle = this.color;
         ctx.fillRect(-barW/2, -60, (this.hp/this.maxHp)*barW, 4);
+        ctx.restore();
     }
 }
 
