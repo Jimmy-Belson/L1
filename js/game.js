@@ -320,7 +320,7 @@ class Boss {
  // ОБНОВЛЕННАЯ ЛОГИКА СТРЕЛЬБЫ
     this.shootTimer += dt;
     
-    let interval = this.phase === 1 ? 1.5 : 0.3; // Во второй фазе стреляет почти в 2 раза чаще
+    let interval = this.phase === 1 ? 1.5 : 0.45; // Во второй фазе стреляет почти в 2 раза чаще
 
     if (this.shootTimer > interval) {
         this.shoot();
