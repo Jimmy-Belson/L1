@@ -520,14 +520,18 @@ update(dt) {
 // Внутри GameEngine -> update(dt)
 this.gameTime += dt;
 
-// За 5 секунд до босса включаем "Панику" (на 115-й секунде)
+// За 5 секунд до босса включаем "Панику"
 if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
     this.enemies.forEach(e => {
-        e.speed *= 1.1; // Постепенно ускоряем их
-        e.color = '#fff'; // Меняем цвет на белый (эффект испуга/перегрузки)
+        // Устанавливаем фиксированную повышенную скорость ОДИН раз,
+        // а не умножаем её каждый кадр.
+        if (e.type === 'normal') e.speed = 8;
+        if (e.type === 'tank') e.speed = 5;
+        if (e.type === 'sprinter') e.speed = 12;
+        
+        e.color = '#fff'; 
     });
     
-    // Тряска экрана усиливается по мере приближения босса
     this.shake = Math.max(this.shake, (this.gameTime - 115) * 2);
 }
 
