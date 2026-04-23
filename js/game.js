@@ -641,31 +641,7 @@ if (e.y > canvas.height + 50) {
     continue;
 }
 
-// 4. Враги
-for (let i = this.enemies.length - 1; i >= 0; i--) {
-    let e = this.enemies[i];
-    e.update(dt);
-    
-    // Считаем расстояние до игрока ОДИН раз в начале цикла
-    const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
 
-    // Проверка столкновения врагов с ТВОИМИ пулями
-    for (let j = this.projectiles.length - 1; j >= 0; j--) {
-        let p = this.projectiles[j];
-        if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
-            if (e.type === 'repair') continue; // Пули летят сквозь аптечку
-            e.hp--;
-            this.projectiles.splice(j, 1);
-            if (e.hp <= 0) break;
-        }
-    }
-
-    if (e.hp <= 0) {
-        this.player.score += e.scoreValue;
-        for(let j=0; j<8; j++) this.particles.push(new Particle(e.x, e.y, e.color));
-        this.enemies.splice(i, 1);
-        continue;
-    }
 
     // --- ОБЪЕДИНЕННАЯ ЛОГИКА ПРОПУСКОВ И СТОЛКНОВЕНИЙ ---
 
@@ -701,7 +677,7 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
         this.enemies.splice(i, 1);
         continue;
     }
-}
+
 }
         // 5. Универсальное обновление частиц и спецэффектов
 for (let i = this.particles.length - 1; i >= 0; i--) {
