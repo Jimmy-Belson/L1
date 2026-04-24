@@ -389,23 +389,28 @@ body:not(:has(.game-over-visible)) {
     margin-bottom: 15px !important;
 }
 
-/* Панель магазина */
 .side-panel {
-    position: absolute;
-    top: 0; right: -100%; /* Прячем за экраном */
-    width: 300px;
-    height: 100%;
-    background: rgba(0, 5, 10, 0.95);
+    position: fixed; /* Именно fixed, чтобы не зависеть от флексбоксов центра */
+    top: 0; 
+    right: -400px; /* Прячем подальше вправо */
+    width: 350px;
+    height: 100vh;
+    background: rgba(1, 5, 10, 0.98); /* Плотный фон */
     border-left: 2px solid #0ff;
-    backdrop-filter: blur(10px);
-    transition: right 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    padding: 20px;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(15px);
+    transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 30px 20px;
+    z-index: 100000; /* Максимальный приоритет — выше логов и оверлея */
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    box-sizing: border-box;
 }
 
-.side-panel.active { right: 0; }
+.side-panel.active { 
+    right: 0 !important; 
+}
+
 
 .panel-header {
     display: flex;
@@ -424,25 +429,25 @@ body:not(:has(.game-over-visible)) {
     font-size: 14px;
 }
 
-/* Карточки товаров */
+/* Фикс для кнопок внутри магазина, чтобы не наследовались криво */
 .shop-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(0, 255, 255, 0.2);
-    padding: 15px;
-    margin-bottom: 10px;
-    cursor: pointer;
+    all: initial; /* Сброс наследования от стандартных кнопок */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: 0.2s;
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: 0.3s;
 }
 
 .shop-card:hover {
-    background: rgba(0, 255, 255, 0.1);
+    background: rgba(0, 255, 255, 0.15);
     border-color: #0ff;
-    transform: translateX(-5px);
 }
-
 .shop-card .name { display: block; color: #fff; font-size: 14px; }
 .shop-card .desc { display: block; color: #555; font-size: 9px; margin-top: 4px; }
 .shop-card .price { color: #ffaa00; font-weight: bold; }

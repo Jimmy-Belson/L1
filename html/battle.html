@@ -66,7 +66,7 @@
     
 <div class="game-viewport">
     <canvas id="game-canvas"></canvas>
-     <div class="heat-system">
+    <div class="heat-system">
         <div class="heat-bar-container">
             <div id="heat-fill"></div>
         </div>
@@ -74,20 +74,32 @@
     </div>
 </div>
 
-    <div id="game-over-overlay">
+<div id="game-over-overlay">
+    <div class="terminal-header">SYSTEM_FAILURE</div>
+    <div class="game-over-content">
+        <h1 class="glitch" data-text="TERMINATED">TERMINATED</h1>
+        
+        <div class="stats-row">
+            <span>FINAL_SCORE:</span>
+            <span id="final-score-value">0</span>
+        </div>
+        <div class="stats-row">
+            <span>RANK_ACHIEVED:</span>
+            <span id="final-rank-value" style="color: #0ff;">RECRUIT</span>
+        </div>
 
-        <div class="game-over-content">
-    <div class="action-buttons">
-        <button class="menu-btn shop-trigger" onclick="window.toggleShop(true)">[ OPEN_BLACK_MARKET ]</button>
-        <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
-        <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
+        <div class="action-buttons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <button class="shop-trigger" id="retry-btn" onclick="window.toggleShop(true)">[ OPEN_BLACK_MARKET ]</button>
+            <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
+            <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
+        </div>
     </div>
 </div>
 
 <div id="black-market-panel" class="side-panel">
     <div class="panel-header">
         <span>BLACK_MARKET_TERMINAL</span>
-        <button onclick="window.toggleShop(false)">[X]</button>
+        <button onclick="window.toggleShop(false)" style="background:none; border:none; color:#0ff; cursor:pointer;">[X]</button>
     </div>
     
     <div class="credits-display">AVAILABLE_CREDITS: <span id="shop-credits">0</span></div>
@@ -100,7 +112,6 @@
             </div>
             <div class="price">2000c</div>
         </div>
-
         <div class="shop-card" onclick="window.buyItem('twin', 5000, this)">
             <div class="card-info">
                 <span class="name">TWIN_BRO</span>
@@ -126,23 +137,6 @@
         </div>
     </div>
 </div>
-        <div class="terminal-header">SYSTEM_FAILURE</div>
-        <div class="game-over-content">
-
-            <h1 class="glitch" data-text="TERMINATED">TERMINATED</h1>
-            <div class="stats-row">
-                <span>FINAL_SCORE:</span>
-                <span id="final-score-value">0</span>
-            </div>
-            <div class="stats-row">
-                <span>RANK_ACHIEVED:</span>
-                <span id="final-rank-value" style="color: #0ff;">RECRUIT</span>
-            </div>
-            <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
-            <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
-        </div>
-    </div>
-    </div>
     
     <div class="tactical-log">
         <h3>Tactical Log</h3>
