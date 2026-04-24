@@ -87,6 +87,17 @@ class Player {
 
     update(dt) {
         const prevX = this.x;
+
+ // --- ДОБАВЬ ЭТУ ПРОВЕРКУ ---
+    // Если босс существует, он мимик и он схватил нас — ПРЕРЫВАЕМ движение
+    if (window.engine && window.engine.boss && window.engine.boss.isGrabbed) {
+        // Ничего не делаем, пропускаем расчет координат
+    } else {
+        // Стандартная логика движения
+        this.x += (this.targetX - this.x) * (0.3 * dt * 60);
+    }
+
+
         // Движение к курсору
         this.x += (this.targetX - this.x) * (0.3 * dt * 60);
         
