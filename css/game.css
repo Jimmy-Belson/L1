@@ -458,3 +458,32 @@ body:not(:has(.game-over-visible)) {
     pointer-events: none;
     opacity: 0.7;
 }
+/* 1. Стилизация самого бара (дорожки) */
+.shop-grid-vertical::-webkit-scrollbar {
+    width: 6px; /* Делаем его тонким и элегантным */
+}
+
+/* 2. Фон дорожки (скрываем или делаем очень темным) */
+.shop-grid-vertical::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+/* 3. Ползунок (та самая неоновая часть) */
+.shop-grid-vertical::-webkit-scrollbar-thumb {
+    background: #0ff; /* Твой основной неоновый цвет */
+    border-radius: 10px;
+    box-shadow: 0 0 10px #0ff, 0 0 20px #0ff; /* Эффект свечения */
+}
+
+/* 4. Цвет при наведении (делаем ярче) */
+.shop-grid-vertical::-webkit-scrollbar-thumb:hover {
+    background: #fff;
+    box-shadow: 0 0 15px #fff, 0 0 30px #0ff;
+}
+
+/* Фикс для Firefox (у него свои правила) */
+.shop-grid-vertical {
+    scrollbar-width: thin;
+    scrollbar-color: #0ff rgba(0, 0, 0, 0.3);
+}
