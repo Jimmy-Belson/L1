@@ -863,9 +863,9 @@ setupListeners() {
     let heatGain = 15; // Стандарт (Default, Laser)
 
     if (upg.weaponType === 'triple') {
-        heatGain = 30; // В 2 раза быстрее обычного
+        heatGain = 35; // В 2 раза быстрее обычного
     } else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') {
-        heatGain = 37; // В 3 раза быстрее (самые тяжелые)
+        heatGain = 40; // В 3 раза быстрее (самые тяжелые)
     }
     
     this.player.heat += heatGain;
