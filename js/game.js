@@ -997,12 +997,11 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
 
 }
 
-// 4. Враги
 for (let i = this.enemies.length - 1; i >= 0; i--) {
     let e = this.enemies[i];
     e.update(dt);
     
-    // Проверка столкновения с пулями
+    // 1. СТОЛКНОВЕНИЕ С ПУЛЯМИ
     for (let j = this.projectiles.length - 1; j >= 0; j--) {
         let p = this.projectiles[j];
         if (Math.hypot(p.x - e.x, p.y - e.y) < e.size) {
@@ -1012,8 +1011,7 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
         }
     }
 
-   
-
+    // 2. СМЕРТЬ ВРАГА (Начисление очков)
     if (e.hp <= 0) {
         this.player.score += e.scoreValue;
         for(let j=0; j<8; j++) this.particles.push(new Particle(e.x, e.y, e.color));
@@ -1021,23 +1019,9 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
         continue;
     }
 
-    // Пропуск или смерть игрока
-   // РАССТОЯНИЕ ДО ОБЪЕКТА
-const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-
-// 1. Проверка на выход за экран
-if (e.y > canvas.height + 50) {
-    this.enemies.splice(i, 1);
-    continue;
-}
-
-
-
-    // --- ОБЪЕДИНЕННАЯ ЛОГИКА ПРОПУСКОВ И СТОЛКНОВЕНИЙ ---
-
-    // 1. Проверка: Объект улетел за нижний край экрана
+    // 3. ПРОВЕРКА ПРОПУСКА (Улетел за экран)
     if (e.y > canvas.height + 50) {
-        // Если пропустили врага (не аптечку) и не в режиме паники — минус жизнь
+        // Отнимаем жизнь, если это не аптечка и не фаза перед боссом
         if (e.type !== 'repair' && this.gameTime < 115) {
             this.player.lives--;
             this.shake = 10;
@@ -1047,27 +1031,26 @@ if (e.y > canvas.height + 50) {
         continue; 
     }
 
-    // 2. Проверка: Прямое столкновение игрока с объектом
+    // 4. ПРЯМОЕ СТОЛКНОВЕНИЕ С ИГРОКОМ
+    const distToPlayer = Math.hypot(e.x - this.player.x, e.y - this.player.y);
     if (distToPlayer < 30) {
         if (e.type === 'repair') {
-            // Подобрали аптечку
             this.player.lives = Math.min(this.player.lives + 1, 5);
             this.player.score += 500;
             this.shake = 5;
-            console.log("%c[SYSTEM] REPAIR_KIT_APPLIED", "color: #00ff44");
         } else {
-            // Врезались во врага
-            this.player.invulTimer = 1.5; // Даем 1.5 сек бессмертия после удара
-            if (this.gameTime < 115) {
+            // Если у игрока нет бессмертия
+            if (!(this.player.invulTimer > 0)) {
                 this.player.lives--;
+                this.player.invulTimer = 1.5;
                 this.shake = 15;
                 if (this.player.lives <= 0) this.gameOver();
             }
         }
-        
         this.enemies.splice(i, 1);
         continue;
     }
+
 
 }
         // 5. Универсальное обновление частиц и спецэффектов
