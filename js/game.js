@@ -33,12 +33,14 @@ window.GameProgression = {
     buy(item, cost) {
         if (this.credits >= cost || this.credits > 900000) {
             switch(item) {
-                case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
-                case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
-                case 'twin':     this.activeUpgrades.twin = true; break;
-                case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
-                case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
-            }
+    case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
+    case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
+    case 'grenade':  this.activeUpgrades.weaponType = 'grenade'; break;
+    case 'twin':     this.activeUpgrades.twin = true; break;
+    case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
+    case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
+    case 'life':     this.activeUpgrades.extraLives = 1; break; // Наша новая жизнь
+}
             // Сохраняем в буфер перед ребутом
             sessionStorage.setItem('temp_upgrades', JSON.stringify(this.activeUpgrades));
             this.updateShopUI();
@@ -880,11 +882,19 @@ setupListeners() {
                 this.projectiles.push({ x: startX, y: startY, type: 'grenade' });
                 break;
             case 'berserk':
-                for(let i = 0; i < 8; i++) {
-                    const a = (Math.PI*2/8)*i;
-                    this.projectiles.push({ x: startX, y: startY, vx: Math.cos(a)*8, vy: Math.sin(a)*8, type: 'berserk' });
-                }
-                break;
+    // Создаем 5–8 пуль за один клик, летящих в абсолютно случайных направлениях
+    for(let i = 0; i < 6; i++) {
+        const randomAngle = Math.random() * Math.PI * 2; // Случайный угол 360 градусов
+        const randomSpeed = 5 + Math.random() * 10;      // Разная скорость
+        this.projectiles.push({ 
+            x: startX, 
+            y: startY, 
+            vx: Math.cos(randomAngle) * randomSpeed, 
+            vy: -Math.sin(randomAngle) * randomSpeed, // Минус, чтобы летели вверх-вбок
+            type: 'berserk' 
+        });
+    }
+    break;
             default:
                 this.projectiles.push({ x: startX, y: startY, vx: 0, type: 'normal' });
         }

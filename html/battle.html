@@ -104,7 +104,8 @@
     
     <div class="credits-display">AVAILABLE_CREDITS: <span id="shop-credits">0</span></div>
 
-    <div class="shop-grid-vertical">
+    <div class="shop-grid-vertical" style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
+        
         <div class="shop-card" onclick="window.buyItem('laser', 2000, this)">
             <div class="card-info">
                 <span class="name">LASER_BEAM</span>
@@ -112,6 +113,31 @@
             </div>
             <div class="price">2000c</div>
         </div>
+
+        <div class="shop-card" onclick="window.buyItem('triple', 5000, this)">
+            <div class="card-info">
+                <span class="name">TRIPLE_CANNON</span>
+                <span class="desc">3_WAY_SPREAD_SHOT</span>
+            </div>
+            <div class="price">5000c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('grenade', 7500, this)">
+            <div class="card-info">
+                <span class="name">PLASMA_GRENADE</span>
+                <span class="desc">HEAVY_AREA_DAMAGE</span>
+            </div>
+            <div class="price">7500c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('berserk', 10000, this)">
+            <div class="card-info">
+                <span class="name">BERSERK_MODE</span>
+                <span class="desc">OMNIDIRECTIONAL_MAYHEM</span>
+            </div>
+            <div class="price">10k</div>
+        </div>
+
         <div class="shop-card" onclick="window.buyItem('twin', 5000, this)">
             <div class="card-info">
                 <span class="name">TWIN_BRO</span>
@@ -128,16 +154,16 @@
             <div class="price">1200c</div>
         </div>
 
-        <div class="shop-card" onclick="window.buyItem('berserk', 10000, this)">
+        <div class="shop-card" onclick="window.buyItem('life', 3000, this)">
             <div class="card-info">
-                <span class="name">BERSERK_MODE</span>
-                <span class="desc">OMNIDIRECTIONAL_MAYHEM</span>
+                <span class="name">REINFORCED_HULL</span>
+                <span class="desc">+1_EXTRA_LIFE_PER_RUN</span>
             </div>
-            <div class="price">10k</div>
+            <div class="price">3000c</div>
         </div>
+        
     </div>
 </div>
-    
     <div class="tactical-log">
         <h3>Tactical Log</h3>
         <ul id="highscores-list">
