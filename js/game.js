@@ -858,10 +858,18 @@ setupListeners() {
         }
 
         if (!this.player.overheated) {
-            this.player.heat += 15; 
-            if (this.player.heat >= 100) this.player.overheated = true;
+    const upg = window.GameProgression.activeUpgrades;
+            // Динамический расчет нагрева:
+    // Если граната — 45 (15 * 3), если остальное — 15
+    const heatGain = (upg.weaponType === 'grenade') ? 45 : 15;
+    
+    this.player.heat += heatGain; 
 
-               const upg = window.GameProgression.activeUpgrades;
+    if (this.player.heat >= 100) {
+        this.player.overheated = true;
+        // Можно добавить мощный звук перегрева или тряску
+        this.shake = 15; 
+    }
 
     // Вспомогательная функция для создания пули в зависимости от оружия
     const fire = (startX, startY) => {
