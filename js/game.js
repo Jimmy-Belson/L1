@@ -6,13 +6,21 @@ import { getRankByScore } from '../js/ranks.js';
 window.GameProgression = {
     credits: 999999, 
     
-    // Пытаемся достать купленное перед ребутом, иначе дефолт
+    // 1. При загрузке скрипта достаем данные
     activeUpgrades: JSON.parse(sessionStorage.getItem('temp_upgrades')) || {
         weaponType: 'default',
         twin: false,
         shieldCharges: 0,
         extraLives: 0,
         coolingFactor: 1
+    },
+
+    // 2. Метод для применения и немедленной очистки
+    consumeTempUpgrades() {
+        if (sessionStorage.getItem('temp_upgrades')) {
+            console.log("%c[SYSTEM] Upgrades applied and cleared for next run.", "color: #00ff44");
+            sessionStorage.removeItem('temp_upgrades'); // Стираем, чтобы после СЛЕДУЮЩЕЙ смерти их не было
+        }
     },
 
     saveCredits(amount) {
@@ -31,21 +39,12 @@ window.GameProgression = {
                 case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
                 case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
             }
-            
-            // СОХРАНЯЕМ ВО ВРЕМЕННОЕ ХРАНИЛИЩЕ (sessionStorage)
-            // Оно очистится только если закрыть вкладку, но выживет при REBOOT
+            // Сохраняем в буфер перед ребутом
             sessionStorage.setItem('temp_upgrades', JSON.stringify(this.activeUpgrades));
-            
             this.updateShopUI();
             return true;
         }
         return false;
-    },
-
-    // Очистка только если мы реально хотим сбросить всё (например, после реального проигрыша)
-    resetAfterMatch() {
-        // Если хочешь, чтобы после смерти апгрейды сгорали СРАЗУ, раскомментируй:
-        // sessionStorage.removeItem('temp_upgrades');
     },
 
     updateShopUI() {
@@ -1421,6 +1420,23 @@ draw() {
     
     // Рисуем игрока (теперь он точно будет внутри после фикса в конструкторе)
     this.player.draw(ctx);
+   
+this.player.draw(ctx);
+
+// 2. Рисуем фантома, если куплен апгрейд
+if (window.GameProgression.activeUpgrades.twin) {
+    ctx.save();
+    // Сдвигаем всё рисование относительно позиции игрока
+    // Мы используем координаты игрока как базу
+    ctx.translate(this.player.x + 60, this.player.y);
+    ctx.rotate(this.player.tilt); // Близнец наклоняется так же, как оригинал
+    ctx.globalAlpha = 0.4; // Эффект прозрачности фантома
+    
+    // Рисуем ТОЛЬКО модельку (тело корабля)
+    this.renderPlayerModel(ctx, '#00f2ff'); 
+    
+    ctx.restore();
+}
     
     // 4. Отрисовка снарядов с неоновым свечением
     this.projectiles.forEach(p => {
@@ -1606,7 +1622,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!canvas) return;
     ctx = canvas.getContext('2d');
         // ДОБАВЬ ЭТО:
-    window.GameProgression.updateShopUI();
+    
 
     
     killBackgroundProcesses();
@@ -1620,6 +1636,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Привязываем его к глобальным переменным
     engine = gameInstance;         // для внутреннего кода (loop)
     window.engine = gameInstance;  // для КОНСОЛИ (чтобы не было Uncaught ReferenceError)
+
+      // ДОБАВЬ ЭТО:
+    window.GameProgression.consumeTempUpgrades();
+    window.GameProgression.updateShopUI();
+
 
     // 3. Запускаем
     engine.loop();
