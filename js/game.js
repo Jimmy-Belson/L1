@@ -866,7 +866,7 @@ setupListeners() {
     if (upg.weaponType === 'grenade') {
         heatGain = 45; // В 3 раза больше за один мощный выстрел
     } else if (upg.weaponType === 'berserk') {
-        heatGain = 45; // В 3 раза больше, так как летит сразу 8 пуль
+        heatGain = 32; // В 3 раза больше, так как летит сразу 8 пуль
     }
     
     this.player.heat += heatGain;
@@ -874,7 +874,7 @@ setupListeners() {
     if (this.player.heat >= 100) {
         this.player.overheated = true;
         // Для берсерка добавим сильную тряску при перегреве
-        this.shake = upg.weaponType === 'berserk' ? 27 : 15; 
+        this.shake = upg.weaponType === 'berserk' ? 45 : 15; 
     }
 
     // Вспомогательная функция для создания пули в зависимости от оружия
