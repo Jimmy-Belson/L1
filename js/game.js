@@ -3,6 +3,94 @@
 // ==========================================
 import { getRankByScore } from '../js/ranks.js';
 
+// ==========================================
+// ORBITRON: PERSISTENT PROGRESSION SYSTEM
+// ==========================================
+window.GameProgression = {
+    // Загружаем кредиты из браузера, если их нет — ставим 0
+    credits: parseInt(localStorage.getItem('orbitron_credits')) || 0,
+    
+    // Текущие активные модификаторы на этот матч
+    activeUpgrades: {
+        weaponType: 'default', // 'default', 'laser', 'triple', 'grenade', 'berserk'
+        twin: false,           // Брат-близнец (корабль-фантом)
+        shieldCharges: 0,      // Заряды щита (пропуск врагов без урона)
+        extraLives: 0,         // Бонусные жизни
+        coolingFactor: 1       // Множитель скорости охлаждения
+    },
+
+    // Сохранение очков в общую копилку
+    saveCredits(amount) {
+        this.credits += amount;
+        localStorage.setItem('orbitron_credits', this.credits);
+        console.log(`%c[BANK] Credits saved. Total: ${this.credits}`, "color: #ffaa00");
+    },
+
+    // Логика покупки (вызывается из HTML кнопок)
+    buy(item, cost) {
+        if (this.credits >= cost) {
+            this.credits -= cost;
+            localStorage.setItem('orbitron_credits', this.credits);
+
+            // Применяем эффект покупки сразу к объекту апгрейдов
+            switch(item) {
+                case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
+                case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
+                case 'grenade':  this.activeUpgrades.weaponType = 'grenade'; break;
+                case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
+                case 'twin':     this.activeUpgrades.twin = true; break;
+                case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
+                case 'life':     this.activeUpgrades.extraLives += 1; break;
+                case 'cryo':     this.activeUpgrades.coolingFactor = 2; break;
+            }
+            
+            this.updateShopUI();
+            return true;
+        }
+        return false;
+    },
+
+    // Сброс временных улучшений после завершения матча
+    resetAfterMatch() {
+        this.activeUpgrades = {
+            weaponType: 'default',
+            twin: false,
+            shieldCharges: 0,
+            extraLives: 0,
+            coolingFactor: 1
+        };
+        console.log("[SYSTEM] Upgrades cleared for the next run.");
+    },
+
+    // Обновление отображения баланса в HTML
+    updateShopUI() {
+        const display = document.getElementById('shop-credits');
+        if (display) display.innerText = this.credits;
+    }
+};
+
+// Функция для интеграции с кнопками HTML
+window.buyItem = (id, cost, btn) => {
+    if (window.GameProgression.buy(id, cost)) {
+        btn.innerHTML = "EQUIPPED";
+        btn.style.background = "#00f2ff";
+        btn.style.color = "#000";
+        btn.disabled = true;
+    } else {
+        const original = btn.innerHTML;
+        btn.innerHTML = "INSUFFICIENT FUNDS";
+        btn.style.color = "#ff0000";
+        setTimeout(() => {
+            btn.innerHTML = original;
+            btn.style.color = "";
+        }, 1000);
+    }
+};
+
+// ==========================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И ДВИЖОК
+// ==========================================
+
 let canvas, ctx;
 let lastTime = performance.now();
 window.gameActive = true; 
@@ -20,7 +108,7 @@ const CONFIG = {
 // --- СИСТЕМА ПРЕДОТВРАЩЕНИЯ КОНФЛИКТОВ ---
 const killBackgroundProcesses = () => {
     if (window.Core) {
-        console.log("%c[SYSTEM] DETECTED_CORE: SHUTTING_DOWN_BACKGROUND_VISUALS", "color: #ff00e5");
+        console.log(`%c[SYSTEM] DETECTED_CORE: SHUTTING_DOWN_BACKGROUND_VISUALS`, "color: #ff00e5");
         
         // 1. Останавливаем отрисовку звезд и планет из основного скрипта
         if (window.Core.Canvas) {
@@ -67,21 +155,18 @@ class Particle {
 
 class Player {
     constructor() {
-        // Позиционирование по центру канваса
         this.x = canvas.width / 2;
         this.y = canvas.height - 60; 
-         
         this.invulTimer = 0;
-
         this.score = 0;
-        this.lives = CONFIG.BALANCE.LIVES;
-        this.targetX = this.x;
 
+        // ИЗМЕНИ ЭТУ СТРОКУ: Базовые жизни + купленные в магазине
+        this.lives = CONFIG.BALANCE.LIVES + window.GameProgression.activeUpgrades.extraLives;
+
+        this.targetX = this.x;
         this.heat = 0;
-        this.maxHeat = 100; // Добавим максимум для корректных расчетов
+        this.maxHeat = 100;
         this.overheated = false;
-        
-        // Для AAA-эффекта наклона
         this.tilt = 0; 
     }
 
@@ -788,7 +873,48 @@ setupListeners() {
         if (!this.player.overheated) {
             this.player.heat += 15; 
             if (this.player.heat >= 100) this.player.overheated = true;
-            this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
+
+               const upg = window.GameProgression.activeUpgrades;
+
+    // Вспомогательная функция для создания пули в зависимости от оружия
+    const fire = (startX, startY) => {
+        switch(upg.weaponType) {
+            case 'triple':
+                for(let i = -1; i <= 1; i++) this.projectiles.push({ x: startX, y: startY, vx: i * 3, type: 'normal' });
+                break;
+            case 'laser':
+    this.projectiles.push({ 
+        x: startX, 
+        y: 0, // Лазер мгновенно занимает всю вертикаль
+        originX: startX,
+        originY: startY,
+        type: 'laser', 
+        life: 0.2 // Длительность вспышки в секундах
+    });
+    break;
+            case 'grenade':
+                this.projectiles.push({ x: startX, y: startY, type: 'grenade' });
+                break;
+            case 'berserk':
+                for(let i = 0; i < 8; i++) {
+                    const a = (Math.PI*2/8)*i;
+                    this.projectiles.push({ x: startX, y: startY, vx: Math.cos(a)*8, vy: Math.sin(a)*8, type: 'berserk' });
+                }
+                break;
+            default:
+                this.projectiles.push({ x: startX, y: startY, vx: 0, type: 'normal' });
+        }
+    };
+
+    // Стреляет основной игрок
+    fire(this.player.x, this.player.y - 20);
+
+    // Если куплен Брат-близнец — он стреляет рядом!
+    if (upg.twin) {
+        fire(this.player.x + 60, this.player.y);
+    }
+
+           
             this.shake = 2;
         }
     });
@@ -985,6 +1111,32 @@ if (this.spawnTimer > CONFIG.BALANCE.SPAWN_INTERVAL && !this.boss && this.bossTi
         // 3. Пули (идем с конца массива)
 for (let i = this.projectiles.length - 1; i >= 0; i--) {
     let p = this.projectiles[i];
+
+
+    if (p.type === 'laser') {
+    // 1. Уменьшаем время жизни луча
+    p.life -= dt;
+    if (p.life <= 0) {
+        this.projectiles.splice(i, 1);
+        continue;
+    }
+
+    // 2. Проверка урона по врагам (луч бьет всех на одной линии X)
+    this.enemies.forEach((e, index) => {
+        // Если враг находится по горизонтали близко к лучу (ширина хитбокса луча ~20px)
+        if (Math.abs(e.x - p.originX) < 25 && e.y < p.originY) {
+            e.hp -= 0.5; // Лазер бьет часто или насквозь, можно регулировать урон
+            this.shake = 2;
+        }
+    });
+
+    // 3. Урон по боссу
+    if (this.boss && Math.abs(this.boss.x - p.originX) < 60) {
+        this.boss.hp -= 0.2;
+    }
+    
+    continue; // Пропускаем стандартное движение p.y -= 700 для лазера
+}
     p.y -= 700 * dt; 
 
     if (this.boss) {
@@ -1038,10 +1190,21 @@ for (let i = this.enemies.length - 1; i >= 0; i--) {
     if (e.y > canvas.height + 50) {
         // Отнимаем жизнь, если это не аптечка и не фаза перед боссом
         if (e.type !== 'repair' && this.gameTime < 115) {
+
+
+             // ПРОВЕРКА ЩИТА ИЗ МАГАЗИНА
+        if (window.GameProgression.activeUpgrades.shieldCharges > 0) {
+            window.GameProgression.activeUpgrades.shieldCharges--;
+            this.shake = 5; // Легкая тряска, что щит сработал
+            console.log("Shield blocked leakage! Charges left:", window.GameProgression.activeUpgrades.shieldCharges);
+        } else {
+            // Если щитов нет — теряем жизнь
             this.player.lives--;
             this.shake = 10;
             if (this.player.lives <= 0) this.gameOver();
         }
+    
+    }
         this.enemies.splice(i, 1);
         continue; 
     }
@@ -1266,13 +1429,33 @@ draw() {
     
     // 4. Отрисовка снарядов с неоновым свечением
     this.projectiles.forEach(p => {
-        ctx.save();
+    ctx.save();
+    if (p.type === 'laser') {
+        // РИСУЕМ ЛАЗЕРНЫЙ ЛУЧ
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#0ff';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4 * (p.life / 0.2); // Луч сужается со временем
+        
+        ctx.beginPath();
+        ctx.moveTo(p.originX, p.originY);
+        ctx.lineTo(p.originX, 0); // Луч до верхнего края
+        ctx.stroke();
+
+        // Дополнительное внешнее свечение
+        ctx.globalAlpha = p.life * 5;
+        ctx.strokeStyle = '#00f2ff';
+        ctx.lineWidth = 15;
+        ctx.stroke();
+    } else {
+        // ОБЫЧНАЯ ПУЛЯ
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#ff00e5';
         ctx.fillStyle = '#ff00e5';
         ctx.fillRect(p.x - 2, p.y, 4, 15);
-        ctx.restore();
-    });
+    }
+    ctx.restore();
+});
     
     ctx.restore(); // Закрываем область тряски
 
@@ -1341,6 +1524,14 @@ if (this.bossTitleTimer > 0) {
 
 async gameOver() {
     window.gameActive = false;
+
+
+      // 1. Сохраняем заработанные очки как валюту
+    window.GameProgression.saveCredits(this.player.score);
+    
+    // 2. Сбрасываем временные улучшения для следующего захода
+    window.GameProgression.resetAfterMatch();
+    
     // Возвращаем курсор пользователю
     if (document.exitPointerLock) {
         document.exitPointerLock();
