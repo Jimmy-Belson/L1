@@ -392,8 +392,8 @@ class MimicBoss {
         this.x = canvas.width / 2;
         this.y = -100;
         this.targetY = 150;
-        this.hp = 40;
-        this.maxHp = 40;
+        this.hp = 70;
+        this.maxHp = 70;
         
         this.type = 'mimic';
         this.state = 'move'; 
@@ -860,21 +860,19 @@ setupListeners() {
        if (!this.player.overheated) {
     const upg = window.GameProgression.activeUpgrades;
     
-    // Расчет нагрева в зависимости от типа оружия
-    let heatGain = 15; // Базовый
-    
-    if (upg.weaponType === 'grenade') {
-        heatGain = 45; // В 3 раза больше за один мощный выстрел
-    } else if (upg.weaponType === 'berserk') {
-        heatGain = 32; // В 3 раза больше, так как летит сразу 8 пуль
+    let heatGain = 15; // Стандарт (Default, Laser)
+
+    if (upg.weaponType === 'triple') {
+        heatGain = 30; // В 2 раза быстрее обычного
+    } else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') {
+        heatGain = 37; // В 3 раза быстрее (самые тяжелые)
     }
     
     this.player.heat += heatGain;
 
     if (this.player.heat >= 100) {
         this.player.overheated = true;
-        // Для берсерка добавим сильную тряску при перегреве
-        this.shake = upg.weaponType === 'berserk' ? 45 : 15; 
+        this.shake = upg.weaponType === 'triple' ? 10 : 20; 
     }
 
     // Вспомогательная функция для создания пули в зависимости от оружия
