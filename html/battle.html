@@ -75,8 +75,60 @@
 </div>
 
     <div id="game-over-overlay">
+
+        <div class="game-over-content">
+    <div class="action-buttons">
+        <button class="menu-btn shop-trigger" onclick="window.toggleShop(true)">[ OPEN_BLACK_MARKET ]</button>
+        <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
+        <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
+    </div>
+</div>
+
+<div id="black-market-panel" class="side-panel">
+    <div class="panel-header">
+        <span>BLACK_MARKET_TERMINAL</span>
+        <button onclick="window.toggleShop(false)">[X]</button>
+    </div>
+    
+    <div class="credits-display">AVAILABLE_CREDITS: <span id="shop-credits">0</span></div>
+
+    <div class="shop-grid-vertical">
+        <div class="shop-card" onclick="window.buyItem('laser', 2000, this)">
+            <div class="card-info">
+                <span class="name">LASER_BEAM</span>
+                <span class="desc">PIERCES_THROUGH_ENEMIES</span>
+            </div>
+            <div class="price">2000c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('twin', 5000, this)">
+            <div class="card-info">
+                <span class="name">TWIN_BRO</span>
+                <span class="desc">PHANTOM_WINGMAN_SUPPORT</span>
+            </div>
+            <div class="price">5000c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('shield', 1200, this)">
+            <div class="card-info">
+                <span class="name">AEGIS_SHIELD</span>
+                <span class="desc">+3_AUTOMATIC_BLOCKS</span>
+            </div>
+            <div class="price">1200c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('berserk', 10000, this)">
+            <div class="card-info">
+                <span class="name">BERSERK_MODE</span>
+                <span class="desc">OMNIDIRECTIONAL_MAYHEM</span>
+            </div>
+            <div class="price">10k</div>
+        </div>
+    </div>
+</div>
         <div class="terminal-header">SYSTEM_FAILURE</div>
         <div class="game-over-content">
+
             <h1 class="glitch" data-text="TERMINATED">TERMINATED</h1>
             <div class="stats-row">
                 <span>FINAL_SCORE:</span>
@@ -86,29 +138,6 @@
                 <span>RANK_ACHIEVED:</span>
                 <span id="final-rank-value" style="color: #0ff;">RECRUIT</span>
             </div>
-
-            <div class="shop-terminal">
-                <div class="shop-header">BLACK_MARKET_LINK [CREDITS: <span id="shop-credits">0</span>]</div>
-                <div class="shop-grid">
-                    <button class="shop-item" onclick="window.buyItem('laser', 2000, this)">
-                        <span class="item-name">LASER_BEAM</span>
-                        <span class="item-cost">2000c</span>
-                    </button>
-                    <button class="shop-item" onclick="window.buyItem('twin', 5000, this)">
-                        <span class="item-name">TWIN_BRO</span>
-                        <span class="item-cost">5000c</span>
-                    </button>
-                    <button class="shop-item" onclick="window.buyItem('shield', 1200, this)">
-                        <span class="item-name">AEGIS_SHIELD</span>
-                        <span class="item-cost">1200c</span>
-                    </button>
-                    <button class="shop-item" onclick="window.buyItem('berserk', 10000, this)">
-                        <span class="item-name">BERSERK_MODE</span>
-                        <span class="item-cost">10k</span>
-                    </button>
-                </div>
-            </div>
-
             <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
             <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
         </div>

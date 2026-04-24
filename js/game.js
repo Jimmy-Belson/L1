@@ -1558,7 +1558,30 @@ async gameOver() {
     }
 
 
+window.toggleShop = (show) => {
+    const panel = document.getElementById('black-market-panel');
+    if (show) {
+        panel.classList.add('active');
+        window.GameProgression.updateShopUI(); // Обновляем баланс при открытии
+    } else {
+        panel.classList.remove('active');
+    }
+};
 
+// Обнови функцию покупки, чтобы она вешала класс купленного товара
+const originalBuyItem = window.buyItem;
+window.buyItem = (id, cost, element) => {
+    if (window.GameProgression.buy(id, cost)) {
+        element.classList.add('bought');
+        element.querySelector('.price').innerText = "EQUIPPED";
+        // Маленькая встряска экрана для эффекта покупки
+        if (window.engine) window.engine.shake = 10;
+    } else {
+        // Эффект нехватки денег
+        element.style.borderColor = "red";
+        setTimeout(() => element.style.borderColor = "", 500);
+    }
+};
 
 
 
