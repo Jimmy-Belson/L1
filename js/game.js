@@ -7,43 +7,46 @@ import { getRankByScore } from '../js/ranks.js';
 // ORBITRON: PERSISTENT PROGRESSION SYSTEM
 // ==========================================
 window.GameProgression = {
-    // Загружаем кредиты из браузера, если их нет — ставим 0
-    credits: parseInt(localStorage.getItem('orbitron_credits')) || 0,
+    // Загружаем кредиты. Если нужно БЕСКОНЕЧНО для теста — раскомментируй строку ниже:
+    credits: 999999, // parseInt(localStorage.getItem('orbitron_credits')) || 0,
     
-    // Текущие активные модификаторы на этот матч
-    activeUpgrades: {
-        weaponType: 'default', // 'default', 'laser', 'triple', 'grenade', 'berserk'
-        twin: false,           // Брат-близнец (корабль-фантом)
-        shieldCharges: 0,      // Заряды щита (пропуск врагов без урона)
-        extraLives: 0,         // Бонусные жизни
-        coolingFactor: 1       // Множитель скорости охлаждения
+    // Загружаем апгрейды из памяти, чтобы они НЕ ИСЧЕЗАЛИ после REBOOT
+    activeUpgrades: JSON.parse(localStorage.getItem('orbitron_upgrades')) || {
+        weaponType: 'default',
+        twin: false,
+        shieldCharges: 0,
+        extraLives: 0,
+        coolingFactor: 1
     },
 
-    // Сохранение очков в общую копилку
     saveCredits(amount) {
-        this.credits += amount;
-        localStorage.setItem('orbitron_credits', this.credits);
-        console.log(`%c[BANK] Credits saved. Total: ${this.credits}`, "color: #ffaa00");
+        // Если у нас не режим бесконечных денег, прибавляем честно
+        if (this.credits < 900000) {
+            this.credits += amount;
+            localStorage.setItem('orbitron_credits', this.credits);
+        }
+        // Всегда сохраняем текущий набор пушек в память браузера
+        localStorage.setItem('orbitron_upgrades', JSON.stringify(this.activeUpgrades));
+        console.log(`%c[BANK] Data Synced.`, "color: #ffaa00");
     },
 
-    // Логика покупки (вызывается из HTML кнопок)
     buy(item, cost) {
-        if (true) 
-        if (this.credits >= cost) {
-            this.credits -= cost;
+        // Условие покупки (для теста цена всегда 1 или просто true)
+        if (this.credits >= cost || this.credits > 900000) {
+            if (this.credits < 900000) this.credits -= cost;
+            
             localStorage.setItem('orbitron_credits', this.credits);
 
-            // Применяем эффект покупки сразу к объекту апгрейдов
             switch(item) {
                 case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
                 case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
-                case 'grenade':  this.activeUpgrades.weaponType = 'grenade'; break;
-                case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
                 case 'twin':     this.activeUpgrades.twin = true; break;
                 case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
-                case 'life':     this.activeUpgrades.extraLives += 1; break;
-                case 'cryo':     this.activeUpgrades.coolingFactor = 2; break;
+                case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
             }
+            
+            // СОХРАНЯЕМ ФАКТ ПОКУПКИ (чтобы после перезагрузки лазер остался)
+            localStorage.setItem('orbitron_upgrades', JSON.stringify(this.activeUpgrades));
             
             this.updateShopUI();
             return true;
@@ -51,22 +54,15 @@ window.GameProgression = {
         return false;
     },
 
-    // Сброс временных улучшений после завершения матча
+    // Теперь этот метод не вызывается автоматически в gameOver, 
+    // если ты хочешь, чтобы пушки были вечными.
     resetAfterMatch() {
-        this.activeUpgrades = {
-            weaponType: 'default',
-            twin: false,
-            shieldCharges: 0,
-            extraLives: 0,
-            coolingFactor: 1
-        };
-        console.log("[SYSTEM] Upgrades cleared for the next run.");
+        console.log("[SYSTEM] Reset skipped to keep permanent upgrades.");
     },
 
-    // Обновление отображения баланса в HTML
     updateShopUI() {
         const display = document.getElementById('shop-credits');
-        if (display) display.innerText = this.credits;
+        if (display) display.innerText = this.credits > 900000 ? "INF" : this.credits;
     }
 };
 
@@ -1530,8 +1526,7 @@ async gameOver() {
       // 1. Сохраняем заработанные очки как валюту
     window.GameProgression.saveCredits(this.player.score);
     
-    // 2. Сбрасываем временные улучшения для следующего захода
-    window.GameProgression.resetAfterMatch();
+
     
     // Возвращаем курсор пользователю
     if (document.exitPointerLock) {
@@ -1612,6 +1607,9 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas = document.getElementById('game-canvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
+        // ДОБАВЬ ЭТО:
+    window.GameProgression.updateShopUI();
+
     
     killBackgroundProcesses();
 
