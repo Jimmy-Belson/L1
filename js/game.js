@@ -857,18 +857,24 @@ setupListeners() {
             return; // Пропускаем выстрел в момент активации лока, чтобы избежать скачка
         }
 
-        if (!this.player.overheated) {
+       if (!this.player.overheated) {
     const upg = window.GameProgression.activeUpgrades;
-            // Динамический расчет нагрева:
-    // Если граната — 45 (15 * 3), если остальное — 15
-    const heatGain = (upg.weaponType === 'grenade') ? 45 : 15;
     
-    this.player.heat += heatGain; 
+    // Расчет нагрева в зависимости от типа оружия
+    let heatGain = 15; // Базовый
+    
+    if (upg.weaponType === 'grenade') {
+        heatGain = 45; // В 3 раза больше за один мощный выстрел
+    } else if (upg.weaponType === 'berserk') {
+        heatGain = 45; // В 3 раза больше, так как летит сразу 8 пуль
+    }
+    
+    this.player.heat += heatGain;
 
     if (this.player.heat >= 100) {
         this.player.overheated = true;
-        // Можно добавить мощный звук перегрева или тряску
-        this.shake = 15; 
+        // Для берсерка добавим сильную тряску при перегреве
+        this.shake = upg.weaponType === 'berserk' ? 35 : 15; 
     }
 
     // Вспомогательная функция для создания пули в зависимости от оружия
