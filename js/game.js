@@ -4,10 +4,10 @@
 import { getRankByScore } from '../js/ranks.js';
 
 window.GameProgression = {
-    credits: 999999, // Бесконечные деньги для теста
+    credits: 999999, 
     
-    // Оставляем пустой объект при каждом обновлении страницы
-    activeUpgrades: {
+    // Пытаемся достать купленное перед ребутом, иначе дефолт
+    activeUpgrades: JSON.parse(sessionStorage.getItem('temp_upgrades')) || {
         weaponType: 'default',
         twin: false,
         shieldCharges: 0,
@@ -16,7 +16,6 @@ window.GameProgression = {
     },
 
     saveCredits(amount) {
-        // Деньги сохраняем, а апгрейды — нет
         if (this.credits < 900000) {
             this.credits += amount;
             localStorage.setItem('orbitron_credits', this.credits);
@@ -32,10 +31,21 @@ window.GameProgression = {
                 case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
                 case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
             }
+            
+            // СОХРАНЯЕМ ВО ВРЕМЕННОЕ ХРАНИЛИЩЕ (sessionStorage)
+            // Оно очистится только если закрыть вкладку, но выживет при REBOOT
+            sessionStorage.setItem('temp_upgrades', JSON.stringify(this.activeUpgrades));
+            
             this.updateShopUI();
             return true;
         }
         return false;
+    },
+
+    // Очистка только если мы реально хотим сбросить всё (например, после реального проигрыша)
+    resetAfterMatch() {
+        // Если хочешь, чтобы после смерти апгрейды сгорали СРАЗУ, раскомментируй:
+        // sessionStorage.removeItem('temp_upgrades');
     },
 
     updateShopUI() {
