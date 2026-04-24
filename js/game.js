@@ -1228,7 +1228,7 @@ spawnLoot(x, y) {
     });
 }
 
-draw(ctx) {
+draw() {
     // 1. Чистим холст
     ctx.fillStyle = '#01050a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
