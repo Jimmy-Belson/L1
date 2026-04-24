@@ -757,65 +757,74 @@ triggerMimicPrank() {
 }
 
 setupListeners() {
-    // 1. Клики и стрельба
+    // 0. СИНХРОНИЗАЦИЯ ПРИ ВХОДЕ В POINTER LOCK
+    // Это критично, чтобы не было прыжка в момент клика
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement === canvas) {
+            this.player.targetX = this.player.x;
+        }
+    });
+
+    // 1. КЛИКИ И СТРЕЛЬБА
     window.addEventListener('mousedown', (e) => {
         if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
         if (!window.gameActive) return;
         
-        // БЛОКИРОВКА СТРЕЛЬБЫ ПРИ ЗАХВАТЕ: Если игрока схватили, он не может стрелять
-        if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) return;
+        // Блокировка стрельбы при захвате мимиком
+        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
 
+        // Включаем Pointer Lock при первом клике
         if (document.pointerLockElement !== canvas) {
             this.requestPointerLock();
+            return; // Пропускаем выстрел в момент активации лока, чтобы избежать скачка
         }
 
         if (!this.player.overheated) {
             this.player.heat += 15; 
             if (this.player.heat >= 100) this.player.overheated = true;
             this.projectiles.push({ x: this.player.x, y: this.player.y - 20 });
-
-            
             this.shake = 2;
         }
     });
 
-    // 2. Движение (С ПРОВЕРКОЙ БЛОКИРОВКИ)
+    // 2. ДВИЖЕНИЕ
     window.addEventListener('mousemove', (e) => {
-    if (!window.gameActive) return;
-    
-    // БЛОКИРОВКА ДВИЖЕНИЯ: Если активен захват
-    if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) {
-        // ВАЖНО: постоянно приравниваем цель к текущей позиции, 
-        // чтобы после отпускания корабль не летел в старую точку мыши
-        this.player.targetX = this.player.x; 
-        return;
-    }
+        if (!window.gameActive) return;
+        
+        // Блокировка движения при захвате
+        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
+            this.player.targetX = this.player.x; 
+            return;
+        }
 
-    if (document.pointerLockElement === canvas) {
-        this.player.targetX += e.movementX * 1.5;
-    } else {
+        if (document.pointerLockElement === canvas) {
+            // В режиме Pointer Lock используем накопление относительного движения
+            // Множитель 1.2 обычно комфортнее, чем 1.5, для точного прицеливания
+            this.player.targetX += e.movementX * 1.2;
+        } else {
+            // Обычный режим (курсор над канвасом)
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             this.player.targetX = (e.clientX - rect.left) * scaleX;
         }
 
+        // Жесткий Clamp (ограничение) по краям экрана
         const margin = 40; 
         if (this.player.targetX < margin) this.player.targetX = margin;
         if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
     });
 
-    // 3. НОВЫЙ ЛИСТЕНЕР ДЛЯ КЛАВИШИ [F]
+    // 3. КЛАВИША [F] (Освобождение от захвата)
     window.addEventListener('keydown', (e) => {
         if (!window.gameActive) return;
 
-        // Проверяем нажатие F (английскую и русскую раскладку)
-        if (e.code === 'KeyF' || e.key === 'f' || e.key === 'а' || e.key === 'А') {
-            if (this.boss && this.boss.type === 'mimic' && this.boss.isGrabbed) {
-                this.boss.fPresses++; // Увеличиваем счетчик нажатий в классе босса
-                this.shake = 8;       // Визуальный отклик на нажатие
-                
-                // Звуковой эффект или лог (по желанию)
-                console.log(`Rebooting system... ${this.boss.fPresses}/3`);
+        const isKeyF = e.code === 'KeyF' || e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'а';
+        
+        if (isKeyF) {
+            if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
+                this.boss.fPresses++; 
+                this.shake = 8; 
+                console.log`([SYSTEM] REBOOTING... ${this.boss.fPresses}/3)`;
             }
         }
     });
