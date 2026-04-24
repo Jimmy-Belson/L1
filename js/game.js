@@ -28,6 +28,7 @@ window.GameProgression = {
 
     // Логика покупки (вызывается из HTML кнопок)
     buy(item, cost) {
+        if (true) 
         if (this.credits >= cost) {
             this.credits -= cost;
             localStorage.setItem('orbitron_credits', this.credits);
