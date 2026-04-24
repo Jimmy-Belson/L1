@@ -3,6 +3,30 @@
 // ==========================================
 import { getRankByScore } from '../js/ranks.js';
 
+const AudioManager = {
+    tracks: {
+        stage: new Audio('assets/Lazerhawk Overdrive.mp3'),
+        sentinel: new Audio('assets/Carpenter Brut - Turbo Killer.mp3'),
+        mimic: new Audio('assets/Gessafelstein - Pursuit.mp3')
+    },
+    current: null,
+
+    play(key) {
+        // Останавливаем текущий трек с плавным затуханием (опционально)
+        if (this.current) {
+            this.current.pause();
+            this.current.currentTime = 0;
+        }
+
+        this.current = this.tracks[key];
+        if (this.current) {
+            this.current.loop = true;
+            this.current.volume = 0.4; // Чтобы музыка не перекрывала звуки выстрелов
+            this.current.play().catch(e => console.log("Audio play blocked: need user interaction"));
+        }
+    }
+};
+
 window.GameProgression = {
     credits: 999999, 
     
@@ -796,6 +820,12 @@ spawnBossSequence(title, createBossFn) {
     
     this.bossTitleText = title;
     this.bossTitleTimer = 3.5; // Титры висят чуть дольше
+     // Определяем, какую музыку включать
+    if (title.includes("SENTINEL")) {
+        AudioManager.play('sentinel');
+    } else if (title.includes("MIMIC")) {
+        AudioManager.play('mimic');
+    }
 
     console.log`([SYSTEM] INITIALIZING: ${title})`;
 
@@ -1360,6 +1390,7 @@ handleBossDeath() {
         p.speedX *= 3; // Разлетаются быстрее
         p.speedY *= 3;
         this.particles.push(p);
+         AudioManager.play('stage'); // Возвращаемся к фоновой музыке
     }
 
     // 3. Создаем "Кольцо взрыва" (Shockwave)
@@ -1586,6 +1617,7 @@ async gameOver() {
       // 1. Сохраняем заработанные очки как валюту
     window.GameProgression.saveCredits(this.player.score);
     
+    if (AudioManager.current) AudioManager.current.pause();
 
     
     // Возвращаем курсор пользователю
@@ -1690,4 +1722,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Запускаем
     engine.loop();
+    AudioManager.play('stage');
 });
