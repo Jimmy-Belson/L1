@@ -480,6 +480,7 @@ class MimicBoss {
         case 'grab':
             if (!this.isGrabbed) {
                 this.isGrabbed = true;
+                engine.player.invultimer = 1.0
                 this.executionProjectileSpawned = false;
                 this.fPresses = 0;
             }
@@ -865,9 +866,17 @@ setupListeners() {
     // Вспомогательная функция для создания пули в зависимости от оружия
     const fire = (startX, startY) => {
         switch(upg.weaponType) {
-            case 'triple':
-                for(let i = -1; i <= 1; i++) this.projectiles.push({ x: startX, y: startY, vx: i * 3, type: 'normal' });
-                break;
+             case 'triple':
+        // Три выстрела веером
+        for(let i = -1; i <= 1; i++) {
+            this.projectiles.push({ 
+                x: startX, y: startY, 
+                vx: i * 5, // Разлет в стороны
+                vy: -700,  // Скорость вверх
+                type: 'normal' 
+            });
+        }
+        break;
             case 'laser':
     this.projectiles.push({ 
         x: startX, 
@@ -878,28 +887,31 @@ setupListeners() {
         life: 0.2 // Длительность вспышки в секундах
     });
     break;
-            case 'grenade':
-                this.projectiles.push({ x: startX, y: startY, type: 'grenade' });
-                break;
-            case 'berserk':
-    // Создаем 5–8 пуль за один клик, летящих в абсолютно случайных направлениях
-    for(let i = 0; i < 6; i++) {
-        const randomAngle = Math.random() * Math.PI * 2; // Случайный угол 360 градусов
-        const randomSpeed = 5 + Math.random() * 10;      // Разная скорость
+           case 'grenade':
         this.projectiles.push({ 
-            x: startX, 
-            y: startY, 
-            vx: Math.cos(randomAngle) * randomSpeed, 
-            vy: -Math.sin(randomAngle) * randomSpeed, // Минус, чтобы летели вверх-вбок
-            type: 'berserk' 
+            x: startX, y: startY, 
+            vx: 0, vy: -400, // Граната летит медленнее
+            type: 'grenade',
+            timer: 0 
         });
-    }
-    break;
-            default:
-                this.projectiles.push({ x: startX, y: startY, vx: 0, type: 'normal' });
+        break;
+             case 'berserk':
+        // Хаотичный разброс
+        for(let i = 0; i < 8; i++) {
+            const angle = (Math.random() * Math.PI) + Math.PI; // Только вверх-вбок
+            const speed = 400 + Math.random() * 400;
+            this.projectiles.push({ 
+                x: startX, y: startY, 
+                vx: Math.cos(angle) * speed, 
+                vy: Math.sin(angle) * speed, 
+                type: 'normal' 
+            });
         }
-    };
-
+        break;
+    default:
+        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
+}
+    }
     // Стреляет основной игрок
     fire(this.player.x, this.player.y - 20);
 
@@ -1113,7 +1125,12 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
     if (p.life <= 0) {
         this.projectiles.splice(i, 1);
         continue;
+        
     }
+    else { 
+    p.y -= 700 * dt; // Обычное движение только для дефолтных пуль
+}
+
 
     // 2. Проверка урона по врагам (луч бьет всех на одной линии X)
     this.enemies.forEach((e, index) => {
@@ -1131,7 +1148,32 @@ for (let i = this.projectiles.length - 1; i >= 0; i--) {
     
     continue; // Пропускаем стандартное движение p.y -= 700 для лазера
 }
-    p.y -= 700 * dt; 
+// 2. ДВИЖЕНИЕ (для всех остальных типов)
+p.x += (p.vx || 0) * dt;
+p.y += (p.vy || -700) * dt;
+
+// 3. ЛОГИКА ГРАНАТЫ (Взрыв при удалении или по таймеру)
+if (p.type === 'grenade') {
+    p.timer += dt;
+    // Если попала во врага или пролетела 0.8 сек — БАБАХ
+    let hitEnemy = this.enemies.some(e => Math.hypot(p.x - e.x, p.y - e.y) < e.size);
+    if (hitEnemy || p.timer > 0.8) {
+        this.spawnShockwave(p.x, p.y); // Визуальный эффект
+        // Урон по площади
+        this.enemies.forEach(e => {
+            if (Math.hypot(p.x - e.x, p.y - e.y) < 150) e.hp -= 5;
+        });
+        if (this.boss && Math.hypot(p.x - this.boss.x, p.y - this.boss.y) < 150) this.boss.hp -= 3;
+        this.projectiles.splice(i, 1);
+        continue;
+    }
+}
+
+// 4. УДАЛЕНИЕ ЗА ЭКРАНОМ
+if (p.y < -50 || p.y > canvas.height + 50 || p.x < -50 || p.x > canvas.width + 50) {
+    this.projectiles.splice(i, 1);
+}
+    
 
     if (this.boss) {
         // Проверяем расстояние от пули до центра босса
@@ -1432,28 +1474,33 @@ draw() {
     
     // 4. Отрисовка снарядов игрока
     this.projectiles.forEach(p => {
-        ctx.save();
-        if (p.type === 'laser') {
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#0ff';
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 4 * (p.life / 0.2);
-            ctx.beginPath();
-            ctx.moveTo(p.originX, p.originY);
-            ctx.lineTo(p.originX, 0);
-            ctx.stroke();
-            ctx.globalAlpha = p.life * 5;
-            ctx.strokeStyle = '#00f2ff';
-            ctx.lineWidth = 15;
-            ctx.stroke();
-        } else {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#ff00e5';
-            ctx.fillStyle = '#ff00e5';
-            ctx.fillRect(p.x - 2, p.y, 4, 15);
-        }
-        ctx.restore();
-    });
+    ctx.save();
+    if (p.type === 'laser') {
+        // Твой код лазера...
+    } else if (p.type === 'grenade') {
+        // Отрисовка плазменной гранаты
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#0f0';
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Пульсирующий ободок
+        ctx.strokeStyle = '#0f0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 10 + Math.sin(Date.now()/50)*2, 0, Math.PI*2);
+        ctx.stroke();
+    } else {
+        // Обычные пули (Трипл, Берсерк, Дефолт)
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff00e5';
+        ctx.fillStyle = '#ff00e5';
+        // Рисуем под углом движения (необязательно, но красиво)
+        ctx.fillRect(p.x - 2, p.y, 4, 15);
+    }
+    ctx.restore();
+});
     
     ctx.restore(); // Закрываем область тряски (Screen Shake)
 
