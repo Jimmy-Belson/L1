@@ -874,7 +874,7 @@ setupListeners() {
     if (this.player.heat >= 100) {
         this.player.overheated = true;
         // Для берсерка добавим сильную тряску при перегреве
-        this.shake = upg.weaponType === 'berserk' ? 35 : 15; 
+        this.shake = upg.weaponType === 'berserk' ? 30 : 15; 
     }
 
     // Вспомогательная функция для создания пули в зависимости от оружия
