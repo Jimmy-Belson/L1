@@ -3,15 +3,11 @@
 // ==========================================
 import { getRankByScore } from '../js/ranks.js';
 
-// ==========================================
-// ORBITRON: PERSISTENT PROGRESSION SYSTEM
-// ==========================================
 window.GameProgression = {
-    // Загружаем кредиты. Если нужно БЕСКОНЕЧНО для теста — раскомментируй строку ниже:
-    credits: 999999, // parseInt(localStorage.getItem('orbitron_credits')) || 0,
+    credits: 999999, // Бесконечные деньги для теста
     
-    // Загружаем апгрейды из памяти, чтобы они НЕ ИСЧЕЗАЛИ после REBOOT
-    activeUpgrades: JSON.parse(localStorage.getItem('orbitron_upgrades')) || {
+    // Оставляем пустой объект при каждом обновлении страницы
+    activeUpgrades: {
         weaponType: 'default',
         twin: false,
         shieldCharges: 0,
@@ -20,23 +16,15 @@ window.GameProgression = {
     },
 
     saveCredits(amount) {
-        // Если у нас не режим бесконечных денег, прибавляем честно
+        // Деньги сохраняем, а апгрейды — нет
         if (this.credits < 900000) {
             this.credits += amount;
             localStorage.setItem('orbitron_credits', this.credits);
         }
-        // Всегда сохраняем текущий набор пушек в память браузера
-        localStorage.setItem('orbitron_upgrades', JSON.stringify(this.activeUpgrades));
-        console.log(`%c[BANK] Data Synced.`, "color: #ffaa00");
     },
 
     buy(item, cost) {
-        // Условие покупки (для теста цена всегда 1 или просто true)
         if (this.credits >= cost || this.credits > 900000) {
-            if (this.credits < 900000) this.credits -= cost;
-            
-            localStorage.setItem('orbitron_credits', this.credits);
-
             switch(item) {
                 case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
                 case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
@@ -44,20 +32,10 @@ window.GameProgression = {
                 case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
                 case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
             }
-            
-            // СОХРАНЯЕМ ФАКТ ПОКУПКИ (чтобы после перезагрузки лазер остался)
-            localStorage.setItem('orbitron_upgrades', JSON.stringify(this.activeUpgrades));
-            
             this.updateShopUI();
             return true;
         }
         return false;
-    },
-
-    // Теперь этот метод не вызывается автоматически в gameOver, 
-    // если ты хочешь, чтобы пушки были вечными.
-    resetAfterMatch() {
-        console.log("[SYSTEM] Reset skipped to keep permanent upgrades.");
     },
 
     updateShopUI() {
@@ -203,6 +181,16 @@ class Player {
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.tilt);
+        // --- ДОБАВЬ ЭТОТ БЛОК ДЛЯ ОРИСОВКИ БЛИЗНЕЦА ---
+if (window.GameProgression.activeUpgrades.twin) {
+    ctx.save();
+    // Рисуем его чуть правее и делаем полупрозрачным (эффект фантома)
+    ctx.translate(60, 0); 
+    ctx.globalAlpha = 0.5; 
+    // Используем тот же метод отрисовки, что и у игрока
+    this.player.draw(ctx); 
+    ctx.restore();
+}
         
         // В начале Player.draw(ctx)
 if (this.invulTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
