@@ -315,8 +315,8 @@ class MimicBoss {
         this.x = canvas.width / 2;
         this.y = -100;
         this.targetY = 150;
-        this.hp = 60;
-        this.maxHp = 60;
+        this.hp = 40;
+        this.maxHp = 40;
         
         this.type = 'mimic';
         this.state = 'move'; 
