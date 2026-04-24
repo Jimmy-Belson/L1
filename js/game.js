@@ -186,70 +186,60 @@ class Player {
         }
     }
 
-    draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.tilt);
-        // --- ДОБАВЬ ЭТОТ БЛОК ДЛЯ ОРИСОВКИ БЛИЗНЕЦА ---
-if (window.GameProgression.activeUpgrades.twin) {
+draw(ctx) {
     ctx.save();
-    // Рисуем его чуть правее и делаем полупрозрачным (эффект фантома)
-    ctx.translate(60, 0); 
-    ctx.globalAlpha = 0.5; 
-    // Используем тот же метод отрисовки, что и у игрока
-    this.player.draw(ctx); 
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.tilt);
+    
+    // Эффект бессмертия (мигание)
+    if (this.invulTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+        ctx.globalAlpha = 0.3;
+    }
+
+    const color = this.overheated ? '#ff3300' : '#00f2ff';
+
+    // 1. Основной корпус
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = color;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -25);     
+    ctx.lineTo(8, -10);     
+    ctx.lineTo(25, 15);     
+    ctx.lineTo(10, 15);     
+    ctx.lineTo(0, 5);       
+    ctx.lineTo(-10, 15);    
+    ctx.lineTo(-25, 15);    
+    ctx.lineTo(-8, -10);    
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Внутренние механизмы
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-8, 0); ctx.lineTo(8, 0);   
+    ctx.moveTo(0, -10); ctx.lineTo(0, 5);  
+    ctx.stroke();
+
+    // 3. Кабина
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // 4. Двигатели
+    ctx.globalAlpha = 0.4;
+    const enginePulse = Math.sin(Date.now() / 50) * 5;
+    ctx.fillStyle = color;
+    ctx.fillRect(-18, 15, 6, 10 + enginePulse); 
+    ctx.fillRect(12, 15, 6, 10 + enginePulse);  
+    
     ctx.restore();
 }
-        
-        // В начале Player.draw(ctx)
-if (this.invulTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
-    ctx.globalAlpha = 0.3; // Делаем полупрозрачным или мигающим
-}
-
-        const color = this.overheated ? '#ff3300' : '#00f2ff';
-
-        // 1. Основной корпус (Сложная геометрия "Aegis")
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2.5;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = color;
-
-        ctx.beginPath();
-        ctx.moveTo(0, -25);     
-        ctx.lineTo(8, -10);     
-        ctx.lineTo(25, 15);     
-        ctx.lineTo(10, 15);     
-        ctx.lineTo(0, 5);       
-        ctx.lineTo(-10, 15);    
-        ctx.lineTo(-25, 15);    
-        ctx.lineTo(-8, -10);    
-        ctx.closePath();
-        ctx.stroke();
-
-        // 2. Внутренние механизмы
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-8, 0); ctx.lineTo(8, 0);   
-        ctx.moveTo(0, -10); ctx.lineTo(0, 5);  
-        ctx.stroke();
-
-        // 3. Кабина (Блик системы)
-        ctx.fillStyle = '#fff';
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(0, -12); ctx.lineTo(5, 2); ctx.lineTo(-5, 2);
-        ctx.closePath();
-        ctx.fill();
-
-        // 4. Двигатели (Пульсирующий шлейф)
-        ctx.globalAlpha = 0.4;
-        const enginePulse = Math.sin(Date.now() / 50) * 5;
-        ctx.fillStyle = color;
-        ctx.fillRect(-18, 15, 6, 10 + enginePulse); 
-        ctx.fillRect(12, 15, 6, 10 + enginePulse);  
-        
-        ctx.restore();
-    }
 }
 
 class Enemy {
@@ -1383,7 +1373,7 @@ spawnLoot(x, y) {
     });
 }
 
-draw() {
+ddraw() {
     // 1. Чистим холст
     ctx.fillStyle = '#01050a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1401,74 +1391,61 @@ draw() {
     this.enemies.forEach(e => e.draw(ctx));
 
     this.enemyProjectiles.forEach(ep => {
-    ctx.save();
-    // Используем цвет из объекта снаряда, если он есть
-    ctx.fillStyle = ep.color || '#ff0055'; 
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = ep.color || '#ff0055';
-    
-    ctx.beginPath();
-    ctx.arc(ep.x, ep.y, ep.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-});
+        ctx.save();
+        ctx.fillStyle = ep.color || '#ff0055'; 
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = ep.color || '#ff0055';
+        ctx.beginPath();
+        ctx.arc(ep.x, ep.y, ep.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
 
-     // --- ВСТАВИТЬ ЭТО ---
     if (this.boss) {
         this.boss.draw(ctx);
     }
     
-    // Рисуем игрока (теперь он точно будет внутри после фикса в конструкторе)
+    // --- ВНЕДРЕНИЕ ЛОГИКИ ИГРОКА И БЛИЗНЕЦА ---
+    // Рисуем основного игрока
     this.player.draw(ctx);
-   
-this.player.draw(ctx);
 
-// 2. Рисуем фантома, если куплен апгрейд
-if (window.GameProgression.activeUpgrades.twin) {
-    ctx.save();
-    // Сдвигаем всё рисование относительно позиции игрока
-    // Мы используем координаты игрока как базу
-    ctx.translate(this.player.x + 60, this.player.y);
-    ctx.rotate(this.player.tilt); // Близнец наклоняется так же, как оригинал
-    ctx.globalAlpha = 0.4; // Эффект прозрачности фантома
-    
-    // Рисуем ТОЛЬКО модельку (тело корабля)
-    this.renderPlayerModel(ctx, '#00f2ff'); 
-    
-    ctx.restore();
-}
-    
-    // 4. Отрисовка снарядов с неоновым свечением
-    this.projectiles.forEach(p => {
-    ctx.save();
-    if (p.type === 'laser') {
-        // РИСУЕМ ЛАЗЕРНЫЙ ЛУЧ
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = '#0ff';
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 4 * (p.life / 0.2); // Луч сужается со временем
-        
-        ctx.beginPath();
-        ctx.moveTo(p.originX, p.originY);
-        ctx.lineTo(p.originX, 0); // Луч до верхнего края
-        ctx.stroke();
-
-        // Дополнительное внешнее свечение
-        ctx.globalAlpha = p.life * 5;
-        ctx.strokeStyle = '#00f2ff';
-        ctx.lineWidth = 15;
-        ctx.stroke();
-    } else {
-        // ОБЫЧНАЯ ПУЛЯ
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#ff00e5';
-        ctx.fillStyle = '#ff00e5';
-        ctx.fillRect(p.x - 2, p.y, 4, 15);
+    // Если куплен Близнец, рисуем его копию справа
+    if (window.GameProgression.activeUpgrades.twin) {
+        ctx.save();
+        const originalX = this.player.x;
+        this.player.x += 60; // Сдвигаем "виртуальную" позицию
+        ctx.globalAlpha = 0.5; // Эффект фантома
+        this.player.draw(ctx); // Рисуем копию
+        this.player.x = originalX; // Возвращаем реальную позицию
+        ctx.restore();
     }
-    ctx.restore();
-});
     
-    ctx.restore(); // Закрываем область тряски
+    // 4. Отрисовка снарядов игрока
+    this.projectiles.forEach(p => {
+        ctx.save();
+        if (p.type === 'laser') {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#0ff';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 4 * (p.life / 0.2);
+            ctx.beginPath();
+            ctx.moveTo(p.originX, p.originY);
+            ctx.lineTo(p.originX, 0);
+            ctx.stroke();
+            ctx.globalAlpha = p.life * 5;
+            ctx.strokeStyle = '#00f2ff';
+            ctx.lineWidth = 15;
+            ctx.stroke();
+        } else {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ff00e5';
+            ctx.fillStyle = '#ff00e5';
+            ctx.fillRect(p.x - 2, p.y, 4, 15);
+        }
+        ctx.restore();
+    });
+    
+    ctx.restore(); // Закрываем область тряски (Screen Shake)
 
     // 5. Отрисовка UI (всегда поверх всего и не трясется)
     const rank = getRankByScore(this.player.score);
