@@ -88,27 +88,22 @@ class Player {
     update(dt) {
         const prevX = this.x;
 
- // --- ДОБАВЬ ЭТУ ПРОВЕРКУ ---
-    // Если босс существует, он мимик и он схватил нас — ПРЕРЫВАЕМ движение
-    if (window.engine && window.engine.boss && window.engine.boss.isGrabbed) {
-        // Ничего не делаем, пропускаем расчет координат
-    } else {
-        // Стандартная логика движения
-        this.x += (this.targetX - this.x) * (0.3 * dt * 60);
-    }
-
-
-        // Движение к курсору
-        this.x += (this.targetX - this.x) * (0.3 * dt * 60);
+        // Если босс существует, он мимик и он схватил нас — ПРЕРЫВАЕМ движение
+        if (window.engine && window.engine.boss && window.engine.boss.isGrabbed) {
+            // Игрок заблокирован, двигает только сам босс (в классе MimicBoss)
+        } else {
+            // Стандартная логика движения к курсору
+            this.x += (this.targetX - this.x) * (0.3 * dt * 60);
+        }
         
         // Расчет наклона корпуса (AAA динамика)
         const velocity = (this.x - prevX) * 0.2;
         this.tilt = velocity * Math.PI / 180;
 
-        // Внутри Player.update(dt)
-if (this.invulTimer > 0) {
-    this.invulTimer -= dt;
-}
+        // Таймер бессмертия
+        if (this.invulTimer > 0) {
+            this.invulTimer -= dt;
+        }
 
         // Логика перегрева
         if (this.overheated) {
