@@ -208,11 +208,7 @@ body::before {
     backdrop-filter: blur(10px);
 }
 
-.game-over-visible {
-     display: block !important;
-      animation: fadeIn 0.5s;
-      display: flex !important; 
-     }
+.game-over-visible { display: block !important; animation: fadeIn 0.5s; }
 
 .terminal-header {
     position: absolute;
@@ -490,80 +486,4 @@ body:not(:has(.game-over-visible)) {
 .shop-grid-vertical {
     scrollbar-width: thin;
     scrollbar-color: #0ff rgba(0, 0, 0, 0.3);
-}
-@keyframes btnFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-/* Кнопка запуска */
-#start-game-btn {
-    display: none;
-    margin-top: 20px;
-    padding: 18px 40px;
-    background: rgba(0, 255, 255, 0.05);
-    border: 2px solid #0ff;
-    color: #0ff;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), inset 0 0 10px rgba(0, 255, 255, 0.1);
-    backdrop-filter: blur(5px);
-     animation: btnFadeIn 0.5s ease-out forwards;
-}
-
-/* Эффект при наведении */
-#start-game-btn:hover {
-    background: #0ff;
-    color: #000;
-    box-shadow: 0 0 30px #0ff;
-    transform: scale(1.05);
-}
-
-/* Бегущая полоса света внутри кнопки */
-#start-game-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        120deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-    );
-    transition: 0.5s;
-}
-
-#start-game-btn:hover::before {
-    left: 100%;
-}
-
-/* Стили для текста статуса, когда связь установлена */
-#loading-status {
-    text-shadow: 0 0 10px #0ff;
-    transition: all 0.5s ease;
-}
-
-/* Анимация пульсации для оверлея */
-.waiting-overlay {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at center, #010a0f 0%, #01050a 100%);
-    /* КРИТИЧЕСКИ ВАЖНО: */
-    z-index: 100000000; 
-    
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #0ff;
-    gap: 20px;
-    transition: opacity 0.8s ease;
 }
