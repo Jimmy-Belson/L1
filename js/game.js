@@ -881,7 +881,6 @@ triggerMimicPrank() {
 }
 
 setupListeners() {
-    // 0. СИНХРОНИЗАЦИЯ ПРИ ВХОДЕ В POINTER LOCK
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement === canvas) {
             this.player.targetX = this.player.x;
@@ -889,134 +888,82 @@ setupListeners() {
     });
 
     window.addEventListener('mousedown', (e) => {
-        // --- КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ КУРСОРA ---
-        // Если игра еще не началась (висит оверлей), разрешаем обычный клик мышкой
         if (!window.gameActive) return; 
 
-        // Игнорируем UI элементы
         if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay') || e.target.closest('.waiting-overlay')) return;
 
-        // Только если игра активна — захватываем курсор
         if (document.pointerLockElement !== canvas) {
             this.requestPointerLock();
         }
 
-    if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
+        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
 
-    // 3. ЛОГИКА СТРЕЛЬБЫ (сработает одновременно с захватом)
-    if (!this.player.overheated) {
-        // ... твой существующий код выстрелов (fire, heat и т.д.) ...
-        const upg = window.GameProgression.activeUpgrades;
-        let heatGain = 15; 
-        if (upg.weaponType === 'triple') heatGain = 35;
-        else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
-        
-        this.player.heat += heatGain;
-        if (this.player.heat >= 100) this.player.overheated = true;
-    // Вспомогательная функция для создания пули в зависимости от оружия
-    const fire = (startX, startY) => {
-        switch(upg.weaponType) {
-             case 'triple':
-        // Три выстрела веером
-        for(let i = -1; i <= 1; i++) {
-            this.projectiles.push({ 
-                x: startX, y: startY, 
-                vx: i * 5, // Разлет в стороны
-                vy: -700,  // Скорость вверх
-                type: 'normal' 
-            });
-        }
-        break;
-            case 'laser':
-    this.projectiles.push({ 
-        x: startX, 
-        y: 0, // Лазер мгновенно занимает всю вертикаль
-        originX: startX,
-        originY: startY,
-        type: 'laser', 
-        life: 0.2 // Длительность вспышки в секундах
-    });
-    break;
-           case 'grenade':
-        this.projectiles.push({ 
-            x: startX, y: startY, 
-            vx: 0, vy: -400, // Граната летит медленнее
-            type: 'grenade',
-            timer: 0 
-        });
-        break;
-             case 'berserk':
-        // Хаотичный разброс
-        for(let i = 0; i < 8; i++) {
-            const angle = (Math.random() * Math.PI) + Math.PI; // Только вверх-вбок
-            const speed = 400 + Math.random() * 400;
-            this.projectiles.push({ 
-                x: startX, y: startY, 
-                vx: Math.cos(angle) * speed, 
-                vy: Math.sin(angle) * speed, 
-                type: 'normal' 
-            });
-        }
-        break;
-    default:
-        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
-}
-    }
-    // Стреляет основной игрок
-    fire(this.player.x, this.player.y - 20);
+        if (!this.player.overheated) {
+            const upg = window.GameProgression.activeUpgrades;
+            let heatGain = 15; 
+            if (upg.weaponType === 'triple') heatGain = 35;
+            else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
+            
+            this.player.heat += heatGain;
+            if (this.player.heat >= 100) this.player.overheated = true;
 
-    // Если куплен Брат-близнец — он стреляет рядом!
-    if (upg.twin) {
-        fire(this.player.x + 60, this.player.y);
-    }
+            const fire = (startX, startY) => {
+                switch(upg.weaponType) {
+                    case 'triple':
+                        for(let i = -1; i <= 1; i++) {
+                            this.projectiles.push({ x: startX, y: startY, vx: i * 5, vy: -700, type: 'normal' });
+                        }
+                        break;
+                    case 'laser':
+                        this.projectiles.push({ x: startX, y: 0, originX: startX, originY: startY, type: 'laser', life: 0.2 });
+                        break;
+                    case 'grenade':
+                        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -400, type: 'grenade', timer: 0 });
+                        break;
+                    case 'berserk':
+                        for(let i = 0; i < 8; i++) {
+                            const angle = (Math.random() * Math.PI) + Math.PI;
+                            const speed = 400 + Math.random() * 400;
+                            this.projectiles.push({ x: startX, y: startY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, type: 'normal' });
+                        }
+                        break;
+                    default:
+                        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
+                }
+            };
 
-           
+            fire(this.player.x, this.player.y - 20);
+            if (upg.twin) fire(this.player.x + 60, this.player.y);
             this.shake = 2;
         }
-    });
+    }); // Закрывающая скобка mousedown была потеряна здесь
 
-    // 2. ДВИЖЕНИЕ
     window.addEventListener('mousemove', (e) => {
         if (!window.gameActive) return;
-        
-        // Блокировка движения при захвате
         if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
             this.player.targetX = this.player.x; 
             return;
         }
-
         if (document.pointerLockElement === canvas) {
-            // В режиме Pointer Lock используем накопление относительного движения
-            // Множитель 1.2 обычно комфортнее, чем 1.5, для точного прицеливания
             this.player.targetX += e.movementX * 1.2;
         } else {
-            // Обычный режим (курсор над канвасом)
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             this.player.targetX = (e.clientX - rect.left) * scaleX;
         }
-
-        // Жесткий Clamp (ограничение) по краям экрана
         const margin = 40; 
         if (this.player.targetX < margin) this.player.targetX = margin;
         if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
     });
 
-    // 3. КЛАВИША [F] (Освобождение от захвата)
     window.addEventListener('keydown', (e) => {
         if (!window.gameActive) return;
-
         const isKeyF = e.code === 'KeyF' || e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'а';
-        
-        if (isKeyF) {
-            if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
-                this.boss.fPresses++; 
-                this.shake = 8; 
-                console.log(`[SYSTEM] REBOOTING... ${this.boss.fPresses}/3`);
-            }
+        if (isKeyF && this.boss?.type === 'mimic' && this.boss.isGrabbed) {
+            this.boss.fPresses++; 
+            this.shake = 8; 
         }
     });
-
 }
 update(dt) {
         if (!window.gameActive) return;
@@ -1751,21 +1698,25 @@ document.addEventListener('DOMContentLoaded', () => {
     window.GameProgression.updateShopUI();
 
     // 3. Функция разблокировки (вызывается из bootstrap в HTML или по клику)
-    window.unlockGameResources = () => {
-        // Разблокируем аудио
-        Object.keys(AudioManager.tracks).forEach(key => {
-            const track = AudioManager.tracks[key];
-            track.play().then(() => {
-                track.pause();
-                track.currentTime = 0;
-            }).catch(e => console.log("Audio prep..."));
-        });
+window.unlockGameResources = () => {
+    window.gameActive = true; // Важно установить в true!
 
-        // Запускаем музыку и лочим курсор
-        AudioManager.play('stage');
+    // Разблокируем все аудио через короткий "проигрыш-паузу"
+    Object.keys(AudioManager.tracks).forEach(key => {
+        const track = AudioManager.tracks[key];
+        track.play().then(() => {
+            track.pause();
+            track.currentTime = 0;
+        }).catch(e => console.log("Audio waiting for interaction..."));
+    });
+
+    // Запускаем первую музыку
+    AudioManager.play('stage');
+    
+    if (engine) {
         engine.requestPointerLock();
-    };
-
+    }
+};
     
 
     // 4. Запускаем цикл (он будет ждать window.gameActive = true)
