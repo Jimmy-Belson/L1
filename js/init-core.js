@@ -17,11 +17,15 @@ window.GlobalVoiceInit = function() {
     console.log("%c[VOICE] SIGNAL LISTENER DEPLOYED:", "color: #0ff; font-weight: bold;", myId);
 };
 
-// Прокидываем метод закрытия в глобальный объект Core
-// чтобы работало onclick="Core.closeUpdateBanner()"
-if (window.Core) {
-    window.Core.closeUpdateBanner = () => {
-        UI.Updates.close();
-        if (window.Core.Msg) window.Core.Msg("SYSTEM_DATA_STABILIZED", "success");
-    };
-}
+// Исправленный блок экспорта метода
+// Создаем Core в window, если его еще нет (чтобы кнопка в HTML его видела)
+window.Core = window.Core || {}; 
+
+window.Core.closeUpdateBanner = () => {
+    UI.Updates.close();
+    if (UI.Msg) {
+        UI.Msg("SYSTEM_DATA_STABILIZED", "success");
+    } else if (window.Core.Msg) {
+        window.Core.Msg("SYSTEM_DATA_STABILIZED", "success");
+    }
+};
