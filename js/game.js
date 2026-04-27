@@ -45,7 +45,7 @@ setPlaybackRate(key, rate) {
 };
 
 window.GameProgression = {
-    credits: 999999, 
+    credits: 0, 
     
     // 1. При загрузке скрипта достаем данные
     activeUpgrades: JSON.parse(sessionStorage.getItem('temp_upgrades')) || {
