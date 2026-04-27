@@ -882,7 +882,6 @@ triggerMimicPrank() {
 
 setupListeners() {
     // 0. СИНХРОНИЗАЦИЯ ПРИ ВХОДЕ В POINTER LOCK
-    // Это критично, чтобы не было прыжка в момент клика
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement === canvas) {
             this.player.targetX = this.player.x;
@@ -890,26 +889,17 @@ setupListeners() {
     });
 
     window.addEventListener('mousedown', (e) => {
-    // Игнорируем клики по UI (кнопка назад, экран смерти, экран загрузки)
-    if (e.target.closest('.back-btn') || 
-        e.target.closest('#game-over-overlay') || 
-        e.target.closest('.waiting-overlay')) {
-        return;
-    }
-    
-    if (!window.gameActive) return;
+        // --- КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ КУРСОРA ---
+        // Если игра еще не началась (висит оверлей), разрешаем обычный клик мышкой
+        if (!window.gameActive) return; 
 
+        // Игнорируем UI элементы
+        if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay') || e.target.closest('.waiting-overlay')) return;
 
-    // 1. Активируем аудио (если еще не активировано)
-    if (AudioManager.current && AudioManager.current.paused) {
-        AudioManager.current.play().catch(() => {});
-    }
-
-    // 2. ЗАХВАТ КУРСОРА (Без прерывания стрельбы)
-    if (document.pointerLockElement !== canvas) {
-        this.requestPointerLock();
-        // Мы НЕ пишем здесь return, чтобы код ниже (стрельба) выполнился сразу
-    }
+        // Только если игра активна — захватываем курсор
+        if (document.pointerLockElement !== canvas) {
+            this.requestPointerLock();
+        }
 
     if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
 

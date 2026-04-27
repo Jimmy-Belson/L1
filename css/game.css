@@ -487,3 +487,15 @@ body:not(:has(.game-over-visible)) {
     scrollbar-width: thin;
     scrollbar-color: #0ff rgba(0, 0, 0, 0.3);
 }
+/* Пока оверлей виден, курсор должен быть стандартным везде */
+body:has(.waiting-overlay) {
+    cursor: default !important;
+}
+
+.waiting-overlay {
+    cursor: default !important;
+}
+
+#start-game-btn {
+    cursor: pointer !important; /* На самой кнопке — пальчик */
+}
