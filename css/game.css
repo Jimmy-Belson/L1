@@ -382,3 +382,120 @@ body:not(:has(.game-over-visible)) {
     background: var(--neon-pink) !important;
     box-shadow: 0 0 20px var(--neon-pink) !important;
 }
+/* Кнопка вызова */
+.shop-trigger {
+    border-color: #ff00e5 !important;
+    color: #ff00e5 !important;
+    margin-bottom: 15px !important;
+}
+
+.side-panel {
+    position: fixed; /* Именно fixed, чтобы не зависеть от флексбоксов центра */
+    top: 0; 
+    right: -400px; /* Прячем подальше вправо */
+    width: 350px;
+    height: 100vh;
+    background: rgba(1, 5, 10, 0.98); /* Плотный фон */
+    border-left: 2px solid #0ff;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(15px);
+    transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 30px 20px;
+    z-index: 100000; /* Максимальный приоритет — выше логов и оверлея */
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.side-panel.active { 
+    right: 0 !important; 
+}
+
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    color: #0ff;
+    font-family: 'Orbitron';
+    font-size: 12px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+.credits-display {
+    padding: 15px 0;
+    color: #ffaa00;
+    font-family: 'Share Tech Mono';
+    font-size: 14px;
+}
+
+/* Фикс для кнопок внутри магазина, чтобы не наследовались криво */
+.shop-card {
+    all: initial; /* Сброс наследования от стандартных кнопок */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: 0.3s;
+}
+
+.shop-card:hover {
+    background: rgba(0, 255, 255, 0.15);
+    border-color: #0ff;
+}
+.shop-card .name { display: block; color: #fff; font-size: 14px; }
+.shop-card .desc { display: block; color: #555; font-size: 9px; margin-top: 4px; }
+.shop-card .price { color: #ffaa00; font-weight: bold; }
+
+/* Стиль купленного товара */
+.shop-card.bought {
+    border-color: #00ff44;
+    pointer-events: none;
+    opacity: 0.7;
+}
+/* 1. Стилизация самого бара (дорожки) */
+.shop-grid-vertical::-webkit-scrollbar {
+    width: 6px; /* Делаем его тонким и элегантным */
+}
+
+/* 2. Фон дорожки (скрываем или делаем очень темным) */
+.shop-grid-vertical::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+/* 3. Ползунок (та самая неоновая часть) */
+.shop-grid-vertical::-webkit-scrollbar-thumb {
+    background: #0ff; /* Твой основной неоновый цвет */
+    border-radius: 10px;
+    box-shadow: 0 0 10px #0ff, 0 0 20px #0ff; /* Эффект свечения */
+}
+
+/* 4. Цвет при наведении (делаем ярче) */
+.shop-grid-vertical::-webkit-scrollbar-thumb:hover {
+    background: #fff;
+    box-shadow: 0 0 15px #fff, 0 0 30px #0ff;
+}
+
+/* Фикс для Firefox (у него свои правила) */
+.shop-grid-vertical {
+    scrollbar-width: thin;
+    scrollbar-color: #0ff rgba(0, 0, 0, 0.3);
+}
+/* Пока оверлей виден, курсор должен быть стандартным везде */
+body:has(.waiting-overlay) {
+    cursor: default !important;
+}
+
+.waiting-overlay {
+    cursor: default !important;
+}
+
+#start-game-btn {
+    cursor: pointer !important; /* На самой кнопке — пальчик */
+}

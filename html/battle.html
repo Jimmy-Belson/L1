@@ -51,8 +51,11 @@
 <body>
 
  <div class="waiting-overlay">
-    <div style="font-family: 'Orbitron'; letter-spacing: 3px;">ESTABLISHING_LINK...</div>
+    <div id="loading-status" style="font-family: 'Orbitron'; letter-spacing: 3px;">ESTABLISHING_LINK...</div>
     <div class="loader-bar"></div>
+    <button id="start-game-btn" style="display: none; margin-top: 20px; padding: 15px 30px; background: none; border: 2px solid #0ff; color: #0ff; font-family: 'Orbitron'; cursor: pointer; text-shadow: 0 0 10px #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.3);">
+        INITIATE_NEURAL_LINK [CLICK_TO_START]
+    </button>
 </div>
 
 <div class="game-container">
@@ -66,7 +69,7 @@
     
 <div class="game-viewport">
     <canvas id="game-canvas"></canvas>
-     <div class="heat-system">
+    <div class="heat-system">
         <div class="heat-bar-container">
             <div id="heat-fill"></div>
         </div>
@@ -74,24 +77,96 @@
     </div>
 </div>
 
-    <div id="game-over-overlay">
-        <div class="terminal-header">SYSTEM_FAILURE</div>
-        <div class="game-over-content">
-            <h1 class="glitch" data-text="TERMINATED">TERMINATED</h1>
-            <div class="stats-row">
-                <span>FINAL_SCORE:</span>
-                <span id="final-score-value">0</span>
-            </div>
-            <div class="stats-row">
-                <span>RANK_ACHIEVED:</span>
-                <span id="final-rank-value" style="color: #0ff;">RECRUIT</span>
-            </div>
+<div id="game-over-overlay">
+    <div class="terminal-header">SYSTEM_FAILURE</div>
+    <div class="game-over-content">
+        <h1 class="glitch" data-text="TERMINATED">TERMINATED</h1>
+        
+        <div class="stats-row">
+            <span>FINAL_SCORE:</span>
+            <span id="final-score-value">0</span>
+        </div>
+        <div class="stats-row">
+            <span>RANK_ACHIEVED:</span>
+            <span id="final-rank-value" style="color: #0ff;">RECRUIT</span>
+        </div>
+
+        <div class="action-buttons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <button class="shop-trigger" id="retry-btn" onclick="window.toggleShop(true)"> OPEN_BLACK_MARKET </button>
             <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
             <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
         </div>
     </div>
+</div>
+
+<div id="black-market-panel" class="side-panel">
+    <div class="panel-header">
+        <span>BLACK_MARKET_TERMINAL</span>
+        <button onclick="window.toggleShop(false)" style="background:none; border:none; color:#0ff; cursor:pointer;">[X]</button>
     </div>
     
+    <div class="credits-display">AVAILABLE_CREDITS: <span id="shop-credits">0</span></div>
+
+    <div class="shop-grid-vertical" style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
+        
+        <div class="shop-card" onclick="window.buyItem('laser', 2000, this)">
+            <div class="card-info">
+                <span class="name">LASER_BEAM</span>
+                <span class="desc">PIERCES_THROUGH_ENEMIES</span>
+            </div>
+            <div class="price">2000c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('triple', 5000, this)">
+            <div class="card-info">
+                <span class="name">TRIPLE_CANNON</span>
+                <span class="desc">3_WAY_SPREAD_SHOT</span>
+            </div>
+            <div class="price">5000c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('grenade', 7500, this)">
+            <div class="card-info">
+                <span class="name">PLASMA_GRENADE</span>
+                <span class="desc">HEAVY_AREA_DAMAGE</span>
+            </div>
+            <div class="price">7500c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('berserk', 10000, this)">
+            <div class="card-info">
+                <span class="name">BERSERK_MODE</span>
+                <span class="desc">OMNIDIRECTIONAL_MAYHEM</span>
+            </div>
+            <div class="price">10k</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('twin', 5000, this)">
+            <div class="card-info">
+                <span class="name">TWIN_BRO</span>
+                <span class="desc">PHANTOM_WINGMAN_SUPPORT</span>
+            </div>
+            <div class="price">5000c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('shield', 1200, this)">
+            <div class="card-info">
+                <span class="name">AEGIS_SHIELD</span>
+                <span class="desc">+3_AUTOMATIC_BLOCKS</span>
+            </div>
+            <div class="price">1200c</div>
+        </div>
+
+        <div class="shop-card" onclick="window.buyItem('life', 3000, this)">
+            <div class="card-info">
+                <span class="name">REINFORCED_HULL</span>
+                <span class="desc">+1_EXTRA_LIFE_PER_RUN</span>
+            </div>
+            <div class="price">3000c</div>
+        </div>
+        
+    </div>
+</div>
     <div class="tactical-log">
         <h3>Tactical Log</h3>
         <ul id="highscores-list">
@@ -136,23 +211,49 @@
                     return;
                 }
 
-                Core.user = session.user;
                 
-                // Запускаем игру (флаг для game.js)
-                window.gameActive = true;
+                
 
-                // Загружаем лидерборд
-                await updateTacticalLog(Core);
+                 Core.user = session.user;
+    await updateTacticalLog(Core);
 
-                // Убираем экран загрузки
-                if (overlay) {
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.remove(), 800);
-                }
+    // --- МОДИФИКАЦИЯ ТУТ ---
+    const statusText = document.getElementById('loading-status');
+    const loaderBar = document.querySelector('.loader-bar');
+    const startBtn = document.getElementById('start-game-btn');
 
-            } catch (err) {
-                console.error("CRITICAL_BOOT_ERROR:", err);
-            }
+    // Когда всё загрузилось, меняем лоадер на кнопку
+    statusText.innerText = "LINK_ESTABLISHED";
+    loaderBar.style.display = 'none';
+    startBtn.style.display = 'block';
+
+   startBtn.addEventListener('click', (e) => {
+    // Останавливаем всплытие, чтобы не сработали другие window.onclick
+    e.stopPropagation(); 
+    
+    startBtn.blur(); 
+    
+    // Принудительно ставим флаг
+    window.gameActive = true;
+
+    // Сначала вызываем захват и звук
+    if (window.unlockGameResources) {
+        window.unlockGameResources();
+    }
+
+    // Мгновенно отключаем возможность кликать в оверлей
+    overlay.style.pointerEvents = 'none'; 
+    overlay.style.opacity = '0';
+
+    // Полностью удаляем через время анимации
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.remove();
+    }, 800);
+});
+} catch (err) {
+    console.error("CRITICAL_BOOT_ERROR:", err);
+}
         }
 
 async function updateTacticalLog(Core) {
