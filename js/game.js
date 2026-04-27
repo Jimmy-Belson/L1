@@ -827,7 +827,7 @@ spawnBossSequence(title, createBossFn) {
         AudioManager.play('mimic');
     }
 
-    console.log`([SYSTEM] INITIALIZING: ${title})`;
+    console.log(`[SYSTEM] INITIALIZING: ${title}`);
 
     setTimeout(() => {
         if (window.gameActive) {
@@ -1718,6 +1718,21 @@ document.addEventListener('DOMContentLoaded', () => {
       // ДОБАВЬ ЭТО:
     window.GameProgression.consumeTempUpgrades();
     window.GameProgression.updateShopUI();
+
+    const startMusic = () => {
+        AudioManager.play('stage');
+        
+        // "Прогреваем" музыку боссов (запускаем и тут же на паузу)
+        // Это даст нам право запустить их программно позже
+        Object.keys(AudioManager.tracks).forEach(key => {
+            const track = AudioManager.tracks[key];
+            track.play().then(() => track.pause()).catch(() => {});
+        });
+
+        window.removeEventListener('mousedown', startMusic);
+    };
+
+    window.addEventListener('mousedown', startMusic);
 
 
     // 3. Запускаем
