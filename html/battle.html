@@ -51,8 +51,11 @@
 <body>
 
  <div class="waiting-overlay">
-    <div style="font-family: 'Orbitron'; letter-spacing: 3px;">ESTABLISHING_LINK...</div>
+    <div id="loading-status" style="font-family: 'Orbitron'; letter-spacing: 3px;">ESTABLISHING_LINK...</div>
     <div class="loader-bar"></div>
+    <button id="start-game-btn" style="display: none; margin-top: 20px; padding: 15px 30px; background: none; border: 2px solid #0ff; color: #0ff; font-family: 'Orbitron'; cursor: pointer; text-shadow: 0 0 10px #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.3);">
+        INITIATE_NEURAL_LINK [CLICK_TO_START]
+    </button>
 </div>
 
 <div class="game-container">
@@ -208,23 +211,39 @@
                     return;
                 }
 
-                Core.user = session.user;
                 
-                // Запускаем игру (флаг для game.js)
-                window.gameActive = true;
+                
 
-                // Загружаем лидерборд
-                await updateTacticalLog(Core);
+                 Core.user = session.user;
+    await updateTacticalLog(Core);
 
-                // Убираем экран загрузки
-                if (overlay) {
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.remove(), 800);
-                }
+    // --- МОДИФИКАЦИЯ ТУТ ---
+    const statusText = document.getElementById('loading-status');
+    const loaderBar = document.querySelector('.loader-bar');
+    const startBtn = document.getElementById('start-game-btn');
 
-            } catch (err) {
-                console.error("CRITICAL_BOOT_ERROR:", err);
-            }
+    // Когда всё загрузилось, меняем лоадер на кнопку
+    statusText.innerText = "LINK_ESTABLISHED";
+    loaderBar.style.display = 'none';
+    startBtn.style.display = 'block';
+
+    startBtn.addEventListener('click', () => {
+        // 1. Активируем игру
+        window.gameActive = true;
+
+        // 2. ЗАХВАТ КУРСОРА (Сразу при клике!)
+        if (window.engine) {
+            window.engine.requestPointerLock();
+        }
+
+        // 3. Убираем оверлей
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 800);
+    });
+
+} catch (err) {
+    console.error("CRITICAL_BOOT_ERROR:", err);
+}
         }
 
 async function updateTacticalLog(Core) {

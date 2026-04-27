@@ -873,43 +873,33 @@ setupListeners() {
         }
     });
 
-    // 1. КЛИКИ И СТРЕЛЬБА
     window.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
-        if (!window.gameActive) return;
+    if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
+    if (!window.gameActive) return;
 
-        // ГАРАНТИРУЕМ, что музыка играет, если она вдруг встала на паузу
+    // 1. Активируем аудио (если еще не активировано)
     if (AudioManager.current && AudioManager.current.paused) {
         AudioManager.current.play().catch(() => {});
     }
+
+    // 2. ЗАХВАТ КУРСОРА (Без прерывания стрельбы)
+    if (document.pointerLockElement !== canvas) {
+        this.requestPointerLock();
+        // Мы НЕ пишем здесь return, чтобы код ниже (стрельба) выполнился сразу
+    }
+
+    if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
+
+    // 3. ЛОГИКА СТРЕЛЬБЫ (сработает одновременно с захватом)
+    if (!this.player.overheated) {
+        // ... твой существующий код выстрелов (fire, heat и т.д.) ...
+        const upg = window.GameProgression.activeUpgrades;
+        let heatGain = 15; 
+        if (upg.weaponType === 'triple') heatGain = 35;
+        else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
         
-        // Блокировка стрельбы при захвате мимиком
-        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
-
-        // Включаем Pointer Lock при первом клике
-        if (document.pointerLockElement !== canvas) {
-            this.requestPointerLock();
-            return; // Пропускаем выстрел в момент активации лока, чтобы избежать скачка
-        }
-
-       if (!this.player.overheated) {
-    const upg = window.GameProgression.activeUpgrades;
-    
-    let heatGain = 15; // Стандарт (Default, Laser)
-
-    if (upg.weaponType === 'triple') {
-        heatGain = 35; // В 2 раза быстрее обычного
-    } else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') {
-        heatGain = 40; // В 3 раза быстрее (самые тяжелые)
-    }
-    
-    this.player.heat += heatGain;
-
-    if (this.player.heat >= 100) {
-        this.player.overheated = true;
-        this.shake = upg.weaponType === 'triple' ? 10 : 20; 
-    }
-
+        this.player.heat += heatGain;
+        if (this.player.heat >= 100) this.player.overheated = true;
     // Вспомогательная функция для создания пули в зависимости от оружия
     const fire = (startX, startY) => {
         switch(upg.weaponType) {
@@ -1009,7 +999,7 @@ setupListeners() {
             if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
                 this.boss.fPresses++; 
                 this.shake = 8; 
-                console.log`([SYSTEM] REBOOTING... ${this.boss.fPresses}/3)`;
+                console.log(`[SYSTEM] REBOOTING... ${this.boss.fPresses}/3`);
             }
         }
     });
@@ -1704,45 +1694,44 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas = document.getElementById('game-canvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
-        // ДОБАВЬ ЭТО:
-    
 
-    
+    // Останавливаем фоновые визуальные эффекты основного сайта
     killBackgroundProcesses();
 
     canvas.width = 900;
     canvas.height = 600;
 
-    // 1. Создаем движок ОДИН раз
+    // 1. Создаем движок
     const gameInstance = new GameEngine(); 
+    engine = gameInstance;         
+    window.engine = gameInstance;  
 
-    // 2. Привязываем его к глобальным переменным
-    engine = gameInstance;         // для внутреннего кода (loop)
-    window.engine = gameInstance;  // для КОНСОЛИ (чтобы не было Uncaught ReferenceError)
-
-      // ДОБАВЬ ЭТО:
+    // 2. Инициализируем апгрейды и магазин
     window.GameProgression.consumeTempUpgrades();
     window.GameProgression.updateShopUI();
 
-    const unlockAudio = () => {
-    Object.keys(AudioManager.tracks).forEach(key => {
-        const track = AudioManager.tracks[key];
-        // Запускаем и сразу ставим на паузу, чтобы "легализовать" аудио
-        track.play().then(() => {
-            track.pause();
-            track.currentTime = 0;
-        }).catch(e => console.log("Audio unlock waiting..."));
+    // 3. Функция разблокировки (вызывается из bootstrap в HTML или по клику)
+    window.unlockGameResources = () => {
+        // Разблокируем аудио
+        Object.keys(AudioManager.tracks).forEach(key => {
+            const track = AudioManager.tracks[key];
+            track.play().then(() => {
+                track.pause();
+                track.currentTime = 0;
+            }).catch(e => console.log("Audio prep..."));
+        });
+
+        // Запускаем музыку и лочим курсор
+        AudioManager.play('stage');
+        engine.requestPointerLock();
+    };
+
+    // Слушатель для страховки (если оверлей не сработает)
+    window.addEventListener('mousedown', function internalUnlock() {
+        window.unlockGameResources();
+        window.removeEventListener('mousedown', internalUnlock);
     });
-    // Запускаем основной трек
-    if (!AudioManager.current) AudioManager.play('stage');
-    
-    window.removeEventListener('mousedown', unlockAudio);
-};
 
-window.addEventListener('mousedown', unlockAudio);
-
-
-    // 3. Запускаем
+    // 4. Запускаем цикл (он будет ждать window.gameActive = true)
     engine.loop();
-    AudioManager.play('stage');
 });
