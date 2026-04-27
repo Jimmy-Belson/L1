@@ -881,90 +881,92 @@ triggerMimicPrank() {
 }
 
 setupListeners() {
-    document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement === canvas) {
-            this.player.targetX = this.player.x;
-        }
-    });
+        document.addEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === canvas) {
+                this.player.targetX = this.player.x;
+            }
+        });
 
-    window.addEventListener('mousedown', (e) => {
-        if (!window.gameActive) return; 
+        window.addEventListener('mousedown', (e) => {
+            if (!window.gameActive) return; 
+            if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay') || e.target.closest('.waiting-overlay')) return;
 
-        if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay') || e.target.closest('.waiting-overlay')) return;
+            if (document.pointerLockElement !== canvas) {
+                this.requestPointerLock();
+            }
 
-        if (document.pointerLockElement !== canvas) {
-            this.requestPointerLock();
-        }
+            if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
 
-        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
+            if (!this.player.overheated) {
+                const upg = window.GameProgression.activeUpgrades;
+                let heatGain = 15; 
+                if (upg.weaponType === 'triple') heatGain = 35;
+                else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
+                
+                this.player.heat += heatGain;
+                if (this.player.heat >= 100) this.player.overheated = true;
 
-        if (!this.player.overheated) {
-            const upg = window.GameProgression.activeUpgrades;
-            let heatGain = 15; 
-            if (upg.weaponType === 'triple') heatGain = 35;
-            else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
-            
-            this.player.heat += heatGain;
-            if (this.player.heat >= 100) this.player.overheated = true;
+                const fire = (startX, startY) => {
+                    switch(upg.weaponType) {
+                        case 'triple':
+                            for(let i = -1; i <= 1; i++) {
+                                this.projectiles.push({ x: startX, y: startY, vx: i * 5, vy: -700, type: 'normal' });
+                            }
+                            break;
+                        case 'laser':
+                            this.projectiles.push({ x: startX, y: 0, originX: startX, originY: startY, type: 'laser', life: 0.2 });
+                            break;
+                        case 'grenade':
+                            this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -400, type: 'grenade', timer: 0 });
+                            break;
+                        case 'berserk':
+                            for(let i = 0; i < 8; i++) {
+                                const angle = (Math.random() * Math.PI) + Math.PI;
+                                const speed = 400 + Math.random() * 400;
+                                this.projectiles.push({ x: startX, y: startY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, type: 'normal' });
+                            }
+                            break;
+                        default:
+                            this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
+                    }
+                };
 
-            const fire = (startX, startY) => {
-                switch(upg.weaponType) {
-                    case 'triple':
-                        for(let i = -1; i <= 1; i++) {
-                            this.projectiles.push({ x: startX, y: startY, vx: i * 5, vy: -700, type: 'normal' });
-                        }
-                        break;
-                    case 'laser':
-                        this.projectiles.push({ x: startX, y: 0, originX: startX, originY: startY, type: 'laser', life: 0.2 });
-                        break;
-                    case 'grenade':
-                        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -400, type: 'grenade', timer: 0 });
-                        break;
-                    case 'berserk':
-                        for(let i = 0; i < 8; i++) {
-                            const angle = (Math.random() * Math.PI) + Math.PI;
-                            const speed = 400 + Math.random() * 400;
-                            this.projectiles.push({ x: startX, y: startY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, type: 'normal' });
-                        }
-                        break;
-                    default:
-                        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
-                }
-            };
+                fire(this.player.x, this.player.y - 20);
+                if (upg.twin) fire(this.player.x + 60, this.player.y);
+                this.shake = 2;
+            }
+        });
 
-            fire(this.player.x, this.player.y - 20);
-            if (upg.twin) fire(this.player.x + 60, this.player.y);
-            this.shake = 2;
-        }
-    }); // Закрывающая скобка mousedown была потеряна здесь
+        window.addEventListener('mousemove', (e) => {
+            if (!window.gameActive) return;
+            if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
+                this.player.targetX = this.player.x; 
+                return;
+            }
+            if (document.pointerLockElement === canvas) {
+                this.player.targetX += e.movementX * 1.2;
+            } else {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                this.player.targetX = (e.clientX - rect.left) * scaleX;
+            }
+            const margin = 40; 
+            if (this.player.targetX < margin) this.player.targetX = margin;
+            if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
+        });
 
-    window.addEventListener('mousemove', (e) => {
-        if (!window.gameActive) return;
-        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
-            this.player.targetX = this.player.x; 
-            return;
-        }
-        if (document.pointerLockElement === canvas) {
-            this.player.targetX += e.movementX * 1.2;
-        } else {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            this.player.targetX = (e.clientX - rect.left) * scaleX;
-        }
-        const margin = 40; 
-        if (this.player.targetX < margin) this.player.targetX = margin;
-        if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
-    });
+        window.addEventListener('keydown', (e) => {
+            if (!window.gameActive) return;
+            const isKeyF = e.code === 'KeyF' || e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'а';
+            if (isKeyF && this.boss?.type === 'mimic' && this.boss.isGrabbed) {
+                this.boss.fPresses++; 
+                this.shake = 8; 
+            }
+        });
+    } // Конец setupListeners
 
-    window.addEventListener('keydown', (e) => {
-        if (!window.gameActive) return;
-        const isKeyF = e.code === 'KeyF' || e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'а';
-        if (isKeyF && this.boss?.type === 'mimic' && this.boss.isGrabbed) {
-            this.boss.fPresses++; 
-            this.shake = 8; 
-        }
-    });
-}
+
+    
 update(dt) {
         if (!window.gameActive) return;
             // --- ВСТАВИТЬ ЭТО В НАЧАЛО UPDATE ---
