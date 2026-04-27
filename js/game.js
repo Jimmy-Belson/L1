@@ -5,10 +5,10 @@ import { getRankByScore } from '../js/ranks.js';
 
 const AudioManager = {
     tracks: {
-        stage: new Audio('/assets/Lazerhawk_Overdrive.mp3'),
-        sentinel: new Audio('/assets/Carpenter_Brut_Turbo_Killer.mp3'),
-        mimic: new Audio('/assets/Gesaffelstein_Pursuit.mp3'),
-        heartbeat: new Audio('/assets/heartbeat.mp3') 
+        stage: new Audio('assets/Lazerhawk_Overdrive.mp3'),
+        sentinel: new Audio('assets/Carpenter_Brut_Turbo_Killer.mp3'),
+        mimic: new Audio('assets/Gesaffelstein_Pursuit.mp3'),
+        heartbeat: new Audio('assets/heartbeat.mp3') 
     },
     current: null,
 
