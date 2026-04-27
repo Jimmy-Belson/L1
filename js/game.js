@@ -45,9 +45,9 @@ setPlaybackRate(key, rate) {
 };
 
 window.GameProgression = {
-    credits: 0, 
+    // ЧИТАЕМ накопительный баланс из памяти сразу при загрузке
+    credits: parseInt(localStorage.getItem('orbitron_credits')) || 0, 
     
-    // 1. При загрузке скрипта достаем данные
     activeUpgrades: JSON.parse(sessionStorage.getItem('temp_upgrades')) || {
         weaponType: 'default',
         twin: false,
@@ -56,33 +56,37 @@ window.GameProgression = {
         coolingFactor: 1
     },
 
-    // 2. Метод для применения и немедленной очистки
     consumeTempUpgrades() {
         if (sessionStorage.getItem('temp_upgrades')) {
             console.log("%c[SYSTEM] Upgrades applied and cleared for next run.", "color: #00ff44");
-            sessionStorage.removeItem('temp_upgrades'); // Стираем, чтобы после СЛЕДУЮЩЕЙ смерти их не было
+            sessionStorage.removeItem('temp_upgrades');
         }
     },
 
     saveCredits(amount) {
-        if (this.credits < 900000) {
-            this.credits += amount;
-            localStorage.setItem('orbitron_credits', this.credits);
-        }
+        // Убрано условие < 900000, чтобы очки копились честно и всегда
+        // Мы берем ТЕКУЩЕЕ значение из памяти, прибавляем новое и сохраняем
+        let currentTotal = parseInt(localStorage.getItem('orbitron_credits')) || 0;
+        this.credits = currentTotal + amount;
+        localStorage.setItem('orbitron_credits', this.credits);
+        console.log(`%c[ECONOMY] Added: ${amount}. New Balance: ${this.credits}`, "color: #00ff44");
     },
 
     buy(item, cost) {
-        if (this.credits >= cost || this.credits > 900000) {
+        // Теперь всегда проверяем реальный баланс
+        if (this.credits >= cost) {
+            this.credits -= cost; // Вычитаем стоимость из общей суммы
+            localStorage.setItem('orbitron_credits', this.credits); // Сохраняем остаток
+
             switch(item) {
-    case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
-    case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
-    case 'grenade':  this.activeUpgrades.weaponType = 'grenade'; break;
-    case 'twin':     this.activeUpgrades.twin = true; break;
-    case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
-    case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
-    case 'life':     this.activeUpgrades.extraLives = 1; break; // Наша новая жизнь
-}
-            // Сохраняем в буфер перед ребутом
+                case 'laser':    this.activeUpgrades.weaponType = 'laser'; break;
+                case 'triple':   this.activeUpgrades.weaponType = 'triple'; break;
+                case 'grenade':  this.activeUpgrades.weaponType = 'grenade'; break;
+                case 'twin':     this.activeUpgrades.twin = true; break;
+                case 'berserk':  this.activeUpgrades.weaponType = 'berserk'; break;
+                case 'shield':   this.activeUpgrades.shieldCharges += 3; break;
+                case 'life':     this.activeUpgrades.extraLives = 1; break;
+            }
             sessionStorage.setItem('temp_upgrades', JSON.stringify(this.activeUpgrades));
             this.updateShopUI();
             return true;
@@ -92,7 +96,10 @@ window.GameProgression = {
 
     updateShopUI() {
         const display = document.getElementById('shop-credits');
-        if (display) display.innerText = this.credits > 900000 ? "INF" : this.credits;
+        if (display) {
+            // Если кредитов очень много (чит), пишем INF, иначе — число
+            display.innerText = this.credits > 900000 ? "INF" : this.credits;
+        }
     }
 };
 
