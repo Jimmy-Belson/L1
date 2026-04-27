@@ -8,26 +8,30 @@ const AudioManager = {
         stage: new Audio('/assets/Lazerhawk Overdrive.mp3'),
         sentinel: new Audio('/assets/Carpenter Brut - Turbo Killer.mp3'),
         mimic: new Audio('/assets/Gesaffelstein - Pursuit.mp3'),
-// ДОБАВЛЯЕМ СЮДА ФАЙЛ СЕРДЦЕБИЕНИЯ:
         heartbeat: new Audio('/assets/heartbeat.mp3') 
     },
     current: null,
 
+    stopAll() {
+        Object.values(this.tracks).forEach(track => {
+            track.pause();
+            track.currentTime = 0;
+        });
+        this.current = null;
+    },
+
     play(key) {
-        if (this.current) {
-            this.current.pause();
-            this.current.currentTime = 0;
-        }
+        // Если это тот же трек, который уже играет — ничего не делаем
+        if (this.current === this.tracks[key] && !this.current.paused && key !== 'heartbeat') return;
+
+        this.stopAll();
 
         this.current = this.tracks[key];
         if (this.current) {
-            // Делаем фоновую музыку тише, а сердцебиение - на максимум для напряжения
             this.current.volume = (key === 'heartbeat') ? 1.0 : 0.4; 
-            
-            // Сердцебиение не нужно зацикливать на всю игру
             this.current.loop = (key !== 'heartbeat'); 
             
-            this.current.play().catch(e => console.log("Audio play blocked: need user interaction"));
+            this.current.play().catch(e => console.log("Audio interaction needed"));
         }
     }
 };
@@ -817,38 +821,37 @@ this.bossTitleText = "";  // Текст названия     // Ссылка н�
 }
 
 spawnBossSequence(title, createBossFn) {
-    this.bossSpawned = true; // Блокируем повторный вход
-    this.enemies = [];       // Очищаем обычных мобов
-    this.projectiles = [];   // Очищаем пули игрока
-    this.enemyProjectiles = []; // Очищаем пули врагов
-    this.shake = 60;         // Мощная тряска при анонсе
+    if (this.bossSpawned) return;
+    this.bossSpawned = true; 
+
+    // 1. ОСТАНАВЛИВАЕМ ВСЁ И ВКЛЮЧАЕМ СЕРДЦЕ
+    AudioManager.play('heartbeat');
     
+    this.enemies = [];       
+    this.projectiles = [];   
+    this.enemyProjectiles = []; 
+    
+    // Эффект "Предчувствия"
     this.bossTitleText = title;
-    this.bossTitleTimer = 3.5; // Титры висят чуть дольше
+    this.bossTitleTimer = 4.0; // Текст висит чуть дольше
+    this.shake = 10;           // Легкая предсмертная дрожь
 
-    console.log(`[SYSTEM] INITIALIZING: ${title}`);
+    let bossMusicKey = title.includes("SENTINEL") ? 'sentinel' : 'mimic';
 
-
-
-    // 2. ЗАПОМИНАЕМ, КАКОЙ ТРЕК ВКЛЮЧАТЬ ПОСЛЕ ПАУЗЫ
-    let bossMusicKey = 'stage'; // на всякий случай дефолт
-    if (title.includes("SENTINEL")) {
-        bossMusicKey = 'sentinel';
-    } else if (title.includes("MIMIC")) {
-        bossMusicKey = 'mimic';
-    }
-
-    // 3. ПАУЗА 3 СЕКУНДЫ (в это время стучит сердце)
+    // 2. ТАЙМЕР ОЖИДАНИЯ (3 секунды страха)
     setTimeout(() => {
         if (window.gameActive) {
-            this.boss = createBossFn(); // Создаем нужного босса
-            console.log("[SYSTEM] BOSS_MATERIALIZED");
-            
-            // 4. МУЗЫКА БОССА СТАРТУЕТ РОВНО ВМЕСТЕ С НИМ
+            // Включаем тяжелую музыку
             AudioManager.play(bossMusicKey);
             
-            // Дополнительная тряска экрана в момент дропа босса (по желанию)
-            this.shake = 40; 
+            // Спавним босса
+            this.boss = createBossFn(); 
+            
+            // Ударный эффект появления
+            this.shake = 80; 
+            this.spawnShockwave(canvas.width/2, -100);
+            
+            console.log(`%c[SYSTEM] ${title} ENGAGED, "color: #ff0055; font-weight: bold;`);
         }
     }, 3000); 
 }
