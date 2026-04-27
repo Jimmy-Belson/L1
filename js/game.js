@@ -828,8 +828,7 @@ spawnBossSequence(title, createBossFn) {
 
     console.log(`[SYSTEM] INITIALIZING: ${title}`);
 
-    // 1. ОСТАНАВЛИВАЕМ ОБЫЧНУЮ МУЗЫКУ И ВРУБАЕМ СЕРДЦЕБИЕНИЕ
-    AudioManager.play('heartbeat'); 
+
 
     // 2. ЗАПОМИНАЕМ, КАКОЙ ТРЕК ВКЛЮЧАТЬ ПОСЛЕ ПАУЗЫ
     let bossMusicKey = 'stage'; // на всякий случай дефолт
@@ -1037,7 +1036,34 @@ this.gameTime += dt;
 
  if (this.bossTitleTimer > 0) {
     this.bossTitleTimer -= dt;
+
 }
+// --- 1. ОПРЕДЕЛЯЕМ ФАЗЫ ПОДГОТОВКИ (за 5 сек до любого босса) ---
+    const isPreBoss1 = (this.gameTime >= 115 && this.gameTime < 120);
+    const isPreBoss2 = (this.gameTime >= 235 && this.gameTime < 240);
+    const isPreBossPhase = (isPreBoss1 || isPreBoss2) && !this.bossSpawned;
+
+    if (isPreBossPhase) {
+        // Если музыка еще не сменилась на сердце — включаем
+        if (AudioManager.current !== AudioManager.tracks.heartbeat) {
+            AudioManager.play('heartbeat');
+        }
+
+        // --- 2. РАСЧЕТ УСКОРЕНИЯ (от 1.0 до 1.7) ---
+        // Считаем прогресс текущей 5-секундки (от 0 до 1)
+        let startTime = isPreBoss1 ? 115 : 235;
+        let progress = (this.gameTime - startTime) / 5; 
+        
+        // Ограничиваем прогресс, чтобы не улетел выше 1
+        progress = Math.min(Math.max(progress, 0), 1);
+
+        // Применяем ускорение к самому аудио-файлу
+        // 1.0 — обычный темп, 1.7 — очень быстрый пульс
+        AudioManager.tracks.heartbeat.playbackRate = 1 + (progress * 0.7);
+        
+        // Можно даже громкость чуть-чуть поднять к концу
+        AudioManager.tracks.heartbeat.volume = 0.6 + (progress * 0.4); 
+    }
 
 // За 5 секунд до босса включаем "Панику"
 if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
