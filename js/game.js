@@ -881,92 +881,153 @@ triggerMimicPrank() {
 }
 
 setupListeners() {
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === canvas) {
-                this.player.targetX = this.player.x;
-            }
+    // 0. СИНХРОНИЗАЦИЯ ПРИ ВХОДЕ В POINTER LOCK
+    // Это критично, чтобы не было прыжка в момент клика
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement === canvas) {
+            this.player.targetX = this.player.x;
+        }
+    });
+
+    window.addEventListener('mousedown', (e) => {
+    // Игнорируем клики по UI (кнопка назад, экран смерти, экран загрузки)
+    if (e.target.closest('.back-btn') || 
+        e.target.closest('#game-over-overlay') || 
+        e.target.closest('.waiting-overlay')) {
+        return;
+    }
+    
+    if (!window.gameActive) return;
+
+
+    // 1. Активируем аудио (если еще не активировано)
+    if (AudioManager.current && AudioManager.current.paused) {
+        AudioManager.current.play().catch(() => {});
+    }
+
+    // 2. ЗАХВАТ КУРСОРА (Без прерывания стрельбы)
+    if (document.pointerLockElement !== canvas) {
+        this.requestPointerLock();
+        // Мы НЕ пишем здесь return, чтобы код ниже (стрельба) выполнился сразу
+    }
+
+    if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
+
+    // 3. ЛОГИКА СТРЕЛЬБЫ (сработает одновременно с захватом)
+    if (!this.player.overheated) {
+        // ... твой существующий код выстрелов (fire, heat и т.д.) ...
+        const upg = window.GameProgression.activeUpgrades;
+        let heatGain = 15; 
+        if (upg.weaponType === 'triple') heatGain = 35;
+        else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
+        
+        this.player.heat += heatGain;
+        if (this.player.heat >= 100) this.player.overheated = true;
+    // Вспомогательная функция для создания пули в зависимости от оружия
+    const fire = (startX, startY) => {
+        switch(upg.weaponType) {
+             case 'triple':
+        // Три выстрела веером
+        for(let i = -1; i <= 1; i++) {
+            this.projectiles.push({ 
+                x: startX, y: startY, 
+                vx: i * 5, // Разлет в стороны
+                vy: -700,  // Скорость вверх
+                type: 'normal' 
+            });
+        }
+        break;
+            case 'laser':
+    this.projectiles.push({ 
+        x: startX, 
+        y: 0, // Лазер мгновенно занимает всю вертикаль
+        originX: startX,
+        originY: startY,
+        type: 'laser', 
+        life: 0.2 // Длительность вспышки в секундах
+    });
+    break;
+           case 'grenade':
+        this.projectiles.push({ 
+            x: startX, y: startY, 
+            vx: 0, vy: -400, // Граната летит медленнее
+            type: 'grenade',
+            timer: 0 
         });
+        break;
+             case 'berserk':
+        // Хаотичный разброс
+        for(let i = 0; i < 8; i++) {
+            const angle = (Math.random() * Math.PI) + Math.PI; // Только вверх-вбок
+            const speed = 400 + Math.random() * 400;
+            this.projectiles.push({ 
+                x: startX, y: startY, 
+                vx: Math.cos(angle) * speed, 
+                vy: Math.sin(angle) * speed, 
+                type: 'normal' 
+            });
+        }
+        break;
+    default:
+        this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
+}
+    }
+    // Стреляет основной игрок
+    fire(this.player.x, this.player.y - 20);
 
-        window.addEventListener('mousedown', (e) => {
-            if (!window.gameActive) return; 
-            if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay') || e.target.closest('.waiting-overlay')) return;
+    // Если куплен Брат-близнец — он стреляет рядом!
+    if (upg.twin) {
+        fire(this.player.x + 60, this.player.y);
+    }
 
-            if (document.pointerLockElement !== canvas) {
-                this.requestPointerLock();
-            }
+           
+            this.shake = 2;
+        }
+    });
 
-            if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
+    // 2. ДВИЖЕНИЕ
+    window.addEventListener('mousemove', (e) => {
+        if (!window.gameActive) return;
+        
+        // Блокировка движения при захвате
+        if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
+            this.player.targetX = this.player.x; 
+            return;
+        }
 
-            if (!this.player.overheated) {
-                const upg = window.GameProgression.activeUpgrades;
-                let heatGain = 15; 
-                if (upg.weaponType === 'triple') heatGain = 35;
-                else if (upg.weaponType === 'grenade' || upg.weaponType === 'berserk') heatGain = 40;
-                
-                this.player.heat += heatGain;
-                if (this.player.heat >= 100) this.player.overheated = true;
+        if (document.pointerLockElement === canvas) {
+            // В режиме Pointer Lock используем накопление относительного движения
+            // Множитель 1.2 обычно комфортнее, чем 1.5, для точного прицеливания
+            this.player.targetX += e.movementX * 1.2;
+        } else {
+            // Обычный режим (курсор над канвасом)
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            this.player.targetX = (e.clientX - rect.left) * scaleX;
+        }
 
-                const fire = (startX, startY) => {
-                    switch(upg.weaponType) {
-                        case 'triple':
-                            for(let i = -1; i <= 1; i++) {
-                                this.projectiles.push({ x: startX, y: startY, vx: i * 5, vy: -700, type: 'normal' });
-                            }
-                            break;
-                        case 'laser':
-                            this.projectiles.push({ x: startX, y: 0, originX: startX, originY: startY, type: 'laser', life: 0.2 });
-                            break;
-                        case 'grenade':
-                            this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -400, type: 'grenade', timer: 0 });
-                            break;
-                        case 'berserk':
-                            for(let i = 0; i < 8; i++) {
-                                const angle = (Math.random() * Math.PI) + Math.PI;
-                                const speed = 400 + Math.random() * 400;
-                                this.projectiles.push({ x: startX, y: startY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, type: 'normal' });
-                            }
-                            break;
-                        default:
-                            this.projectiles.push({ x: startX, y: startY, vx: 0, vy: -700, type: 'normal' });
-                    }
-                };
+        // Жесткий Clamp (ограничение) по краям экрана
+        const margin = 40; 
+        if (this.player.targetX < margin) this.player.targetX = margin;
+        if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
+    });
 
-                fire(this.player.x, this.player.y - 20);
-                if (upg.twin) fire(this.player.x + 60, this.player.y);
-                this.shake = 2;
-            }
-        });
+    // 3. КЛАВИША [F] (Освобождение от захвата)
+    window.addEventListener('keydown', (e) => {
+        if (!window.gameActive) return;
 
-        window.addEventListener('mousemove', (e) => {
-            if (!window.gameActive) return;
+        const isKeyF = e.code === 'KeyF' || e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'а';
+        
+        if (isKeyF) {
             if (this.boss?.type === 'mimic' && this.boss.isGrabbed) {
-                this.player.targetX = this.player.x; 
-                return;
-            }
-            if (document.pointerLockElement === canvas) {
-                this.player.targetX += e.movementX * 1.2;
-            } else {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                this.player.targetX = (e.clientX - rect.left) * scaleX;
-            }
-            const margin = 40; 
-            if (this.player.targetX < margin) this.player.targetX = margin;
-            if (this.player.targetX > canvas.width - margin) this.player.targetX = canvas.width - margin;
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (!window.gameActive) return;
-            const isKeyF = e.code === 'KeyF' || e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'а';
-            if (isKeyF && this.boss?.type === 'mimic' && this.boss.isGrabbed) {
                 this.boss.fPresses++; 
                 this.shake = 8; 
+                console.log(`[SYSTEM] REBOOTING... ${this.boss.fPresses}/3`);
             }
-        });
-    } // Конец setupListeners
+        }
+    });
 
-
-    
+}
 update(dt) {
         if (!window.gameActive) return;
             // --- ВСТАВИТЬ ЭТО В НАЧАЛО UPDATE ---
@@ -975,34 +1036,7 @@ this.gameTime += dt;
 
  if (this.bossTitleTimer > 0) {
     this.bossTitleTimer -= dt;
-
 }
-// --- 1. ОПРЕДЕЛЯЕМ ФАЗЫ ПОДГОТОВКИ (за 5 сек до любого босса) ---
-    const isPreBoss1 = (this.gameTime >= 115 && this.gameTime < 120);
-    const isPreBoss2 = (this.gameTime >= 235 && this.gameTime < 240);
-    const isPreBossPhase = (isPreBoss1 || isPreBoss2) && !this.bossSpawned;
-
-    if (isPreBossPhase) {
-        // Если музыка еще не сменилась на сердце — включаем
-        if (AudioManager.current !== AudioManager.tracks.heartbeat) {
-            AudioManager.play('heartbeat');
-        }
-
-        // --- 2. РАСЧЕТ УСКОРЕНИЯ (от 1.0 до 1.7) ---
-        // Считаем прогресс текущей 5-секундки (от 0 до 1)
-        let startTime = isPreBoss1 ? 115 : 235;
-        let progress = (this.gameTime - startTime) / 5; 
-        
-        // Ограничиваем прогресс, чтобы не улетел выше 1
-        progress = Math.min(Math.max(progress, 0), 1);
-
-        // Применяем ускорение к самому аудио-файлу
-        // 1.0 — обычный темп, 1.7 — очень быстрый пульс
-        AudioManager.tracks.heartbeat.playbackRate = 1 + (progress * 0.7);
-        
-        // Можно даже громкость чуть-чуть поднять к концу
-        AudioManager.tracks.heartbeat.volume = 0.6 + (progress * 0.4); 
-    }
 
 // За 5 секунд до босса включаем "Панику"
 if (this.gameTime >= 115 && this.gameTime < 120 && !this.bossSpawned) {
@@ -1700,25 +1734,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.GameProgression.updateShopUI();
 
     // 3. Функция разблокировки (вызывается из bootstrap в HTML или по клику)
-window.unlockGameResources = () => {
-    window.gameActive = true; // Важно установить в true!
+    window.unlockGameResources = () => {
+        // Разблокируем аудио
+        Object.keys(AudioManager.tracks).forEach(key => {
+            const track = AudioManager.tracks[key];
+            track.play().then(() => {
+                track.pause();
+                track.currentTime = 0;
+            }).catch(e => console.log("Audio prep..."));
+        });
 
-    // Разблокируем все аудио через короткий "проигрыш-паузу"
-    Object.keys(AudioManager.tracks).forEach(key => {
-        const track = AudioManager.tracks[key];
-        track.play().then(() => {
-            track.pause();
-            track.currentTime = 0;
-        }).catch(e => console.log("Audio waiting for interaction..."));
-    });
-
-    // Запускаем первую музыку
-    AudioManager.play('stage');
-    
-    if (engine) {
+        // Запускаем музыку и лочим курсор
+        AudioManager.play('stage');
         engine.requestPointerLock();
-    }
-};
+    };
+
     
 
     // 4. Запускаем цикл (он будет ждать window.gameActive = true)
