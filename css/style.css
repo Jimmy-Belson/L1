@@ -2247,3 +2247,47 @@ html, body {
     0% { transform: translateY(-12px); opacity: 1; }
     100% { transform: translateY(-300px) scale(0.2); opacity: 0; }
 }
+.update-banner {
+    display: none; /* Скрыт по умолчанию */
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    justify-content: center; align-items: center;
+}
+
+.update-content {
+    background: #01050a;
+    border: 2px solid #00f2ff;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    font-family: 'Orbitron', sans-serif;
+    color: #fff;
+    position: relative;
+    border-radius: 5px;
+}
+
+.version-tag { color: #00f2ff; font-size: 0.8rem; letter-spacing: 2px; }
+
+.changelog-list {
+    list-style: none; padding: 0; margin: 20px 0;
+    max-height: 300px; overflow-y: auto;
+}
+
+.changelog-list li {
+    margin-bottom: 12px; font-size: 0.9rem; line-height: 1.4;
+    border-left: 2px solid #ff00e5; padding-left: 10px;
+}
+
+.changelog-list span { color: #ff00e5; font-weight: bold; margin-right: 5px; }
+
+.update-ok-btn {
+    width: 100%; background: transparent; border: 1px solid #00f2ff;
+    color: #00f2ff; padding: 10px; cursor: pointer; transition: 0.3s;
+    font-family: 'Orbitron'; margin-top: 10px;
+}
+
+.update-ok-btn:hover { background: #00f2ff; color: #000; }
