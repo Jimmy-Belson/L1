@@ -7,7 +7,7 @@ const AudioManager = {
     tracks: {
         stage: new Audio('/assets/Lazerhawk Overdrive.mp3'),
         sentinel: new Audio('/assets/Carpenter Brut - Turbo Killer.mp3'),
-        mimic: new Audio('/assets/Gessafelstein - Pursuit.mp3')
+        mimic: new Audio('/assets/Gesaffelstein - Pursuit.mp3'),
     },
     current: null,
 
