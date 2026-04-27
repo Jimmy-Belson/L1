@@ -8,11 +8,12 @@ const AudioManager = {
         stage: new Audio('/assets/Lazerhawk Overdrive.mp3'),
         sentinel: new Audio('/assets/Carpenter Brut - Turbo Killer.mp3'),
         mimic: new Audio('/assets/Gesaffelstein - Pursuit.mp3'),
+// ДОБАВЛЯЕМ СЮДА ФАЙЛ СЕРДЦЕБИЕНИЯ:
+        heartbeat: new Audio('/assets/heartbeat.mp3') 
     },
     current: null,
 
     play(key) {
-        // Останавливаем текущий трек с плавным затуханием (опционально)
         if (this.current) {
             this.current.pause();
             this.current.currentTime = 0;
@@ -20,8 +21,12 @@ const AudioManager = {
 
         this.current = this.tracks[key];
         if (this.current) {
-            this.current.loop = true;
-            this.current.volume = 0.4; // Чтобы музыка не перекрывала звуки выстрелов
+            // Делаем фоновую музыку тише, а сердцебиение - на максимум для напряжения
+            this.current.volume = (key === 'heartbeat') ? 1.0 : 0.4; 
+            
+            // Сердцебиение не нужно зацикливать на всю игру
+            this.current.loop = (key !== 'heartbeat'); 
+            
             this.current.play().catch(e => console.log("Audio play blocked: need user interaction"));
         }
     }
@@ -820,21 +825,33 @@ spawnBossSequence(title, createBossFn) {
     
     this.bossTitleText = title;
     this.bossTitleTimer = 3.5; // Титры висят чуть дольше
-     // Определяем, какую музыку включать
-    if (title.includes("SENTINEL")) {
-        AudioManager.play('sentinel');
-    } else if (title.includes("MIMIC")) {
-        AudioManager.play('mimic');
-    }
 
     console.log(`[SYSTEM] INITIALIZING: ${title}`);
 
+    // 1. ОСТАНАВЛИВАЕМ ОБЫЧНУЮ МУЗЫКУ И ВРУБАЕМ СЕРДЦЕБИЕНИЕ
+    AudioManager.play('heartbeat'); 
+
+    // 2. ЗАПОМИНАЕМ, КАКОЙ ТРЕК ВКЛЮЧАТЬ ПОСЛЕ ПАУЗЫ
+    let bossMusicKey = 'stage'; // на всякий случай дефолт
+    if (title.includes("SENTINEL")) {
+        bossMusicKey = 'sentinel';
+    } else if (title.includes("MIMIC")) {
+        bossMusicKey = 'mimic';
+    }
+
+    // 3. ПАУЗА 3 СЕКУНДЫ (в это время стучит сердце)
     setTimeout(() => {
         if (window.gameActive) {
-            this.boss = createBossFn(); // Создаем нужного босса через функцию
+            this.boss = createBossFn(); // Создаем нужного босса
             console.log("[SYSTEM] BOSS_MATERIALIZED");
+            
+            // 4. МУЗЫКА БОССА СТАРТУЕТ РОВНО ВМЕСТЕ С НИМ
+            AudioManager.play(bossMusicKey);
+            
+            // Дополнительная тряска экрана в момент дропа босса (по желанию)
+            this.shake = 40; 
         }
-    }, 3000); // Пауза 3 секунды перед появлением
+    }, 3000); 
 }
 
 triggerMimicPrank() {
