@@ -227,22 +227,29 @@
     loaderBar.style.display = 'none';
     startBtn.style.display = 'block';
 
-   // Внутри bootstrap()
-startBtn.addEventListener('click', () => {
-    // 1. Снимаем фокус с кнопки, чтобы Escape не блокировал повторные клики
+   startBtn.addEventListener('click', (e) => {
+    // Останавливаем всплытие, чтобы не сработали другие window.onclick
+    e.stopPropagation(); 
+    
     startBtn.blur(); 
     
+    // Принудительно ставим флаг
     window.gameActive = true;
 
-    // 2. Вызываем функцию подготовки аудио и захвата (она у вас есть в script.js)
+    // Сначала вызываем захват и звук
     if (window.unlockGameResources) {
         window.unlockGameResources();
     }
 
-    // 3. Убираем оверлей
+    // Мгновенно отключаем возможность кликать в оверлей
+    overlay.style.pointerEvents = 'none'; 
     overlay.style.opacity = '0';
-    overlay.style.pointerEvents = 'none'; // Чтобы не мешал кликать по канвасу
-    setTimeout(() => overlay.remove(), 800);
+
+    // Полностью удаляем через время анимации
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.remove();
+    }, 800);
 });
 } catch (err) {
     console.error("CRITICAL_BOOT_ERROR:", err);

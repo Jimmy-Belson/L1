@@ -103,7 +103,7 @@ window.buyItem = (id, cost, btn) => {
 
 let canvas, ctx;
 let lastTime = performance.now();
-window.gameActive = true; 
+window.gameActive = false; 
 
 
 
@@ -874,8 +874,15 @@ setupListeners() {
     });
 
     window.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
+    // Игнорируем клики по UI (кнопка назад, экран смерти, экран загрузки)
+    if (e.target.closest('.back-btn') || 
+        e.target.closest('#game-over-overlay') || 
+        e.target.closest('.waiting-overlay')) {
+        return;
+    }
+    
     if (!window.gameActive) return;
+
 
     // 1. Активируем аудио (если еще не активировано)
     if (AudioManager.current && AudioManager.current.paused) {
@@ -1726,11 +1733,7 @@ document.addEventListener('DOMContentLoaded', () => {
         engine.requestPointerLock();
     };
 
-    // Слушатель для страховки (если оверлей не сработает)
-    window.addEventListener('mousedown', function internalUnlock() {
-        window.unlockGameResources();
-        window.removeEventListener('mousedown', internalUnlock);
-    });
+    
 
     // 4. Запускаем цикл (он будет ждать window.gameActive = true)
     engine.loop();
