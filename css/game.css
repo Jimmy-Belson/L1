@@ -208,7 +208,11 @@ body::before {
     backdrop-filter: blur(10px);
 }
 
-.game-over-visible { display: block !important; animation: fadeIn 0.5s; }
+.game-over-visible {
+     display: block !important;
+      animation: fadeIn 0.5s;
+      display: flex !important; 
+     }
 
 .terminal-header {
     position: absolute;

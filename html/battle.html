@@ -92,7 +92,7 @@
         </div>
 
         <div class="action-buttons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-            <button class="shop-trigger" id="retry-btn" onclick="window.toggleShop(true)"> OPEN_BLACK_MARKET </button>
+            <button class="shop-trigger" id="shop-btn" onclick="window.toggleShop(true)"> OPEN_BLACK_MARKET </button>
             <button id="retry-btn" onclick="location.reload()">REBOOT_SYSTEM</button>
             <button id="exit-btn" onclick="location.href='../index.html'">ABORT_MISSION</button>
         </div>
@@ -227,20 +227,23 @@
     loaderBar.style.display = 'none';
     startBtn.style.display = 'block';
 
-    startBtn.addEventListener('click', () => {
-        // 1. Активируем игру
-        window.gameActive = true;
+   // Внутри bootstrap()
+startBtn.addEventListener('click', () => {
+    // 1. Снимаем фокус с кнопки, чтобы Escape не блокировал повторные клики
+    startBtn.blur(); 
+    
+    window.gameActive = true;
 
-        // 2. ЗАХВАТ КУРСОРА (Сразу при клике!)
-        if (window.engine) {
-            window.engine.requestPointerLock();
-        }
+    // 2. Вызываем функцию подготовки аудио и захвата (она у вас есть в script.js)
+    if (window.unlockGameResources) {
+        window.unlockGameResources();
+    }
 
-        // 3. Убираем оверлей
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.remove(), 800);
-    });
-
+    // 3. Убираем оверлей
+    overlay.style.opacity = '0';
+    overlay.style.pointerEvents = 'none'; // Чтобы не мешал кликать по канвасу
+    setTimeout(() => overlay.remove(), 800);
+});
 } catch (err) {
     console.error("CRITICAL_BOOT_ERROR:", err);
 }
