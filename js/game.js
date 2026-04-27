@@ -12,6 +12,14 @@ const AudioManager = {
     },
     current: null,
 
+    // В объект AudioManager добавь этот метод:
+setPlaybackRate(key, rate) {
+    if (this.tracks[key]) {
+        // Ограничим скорость от 1.0 (норма) до 2.5 (очень быстро)
+        this.tracks[key].playbackRate = Math.min(Math.max(rate, 1.0), 2.5);
+    }
+},
+
     stopAll() {
         Object.values(this.tracks).forEach(track => {
             track.pause();
@@ -824,36 +832,30 @@ spawnBossSequence(title, createBossFn) {
     if (this.bossSpawned) return;
     this.bossSpawned = true; 
 
-    // 1. ОСТАНАВЛИВАЕМ ВСЁ И ВКЛЮЧАЕМ СЕРДЦЕ
+    // Включаем зацикленное сердцебиение
     AudioManager.play('heartbeat');
+    AudioManager.tracks.heartbeat.loop = true; 
+    AudioManager.setPlaybackRate('heartbeat', 1.0); // Сброс скорости
     
     this.enemies = [];       
     this.projectiles = [];   
     this.enemyProjectiles = []; 
     
-    // Эффект "Предчувствия"
     this.bossTitleText = title;
-    this.bossTitleTimer = 4.0; // Текст висит чуть дольше
-    this.shake = 10;           // Легкая предсмертная дрожь
+    this.bossTitleTimer = 5.5; // Время ожидания + запас
+    this.isWaitingForBoss = true; // НОВЫЙ ФЛАГ
 
     let bossMusicKey = title.includes("SENTINEL") ? 'sentinel' : 'mimic';
 
-    // 2. ТАЙМЕР ОЖИДАНИЯ (3 секунды страха)
     setTimeout(() => {
         if (window.gameActive) {
-            // Включаем тяжелую музыку
+            this.isWaitingForBoss = false; // Выключаем режим ожидания
             AudioManager.play(bossMusicKey);
-            
-            // Спавним босса
             this.boss = createBossFn(); 
-            
-            // Ударный эффект появления
             this.shake = 80; 
             this.spawnShockwave(canvas.width/2, -100);
-            
-            console.log(`%c[SYSTEM] ${title} ENGAGED, "color: #ff0055; font-weight: bold;`);
         }
-    }, 3000); 
+    }, 5000); 
 }
 
 triggerMimicPrank() {
@@ -1039,6 +1041,22 @@ this.gameTime += dt;
 
  if (this.bossTitleTimer > 0) {
     this.bossTitleTimer -= dt;
+}
+ if (this.isWaitingForBoss) {
+        // Вычисляем, сколько времени прошло из 5 секунд ожидания
+        // bossTitleTimer начинает с 5.5, значит (5.5 - timer) — это прогресс
+        const progress = Math.max(0, 5.5 - this.bossTitleTimer); 
+        
+        // 1. Ускоряем сердцебиение: от 1.0 до 2.2 за 5 секунд
+        const heartRate = 1.0 + (progress * 0.25); 
+        AudioManager.setPlaybackRate('heartbeat', heartRate);
+
+        // 2. Нарастающая тряска экрана (эффект паники)
+        this.shake = Math.max(this.shake, progress * 2);
+
+        // 3. Можно добавить визуальную пульсацию экрана красным
+        // (если добавишь этот код в draw, будет еще круче)
+    
 }
 
 // За 5 секунд до босса включаем "Панику"
@@ -1416,6 +1434,9 @@ handleBossDeath() {
 
     // 3. Создаем "Кольцо взрыва" (Shockwave)
     this.spawnShockwave(this.boss.x, this.boss.y);
+
+    AudioManager.setPlaybackRate('heartbeat', 1.0); // Возвращаем нормальный темп
+    this.isWaitingForBoss = false;
 
     // 4. Награда
     this.player.score += 5000;
