@@ -877,6 +877,11 @@ setupListeners() {
     window.addEventListener('mousedown', (e) => {
         if (e.target.closest('.back-btn') || e.target.closest('#game-over-overlay')) return;
         if (!window.gameActive) return;
+
+        // ГАРАНТИРУЕМ, что музыка играет, если она вдруг встала на паузу
+    if (AudioManager.current && AudioManager.current.paused) {
+        AudioManager.current.play().catch(() => {});
+    }
         
         // Блокировка стрельбы при захвате мимиком
         if (this.boss?.type === 'mimic' && this.boss.isGrabbed) return;
@@ -1719,20 +1724,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.GameProgression.consumeTempUpgrades();
     window.GameProgression.updateShopUI();
 
-    const startMusic = () => {
-        AudioManager.play('stage');
-        
-        // "Прогреваем" музыку боссов (запускаем и тут же на паузу)
-        // Это даст нам право запустить их программно позже
-        Object.keys(AudioManager.tracks).forEach(key => {
-            const track = AudioManager.tracks[key];
-            track.play().then(() => track.pause()).catch(() => {});
-        });
+    const unlockAudio = () => {
+    Object.keys(AudioManager.tracks).forEach(key => {
+        const track = AudioManager.tracks[key];
+        // Запускаем и сразу ставим на паузу, чтобы "легализовать" аудио
+        track.play().then(() => {
+            track.pause();
+            track.currentTime = 0;
+        }).catch(e => console.log("Audio unlock waiting..."));
+    });
+    // Запускаем основной трек
+    if (!AudioManager.current) AudioManager.play('stage');
+    
+    window.removeEventListener('mousedown', unlockAudio);
+};
 
-        window.removeEventListener('mousedown', startMusic);
-    };
-
-    window.addEventListener('mousedown', startMusic);
+window.addEventListener('mousedown', unlockAudio);
 
 
     // 3. Запускаем
