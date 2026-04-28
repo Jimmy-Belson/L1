@@ -2293,7 +2293,7 @@ html, body {
 .update-ok-btn:hover { background: #00f2ff; color: #000; }
 /* 1. Базовый курсор для всей системы */
 html, body {
-    cursor: url('/assets/custom_cursor.png'), auto;
+    cursor: url('/L1/assets/custom_cursor.png'), auto;
     min-height: 100vh;
 }
 
@@ -2341,7 +2341,7 @@ a *,
 [role="button"],
 i.fas, 
 i.fa-solid {
-    cursor: url('/assets/cursor_pointer.png'), pointer !important;
+    cursor: url('/L1/assets/cursor_pointer.png'), pointer !important;
 }
 
 /* 3. Исключение для ввода текста (чтобы курсор не мешал печатать) */
@@ -2362,6 +2362,6 @@ textarea,
 
 /* 4. Предзагрузка, чтобы курсор не пропадал при первом наведении */
 body::after {
-    content: url('/assets/custom_cursor.png') url('/assets/cursor_pointer.png');
+    content: url('/L1/assets/custom_cursor.png') url('/L1/assets/cursor_pointer.png');
     display: none;
 }
