@@ -2351,6 +2351,21 @@ img.pilot-avatar
 [role="button"],
 i.fas, 
 i.fa-solid {
+    /* Кнопка RANKING (плашка, текст и стрелка внутри) */
+#stats-link,
+#stats-link *,
+#stats-link span,
+
+/* Кнопка MUSIC_ENGINE (контейнер, текст и анимированные полоски) */
+#audio-btn,
+#audio-btn *,
+.audio-link,
+.audio-link *,
+.bars,
+.bar,
+
+/* На всякий случай охватим и надпись внутри музыки */
+.audio-link span {
     cursor: url('/assets/cursor_pointer.png'), pointer !important;
 }
 
@@ -2374,4 +2389,5 @@ textarea,
 body::after {
     content: url('/assets/custom_cursor.png') url('/assets/cursor_pointer.png');
     display: none;
+}
 }
