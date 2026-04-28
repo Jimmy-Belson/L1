@@ -2298,7 +2298,7 @@ html, body {
 
 /* Основной фон станции */
 html, body {
-    cursor: url('/assets/custom_cursor.png'), auto;
+    cursor: url('/L1/assets/custom_cursor.png'), auto;
 }
 
 /* Глобальный прицел для всех активных зон */
@@ -2344,7 +2344,7 @@ i.fa-solid,
 /* Интерактивные элементы по атрибутам */
 [onclick],
 [role="button"] {
-    cursor: url('/assets/cursor_pointer.png'), pointer !important;
+    cursor: url('/L1/assets/cursor_pointer.png'), pointer !important;
 }
 
 /* Исключение для ввода (чтобы видеть текстовый курсор) */
@@ -2359,6 +2359,6 @@ textarea,
 
 /* Предзагрузка (исправлены названия файлов) */
 body::after {
-    content: url('/assets/custom_cursor.png') url('/assets/cursor_pointer.png');
+    content: url('/L1/assets/custom_cursor.png') url('/L1/assets/cursor_pointer.png');
     display: none;
 }
