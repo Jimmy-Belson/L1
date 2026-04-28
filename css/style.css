@@ -2291,3 +2291,77 @@ html, body {
 }
 
 .update-ok-btn:hover { background: #00f2ff; color: #000; }
+/* 1. Базовый курсор для всей системы */
+html, body {
+    cursor: url('/assets/custom_cursor.png'), auto;
+    min-height: 100vh;
+}
+
+/* 2. Курсор-прицел для ВСЕХ интерактивных элементов */
+button, 
+button *,
+a, 
+a *,
+/* Музыкальный движок */
+#audio-btn,
+#audio-btn *,
+.audio-link, 
+.audio-link *,
+.bars,
+.bar,
+/* Ранкинг и боковая панель */
+#stats-link,
+#stats-link *,
+/* Аватарки и профили */
+#pop-avatar,
+.popover-content img,
+.chat-stream-item img,
+.avatar-speaker-wrapper img,
+#incoming-avatar,
+#voice-target-avatar,
+/* Чат и ники */
+#chat-stream b,
+#chat-stream span,
+.chat-stream-item *,
+#pop-nick,
+/* Навигация и списки */
+.nav-btn, 
+.nav-btn *,
+.friends-list *,
+.close-btn,
+.close-btn *,
+.ctrl-btn, 
+.ctrl-btn *,
+/* Системные уведомления и баннеры */
+.update-banner button,
+.update-ok-btn,
+.close-update,
+/* Все остальные элементы с событиями клика */
+[onclick],
+[role="button"],
+i.fas, 
+i.fa-solid {
+    cursor: url('/assets/cursor_pointer.png'), pointer !important;
+}
+
+/* 3. Исключение для ввода текста (чтобы курсор не мешал печатать) */
+input[type="text"], 
+textarea {
+    cursor: text !important;
+}
+
+/* 3. Исключение для текстовых полей (чтобы видеть каретку при наборе) */
+input[type="text"], 
+textarea,
+#chat-in,
+#todo-in,
+#friend-search-in,
+#private-in {
+    cursor: text !important;
+}
+
+/* 4. Предзагрузка, чтобы курсор не пропадал при первом наведении */
+body::after {
+    content: url('/assets/custom_cursor.png') url('/assets/cursor_pointer.png');
+    display: none;
+}
