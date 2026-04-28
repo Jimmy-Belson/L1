@@ -2336,6 +2336,16 @@ a *,
 .update-banner button,
 .update-ok-btn,
 .close-update,
+#chat-stream img,
+.chat-stream-item img,
+#user-popover img,
+.popover-content img,
+.avatar-speaker-wrapper img,
+#incoming-avatar,
+#pop-avatar,
+/* Все иконки и картинки, которые могут быть кликабельны */
+img[onclick],
+img.pilot-avatar
 /* Все остальные элементы с событиями клика */
 [onclick],
 [role="button"],
