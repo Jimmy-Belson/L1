@@ -2297,14 +2297,17 @@ html, body {
     min-height: 100vh;
 }
 
-/* 2. Глобальный прицел для ВСЕХ кликабельных элементов */
-/* Мы используем универсальный селектор *, чтобы курсор менялся даже при наведении на иконку внутри кнопки */
+/* Глобальный прицел для ВСЕХ кликабельных элементов */
 button, 
 button *,
 a, 
 a *,
 .audio-link, 
 .audio-link *,
+#audio-btn,
+#audio-btn *,
+.bars,
+.bar,
 .nav-btn, 
 .nav-btn *,
 .btn-profile,
@@ -2319,29 +2322,23 @@ a *,
 .ctrl-btn *,
 .private-header button,
 #stats-link,
+#stats-link *,
 .chat-panel [onclick],
-.bars,
-.bar,
 i.fas, 
 i.fa-solid,
-#stats-link,
-#stats-link *,
 #user-popover,
 #user-popover *,
 .popover-content,
 .popover-content *,
+#pop-avatar, /* Аватарка в мини-профиле */
+.chat-stream-item img, /* Аватарки в чате */
 #chat-stream span,
 #chat-stream b,
 .chat-stream-item *,
 .pop-info *,
 #pop-nick,
 .private-header,
-#audio-btn,
-#audio-btn *,
-.audio-link,
-.audio-link *,
-.bars,
-.bar
+#private-drag-handle,
 [onclick],
 [role="button"] {
     cursor: url('/assets/cursor_pointer.png'), pointer !important;
