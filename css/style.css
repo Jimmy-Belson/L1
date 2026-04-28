@@ -2291,18 +2291,22 @@ html, body {
 }
 
 .update-ok-btn:hover { background: #00f2ff; color: #000; }
-/* 1. Базовый курсор для всей системы */
+
+
+
+/* --- СИСТЕМА КУРСОРОВ ORBITRON --- */
+
+/* Основной фон станции */
 html, body {
     cursor: url('/L1/assets/custom_cursor.png'), auto;
-    min-height: 100vh;
 }
 
-/* 2. Курсор-прицел для ВСЕХ интерактивных элементов */
+/* Глобальный прицел для всех активных зон */
 button, 
 button *,
 a, 
 a *,
-/* Музыкальный движок */
+/* Музыкальный движок (весь блок и полоски) */
 #audio-btn,
 #audio-btn *,
 .audio-link, 
@@ -2324,7 +2328,7 @@ a *,
 #chat-stream span,
 .chat-stream-item *,
 #pop-nick,
-/* Навигация и списки */
+/* Навигация, списки и иконки */
 .nav-btn, 
 .nav-btn *,
 .friends-list *,
@@ -2332,25 +2336,15 @@ a *,
 .close-btn *,
 .ctrl-btn, 
 .ctrl-btn *,
-/* Системные уведомления и баннеры */
-.update-banner button,
-.update-ok-btn,
-.close-update,
-/* Все остальные элементы с событиями клика */
-[onclick],
-[role="button"],
 i.fas, 
-i.fa-solid {
+i.fa-solid,
+/* Интерактивные элементы по атрибутам */
+[onclick],
+[role="button"] {
     cursor: url('/L1/assets/cursor_pointer.png'), pointer !important;
 }
 
-/* 3. Исключение для ввода текста (чтобы курсор не мешал печатать) */
-input[type="text"], 
-textarea {
-    cursor: text !important;
-}
-
-/* 3. Исключение для текстовых полей (чтобы видеть каретку при наборе) */
+/* Исключение для ввода (чтобы видеть текстовый курсор) */
 input[type="text"], 
 textarea,
 #chat-in,
@@ -2360,7 +2354,7 @@ textarea,
     cursor: text !important;
 }
 
-/* 4. Предзагрузка, чтобы курсор не пропадал при первом наведении */
+/* Предзагрузка (исправлены названия файлов) */
 body::after {
     content: url('/L1/assets/custom_cursor.png') url('/L1/assets/cursor_pointer.png');
     display: none;
