@@ -2297,51 +2297,43 @@ html, body {
     min-height: 100vh;
 }
 
-/* Глобальный прицел для ВСЕХ кликабельных элементов */
+/* Глобальный прицел для интерактивных элементов */
 button, 
 button *,
 a, 
 a *,
-.audio-link, 
-.audio-link *,
+/* Музыкальный блок и все его части (надпись, полоски) */
 #audio-btn,
 #audio-btn *,
+.audio-link,
+.audio-link *,
 .bars,
 .bar,
+/* Кнопка рейтинга справа (плашка и текст внутри) */
+#stats-link,
+#stats-link *,
+/* Картинки профиля и ники в чате */
+.chat-stream-item img, 
+#chat-stream b,
+#chat-stream span,
+.avatar-speaker-wrapper img,
+#pop-avatar,
+.popover-content *,
+/* Все элементы навигации и управления */
 .nav-btn, 
 .nav-btn *,
 .btn-profile,
 .btn-logout,
-.close-update,
-.update-ok-btn,
-#scroll-to-game,
-#scroll-to-game *,
-.close-btn,
-.close-btn *,
 .ctrl-btn,
 .ctrl-btn *,
-.private-header button,
-#stats-link,
-#stats-link *,
-.chat-panel [onclick],
-i.fas, 
-i.fa-solid,
-#user-popover,
-#user-popover *,
-.popover-content,
-.popover-content *,
-#pop-avatar, /* Аватарка в мини-профиле */
-.chat-stream-item img, /* Аватарки в чате */
-#chat-stream span,
-#chat-stream b,
-.chat-stream-item *,
-.pop-info *,
-#pop-nick,
-.private-header,
-#private-drag-handle,
+.close-btn,
+.close-btn *,
+/* Остальные кликабельные зоны */
 [onclick],
-[role="button"] {
-    cursor: url('/assets/cursor_pointer.png'), pointer !important;
+[role="button"],
+i.fas, 
+i.fa-solid {
+    cursor: url('../assets/cursor_pointer.png'), pointer !important;
 }
 
 /* 3. Исключение для текстовых полей (чтобы видеть каретку при наборе) */
