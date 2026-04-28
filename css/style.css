@@ -212,7 +212,7 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 
     animation: wave 0.6s infinite alternate; 
       /* Добавляем 16 16 — это точка клика (центр картинки 32x32) */
-    cursor: url('/assets/cursor_pointer.png') 16 16, pointer !important;
+    cursor: url('/L1/assets/cursor_pointer.png') 16 16, pointer !important;
 
 }
 
@@ -2301,7 +2301,7 @@ html, body {
 
 /* Основной фон станции */
 html, body {
-    cursor: url('/assets/custom_cursor.png'), auto;
+    cursor: url('/L1/assets/custom_cursor.png'), auto;
 }
 
 /* Глобальный прицел для всех активных зон */
@@ -2347,7 +2347,7 @@ i.fa-solid,
 /* Интерактивные элементы по атрибутам */
 [onclick],
 [role="button"] {
-    cursor: url('/assets/cursor_pointer.png'), pointer !important;
+    cursor: url('/L1/assets/cursor_pointer.png'), pointer !important;
 }
 
 /* Исключение для ввода (чтобы видеть текстовый курсор) */
@@ -2362,6 +2362,6 @@ textarea,
 
 /* Предзагрузка (исправлены названия файлов) */
 body::after {
-    content: url('/assets/custom_cursor.png') url('/assets/cursor_pointer.png');
+    content: url('/L1/assets/custom_cursor.png') url('/L1/assets/cursor_pointer.png');
     display: none;
 }
