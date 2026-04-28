@@ -2291,3 +2291,26 @@ html, body {
 }
 
 .update-ok-btn:hover { background: #00f2ff; color: #000; }
+body {
+    cursor: url('/assets/custom_cursor.png'), auto;
+}
+/* Максимальный охват всех кликабельных элементов */
+button, 
+a, 
+a *, 
+button *,
+.audio-link, 
+.audio-link *,
+.nav-btn, 
+.btn-profile,
+.btn-logout,
+#scroll-to-game,
+.close-update,
+.update-ok-btn,
+[onclick], 
+[role="button"],
+input[type="button"], 
+input[type="submit"],
+i.fas, i.fa-solid { 
+    cursor: url('../assets/cursor_pointer.png'), pointer !important;
+}
