@@ -2350,8 +2350,7 @@ img.pilot-avatar
 [onclick],
 [role="button"],
 i.fas, 
-i.fa-solid {
-    /* Кнопка RANKING (плашка, текст и стрелка внутри) */
+/* Кнопка RANKING (плашка, текст и стрелка внутри) */
 #stats-link,
 #stats-link *,
 #stats-link span,
@@ -2366,6 +2365,10 @@ i.fa-solid {
 
 /* На всякий случай охватим и надпись внутри музыки */
 .audio-link span {
+    cursor: url('/assets/cursor_pointer.png'), pointer !important;
+}
+i.fa-solid {
+
     cursor: url('/assets/cursor_pointer.png'), pointer !important;
 }
 
@@ -2389,5 +2392,4 @@ textarea,
 body::after {
     content: url('/assets/custom_cursor.png') url('/assets/cursor_pointer.png');
     display: none;
-}
 }
