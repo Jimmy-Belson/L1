@@ -191,8 +191,7 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 .audio-link { 
     display: flex; 
     align-items: center; 
-    gap: 8px; 
-    cursor: pointer; 
+    gap: 8px;  
     padding: 8px 15px; 
     border: 1px solid var(--border); 
     font-size: 10px; 
@@ -210,7 +209,11 @@ button:hover { background: var(--n); color: #000; box-shadow: 0 0 15px var(--n);
 .bar { width: 2px; height: 4px; background: var(--n); transition: 0.3s; }
 .audio-link:hover .bar { background: #fff; }
 .audio-link.playing .bar { 
+
     animation: wave 0.6s infinite alternate; 
+      /* Добавляем 16 16 — это точка клика (центр картинки 32x32) */
+    cursor: url('/L1/assets/cursor_pointer.png') 16 16, pointer !important;
+
 }
 
 .audio-link.playing .bar:nth-child(1) { animation-delay: 0.1s; }
@@ -2313,17 +2316,20 @@ a *,
 .audio-link *,
 .bars,
 .bar,
-/* Ранкинг и боковая панель */
+/* Ранкинг (боковая панель) */
 #stats-link,
 #stats-link *,
-/* Аватарки и профили */
-#pop-avatar,
-.popover-content img,
+#stats-link span,
+/* Аватарки (в чате, в звонках, в профиле) */
+img,
 .chat-stream-item img,
+#chat-stream img,
 .avatar-speaker-wrapper img,
+#pop-avatar,
 #incoming-avatar,
 #voice-target-avatar,
-/* Чат и ники */
+.popover-content img,
+/* Текст в чате и ники */
 #chat-stream b,
 #chat-stream span,
 .chat-stream-item *,
