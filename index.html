@@ -8,10 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    
-
- 
-    
 </head>
 <body>
 <img id="planet-pic" src="https://png.pngtree.com/png-vector/20240123/ourmid/pngtree-uranus-planet-illustration-png-image_11466428.png" style="display:none;" />
@@ -50,10 +46,18 @@
             </section>
 
             <div class="chat-wrapper">
+                
                 <section class="panel chat-panel" id="main-chat-window">
                     <div onclick="Core.toggleChat()" style="padding: 15px; border-bottom: 1px solid var(--border); font-family: 'Orbitron'; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                         <span>COMM_LINK</span>
-                        <i id="chat-toggle-icon" class="fa-solid fa-window-minimize" style="font-size: 10px; transition: 0.3s; color: var(--border);"></i>
+                        
+                        <div style="display: flex; align-items: center;">
+                            <button id="ai-toggle-btn" onclick="event.stopPropagation();" style="background: transparent; border: 1px solid #a855f7; color: #a855f7; padding: 2px 8px; font-size: 10px; cursor: pointer; margin-right: 10px; font-family: 'Orbitron';">
+                                <i class="fas fa-brain"></i> [ ORBI_AI ]
+                            </button>
+                            <i id="chat-toggle-icon" class="fa-solid fa-window-minimize" style="font-size: 10px; transition: 0.3s; color: var(--border);"></i>
+                        </div>
+                        
                     </div>
                     
                     <div id="chat-content">
@@ -252,6 +256,27 @@
     </div>
 </div>
 
+<div id="ai-window" class="ai-window-float" style="display: none;">
+    <div class="ai-header" id="ai-drag-handle">
+        <div class="ai-header-left">
+            <span class="blink">●</span> ORBI_AI_v1.0
+        </div>
+        <div class="ai-controls">
+            <button onclick="document.getElementById('ai-window').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    
+    <div id="ai-content">
+        <div class="ai-msg">[SYSTEM]: Канал связи защищен. Ожидаю запроса...</div>
+    </div>
+
+    <div class="ai-input-wrapper">
+        <input type="text" id="ai-in" placeholder="TYPE_COMMAND...">
+        <button id="ai-send-btn">EXE</button>
+    </div>
+    
+    <div id="ai-resizer"></div>
+</div>
 
 
 <audio id="remote-audio" autoplay></audio>
@@ -264,12 +289,10 @@
 <script type="module" src="js/comm.js"></script>
 <script type="module" src="js/friends.js"></script>
 <script type="module" src="js/chat.js"></script>
-
 <script src="js/script.js" type="module"></script>
-
 <script src="js/game.js" type="module"></script>
-
 <script type="module" src="js/voice.js"></script>
+<script type="module" src="js/ai-assistant.js"></script>
 
 </body>
 </html>
