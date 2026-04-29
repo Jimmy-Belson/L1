@@ -1,8 +1,8 @@
 // js/ai-assistant.js
 
-const API_KEY = "AIzaSyBwf7yp9kXfcuIhI5n93RgPMbJ6bw7HbZw"; 
-const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY;
-
+const API_KEY = "AIzaSyD8PZEqToaHK-j3bYyAPPCPje9EIm-dc18";  //КЛЮЧ ЗАЩИЩЕН,НА САЙТАХ КРОМЕ ОРБИТРОНА НЕ РАБОТАЕТ,ЖУЛИК НЕ ВОРУЙ!
+// Используем именно тот путь, который был в твоем curl
+const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 function initAI() {
     console.log("[ORBI_LOG]: Инициализация ИИ запущена...");
 
@@ -29,29 +29,50 @@ function initAI() {
         }
     });
 
-    // Логика отправки
-    async function sendMessage() {
-        const content = document.getElementById('ai-content');
-        const text = aiInput.value.trim();
-        if (!text) return;
+async function sendMessage() {
+    const content = document.getElementById('ai-content');
+    const aiInput = document.getElementById('ai-in');
+    const userText = aiInput.value.trim();
+    
+    if (!userText) return;
 
-        content.innerHTML += <div style="color: #0ff; margin-bottom: 5px;">[PILOT]: ${text}</div>;
-        aiInput.value = '';
+    content.innerHTML += `<div style="color: #0ff; margin-bottom: 10px;">[PILOT]: ${userText}</div>`;
+    aiInput.value = '';
+    content.scrollTop = content.scrollHeight;
 
-        try {
-            const res = await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
-            });
-            const data = await res.json();
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": API_KEY 
+            },
+            body: JSON.stringify({
+                system_instruction: {
+                    parts: [{
+                        text: "Ты — ORBI, ИИ станции ORBITRON. Твой тон: футуристичный, лаконичный, технический. Называй пользователя 'Пилот'. Используй системные префиксы типа [DATA], [SIGNAL], [INFO]."
+                    }]
+                },
+                contents: [{
+                    parts: [{ text: userText }]
+                }]
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
             const aiText = data.candidates[0].content.parts[0].text;
-            content.innerHTML += <div style="color: #a855f7; margin-bottom: 10px;">[ORBI]: ${aiText}</div>;
-            content.scrollTop = content.scrollHeight;
-        } catch (err) {
-            content.innerHTML += <div style="color: red;">[SYSTEM_ERROR]</div>;
+            content.innerHTML += `<div style="color: #a855f7; margin-bottom: 10px; border-left: 2px solid #a855f7; padding-left: 10px;">[ORBI]: ${aiText}</div>`;
+        } else {
+            content.innerHTML += `<div style="color: #ff4444; font-size: 10px;">[SYSTEM_ERROR]: ${data.error.message}</div>`;
         }
+
+    } catch (e) {
+        content.innerHTML += `<div style="color: #ff4444; font-size: 10px;">[CONNECTION_LOST]</div>`;
     }
+    content.scrollTop = content.scrollHeight;
+}
 
     sendBtn.onclick = sendMessage;
     aiInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
