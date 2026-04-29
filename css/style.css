@@ -2457,7 +2457,7 @@ body::after {
 #ai-toggle-btn {
     z-index: 100;
     position: relative;
-    cursor: url('/L1/assets/cursor_pointer.png') 16 16, pointer !important;
+    cursor: url('//assets/cursor_pointer.png') 16 16, pointer !important;
 }
 
 #ai-toggle-btn:hover {
