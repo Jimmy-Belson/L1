@@ -1,0 +1,266 @@
+/* ОБНУЛЕНИЕ СТИЛЕЙ (чтобы космос не просочился) */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a0f00; /* Глубокий коричневый, если фон не прогрузится */
+    font-family: 'MedievalSharp', cursive;
+}
+
+/* МАГИЯ ПИКСЕЛЕЙ */
+img, div {
+    image-rendering: pixelated; /* Делает пиксели четкими при увеличении */
+}
+
+#tavern-hall {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Проверь, чтобы путь и расширение совпадали на 100% */
+    background-image: url('./assets/bg-hall.jpeg'); 
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+}
+
+/* ЭФФЕКТ СВЕЧЕНИЯ ОТ КАМИНА (виньетка) */
+#tavern-hall::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle, transparent 20%, rgba(26, 15, 0, 0.8) 100%);
+    pointer-events: none;
+}
+
+/* СЛОЙ 2: БАРНАЯ СТОЙКА (вид от бармена) */
+#bar-counter {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%; /* Стойка занимает низ экрана */
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.counter-surface {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 100%;
+    background-color: #3e260c; /* Темное дерево */
+    border-top: 4px solid #5d3a1a;
+    box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+    z-index: 1;
+}
+
+/* ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ (чистим от старых заглушек) */
+.interactive-obj {
+    position: relative;
+    z-index: 5;
+    cursor: pointer;
+    transition: transform 0.2s;
+    /* Убираем фоновый цвет и рамки, которые были в начале файла */
+    background-color: transparent !important;
+    border: none !important;
+}
+.interactive-obj:hover { transform: scale(1.1); background-color: rgba(255,166,0,0.4); }
+
+/* КНИГА ЗАКАЗОВ (ЧАТ) */
+#order-book {
+    width: 400px;
+    height: 90%;
+    background-color: #f3e5ab; /* Цвет пергамента */
+    border: 2px solid #8b4513;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+}
+
+#order-content {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 14px;
+    color: #3e260c;
+    margin-bottom: 10px;
+}
+
+.orb-talk { margin-bottom: 10px; }
+.orb-name { font-family: 'Press Start 2P', cursive; font-size: 8px; color: #8b4513; }
+.orb-text { margin-left: 5px; }
+
+.input-wrapper { display: flex; gap: 5px; }
+#order-input {
+    flex: 1;
+    padding: 5px;
+    background: transparent;
+    border: 1px solid #8b4513;
+    font-family: 'MedievalSharp', cursive;
+    color: #3e260c;
+}
+
+#order-send-btn {
+    padding: 5px 10px;
+    background-color: #8b4513;
+    color: #f3e5ab;
+    border: none;
+    font-family: 'MedievalSharp', cursive;
+    cursor: pointer;
+}
+
+/* ТЕМНЫЙ ПЕРЕХОД */
+#fade-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: black;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 1; /* Начинаем с полной темноты */
+    transition: opacity 2s ease-out; /* Плавное проявление */
+}
+
+/* ПОРТАЛ НАЗАД (невидимая зона) */
+#portal-back {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 50px;
+    z-index: 100;
+    cursor: alias;
+}
+/* ОБНОВЛЕННАЯ СТОЙКА (Слой 2, поверх фона) */
+#bar-counter {
+    position: fixed;
+    bottom: 0; left: 0; width: 100%; height: 40%;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Все предметы стоят на стойке */
+}
+
+.counter-surface {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 100%;
+    /* Текстура темного дерева, переходящая в тень */
+    background: linear-gradient(to bottom, #5d3a1a 0%, #3e260c 20%, #2a1a08 100%);
+    border-top: 6px solid #8b4513;
+    box-shadow: inset 0 10px 20px rgba(0,0,0,0.6);
+    z-index: 1;
+}
+
+/* ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ (КРАН, КРУЖКА, ТРЯПКА) */
+.interactive-obj {
+    position: relative; /* Чтобы стояли поверх поверхности */
+    z-index: 5;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+/* ЭФФЕКТ ПОДСВЕТКИ (как в квестах) */
+.interactive-obj:hover {
+    filter: brightness(1.3) drop-shadow(0 0 10px #ffaa00);
+    transform: scale(1.05);
+}
+
+#beer-tap {
+    /* 1. РАМКА: Компактная, чтобы не мешать другим предметам */
+    width: 220px;  
+    height: 480px; 
+
+    /* 2. КАРТИНКА: Выкручиваем масштаб на максимум */
+    background: url('assets/tap.png') no-repeat center bottom;
+    /* Если кран всё ещё мал — ставь 500% или 600% */
+    background-size: 420%; 
+
+    /* 3. ПОЗИЦИЯ: Двигаем кран к краю экрана */
+    margin-right: auto;
+    margin-left: -0px;   /* Отрицательный отступ прижмет кран к левому краю */
+    margin-bottom: -20px; /* Сажаем его на столешницу */
+
+    /* Убираем все лишнее */
+    border: none;
+    outline: none; 
+    position: relative;
+    z-index: 5;
+    cursor: pointer;
+    transition: transform 0.2s;
+    image-rendering: pixelated;
+}
+
+#beer-tap:hover {
+    filter: brightness(1.2) drop-shadow(0 0 15px #ffaa00);
+    transform: scale(1.02);
+}
+
+#mug {
+    position: absolute;
+    bottom: 20px;       /* Прижимаем к стойке */
+    left: 150px;        /* Подставь нужное число, чтобы она была под краном */
+    
+    /* 1. Компактная рамка (зона клика) */
+    width: 120px; 
+    height: 150px;
+    
+    /* 2. Убираем пустоту: ставим масштаб больше 100% */
+    /* Если кружка всё еще мала внутри этой рамки — ставь 250% или 300% */
+    background: url('assets/mug.png') no-repeat center bottom;
+    background-size: 220%; 
+    
+    /* 3. Оформление */
+    z-index: 999; 
+    image-rendering: pixelated;
+    cursor: pointer;
+    
+    /* Включи это временно, чтобы увидеть реальную зону клика: */
+    /* outline: 2px solid red; */
+}
+
+#mug:hover {
+    filter: brightness(1.2) drop-shadow(0 0 10px #ffaa00);
+    transform: scale(1.05);
+}
+
+#rag {
+    /* 1. Компактная рамка — теперь она не будет мешаться */
+    width: 240px;  
+    height: 180px; 
+    
+    /* 2. Убираем пустоту внутри самого файла */
+    background: url('assets/rag.png') no-repeat;
+    
+    /* Увеличиваем картинку так, чтобы сама тряпка заняла весь квадрат.
+       Цифра 250% — это пример, подбери её так, чтобы тряпка влезла в рамку */
+    background-size: 200%; 
+    
+    /* Центрируем саму тряпку внутри маленькой рамки */
+    background-position: center 60%; 
+
+    /* 3. Оформление */
+    image-rendering: pixelated;
+    border: none;
+    /* outline: 1px solid red;  <-- Раскомментируй эту строку, чтобы видеть реальную рамку при настройке */
+
+    /* 4. Позиция на стойке */
+    margin-right: 120px; 
+    margin-bottom: 25px;
+    
+    position: relative;
+    z-index: 5;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+#rag:hover {
+    filter: brightness(1.2) drop-shadow(0 0 10px #ffaa00);
+    transform: scale(1.05);
+}

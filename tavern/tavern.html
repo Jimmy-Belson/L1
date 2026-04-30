@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>МЕРТВЫЙ ГОБЛИН - ТАВЕРНА</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tavern.css">
+</head>
+<body>
+
+    <a href="../index.html" id="portal-back" title="Вернуться на станцию"></a>
+
+    <div id="tavern-hall"></div>
+
+<div id="bar-counter">
+        <div class="counter-surface"></div>
+        
+        <div id="beer-tap" class="interactive-obj" title="Налить эля"></div>
+        <div id="mug" class="interactive-obj" title="Взять кружку"></div>
+        <div id="rag" class="interactive-obj" title="Протереть стойку"></div>
+        
+        <div id="order-book">
+            <div id="order-content">
+                <p class="orb-talk">
+                    <span class="orb-name">[ОРБИ]:</span>
+                    <span class="orb-text">протирая стойку — Ну что, хозяин, за работу? Заждались тебя...</span>
+                </p>
+            </div>
+            <div class="input-wrapper">
+                <input type="text" id="order-input" placeholder="Нацарапать ответ...">
+                <button id="order-send-btn">ЗАПИСАТЬ</button>
+            </div>
+        </div> </div> 
+
+    <div id="fade-overlay"></div>
+
+    <script src="tavern.js"></script>
+</body>
+</html>
