@@ -2297,80 +2297,14 @@ html, body {
 
 
 
-/* --- СИСТЕМА КУРСОРОВ ORBITRON --- */
 
-/* Основной фон станции */
-html, body {
-    cursor: url('/L1/assets/custom_cursor.png'), auto;
-}
-
-/* Глобальный прицел для всех активных зон */
-button, 
-button *,
-a, 
-a *,
-/* Музыкальный движок (весь блок и полоски) */
-#audio-btn,
-#audio-btn *,
-.audio-link, 
-.audio-link *,
-.bars,
-.bar,
-/* Ранкинг (боковая панель) */
-#stats-link,
-#stats-link *,
-#stats-link span,
-/* Аватарки (в чате, в звонках, в профиле) */
-img,
-.chat-stream-item img,
-#chat-stream img,
-.avatar-speaker-wrapper img,
-#pop-avatar,
-#incoming-avatar,
-#voice-target-avatar,
-.popover-content img,
-/* Текст в чате и ники */
-#chat-stream b,
-#chat-stream span,
-.chat-stream-item *,
-#pop-nick,
-/* Навигация, списки и иконки */
-.nav-btn, 
-.nav-btn *,
-.friends-list *,
-.close-btn,
-.close-btn *,
-.ctrl-btn, 
-.ctrl-btn *,
-i.fas, 
-i.fa-solid,
-/* Интерактивные элементы по атрибутам */
-[onclick],
-[role="button"] {
-    cursor: url('/L1/assets/cursor_pointer.png'), pointer !important;
-}
-
-/* Исключение для ввода (чтобы видеть текстовый курсор) */
-input[type="text"], 
-textarea,
-#chat-in,
-#todo-in,
-#friend-search-in,
-#private-in {
-    cursor: text !important;
-}
-
-/* Предзагрузка (исправлены названия файлов) */
-body::after {
-    content: url('/L1/assets/custom_cursor.png') url('/L1/assets/cursor_pointer.png');
-    display: none;
-}
 /* Добавляем элементы ИИ ассистента */
 .ai-panel,
 .ai-panel *,
 #ai-send-btn,
 #ai-send-btn i {
-    cursor: url('/L1/assets/cursor_pointer.png') 16 16, pointer !important;
+    font-family: 'Share Tech Mono', monospace;
+    color: #c084fc;
 }
 /* Кнопка запуска */
 .ai-launcher {
@@ -2451,13 +2385,13 @@ body::after {
 }
 
 /* Курсор для всех элементов ИИ */
-.ai-window-float, .ai-launcher, .ai-launcher * {
-    cursor: url('/L1/assets/cursor_pointer.png') 16 16, pointer !important;
-}
+ 
+
+
 #ai-toggle-btn {
     z-index: 100;
     position: relative;
-    cursor: url('//assets/cursor_pointer.png') 16 16, pointer !important;
+
 }
 
 #ai-toggle-btn:hover {
