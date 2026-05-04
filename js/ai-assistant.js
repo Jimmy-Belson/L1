@@ -1,6 +1,10 @@
 // js/ai-assistant.js
 
-const API_KEY = "AIzaSyD8PZEqToaHK-j3bYyAPPCPje9EIm-dc18";  //КЛЮЧ ЗАЩИЩЕН,НА САЙТАХ КРОМЕ ОРБИТРОНА НЕ РАБОТАЕТ,ЖУЛИК НЕ ВОРУЙ!
+// Твоя закодированная строка (я убрал лишние пробелы, если они были)
+const encodedKey = "QUl6YVN5Q2pZMlhtTFpta0R0OHdtb284OWJpR3dNLTNtYWh5VUpZCg==";
+
+// Функция atob() расшифрует ключ прямо в памяти браузера перед отправкой
+const API_KEY = atob(encodedKey).trim();
 // Используем именно тот путь, который был в твоем curl
 const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 function initAI() {
@@ -50,7 +54,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 system_instruction: {
                     parts: [{
-                        text: "Ты — ORBI, ИИ станции ORBITRON. Твой тон: футуристичный, лаконичный, технический. Называй пользователя 'Пилот'. Используй системные префиксы типа [DATA], [SIGNAL], [INFO]."
+                        text: "Ты — ORBI, ИИ станции ORBITRON. Твой тон: футуристичный, лаконичный, технический. Называй пользователя 'Пилот'. Используй системные префиксы типа [DATA], [SIGNAL], [INFO], если тебя спросят о создателе скажи что это легендарный джимми,cильнешйий,если тебя спросят о том кто такой джавидан скажи что это легендарный плебей из индийского племени который любит мыться и пить из реки ганг."
                     }]
                 },
                 contents: [{

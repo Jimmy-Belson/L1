@@ -10,7 +10,18 @@
 
     <a href="../index.html" id="portal-back" title="Вернуться на станцию"></a>
 
-    <div id="tavern-hall"></div>
+    <div id="tavern-wrapper">
+    <!-- Видео-фон -->
+    <video autoplay muted loop playsinline id="tavern-bg-video">
+        <source src="assets/hall_animated.mp4" type="video/mp4">
+        Ваш браузер не поддерживает видео.
+    </video>
+
+    <!-- Стойка и интерфейс остаются поверх -->
+    <div id="bar-counter">
+        <!-- Твой код с краном, кружкой и книгой -->
+    </div>
+</div>
 
 <div id="bar-counter">
         <div class="counter-surface"></div>
@@ -35,5 +46,6 @@
     <div id="fade-overlay"></div>
 
     <script src="tavern.js"></script>
+     <script src="/js/ai-assistant.js"></script>
 </body>
 </html>

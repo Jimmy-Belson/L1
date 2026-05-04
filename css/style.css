@@ -2469,6 +2469,18 @@ body::after {
 .ai-window-float {
     z-index: 999999999 !important; 
 }
+#ai-content::-webkit-scrollbar {
+    width: 6px !important;
+}
+
+#ai-content::-webkit-scrollbar-track {
+    background: rgba(168, 85, 247, 0.1) !important;
+}
+
+#ai-content::-webkit-scrollbar-thumb {
+    background: #a855f7 !important;
+    border-radius: 10px !important;
+}
 #portal-to-tavern {
     position: fixed;
     bottom: 90px; /* Над кнопкой контактов */
