@@ -95,16 +95,29 @@ img, div {
 }
 
 #beer-tap {
-    width: clamp(100px, 12vw, 480px); 
-    height: clamp(440px, 41vh, 900px); /* Увеличили высоту, чтобы не резало */
-    background: url('assets/tap.png') no-repeat center bottom;
-    background-size: 500%; 
-    margin-bottom: -5px;
-     /* Добавляем это: */
-    margin-left: -140px; 
-    margin-right: -50px;
-    /* Теперь соседние элементы придвинутся ближе, 
-       хотя картинка внутри блока останется прежней */
+    width: 400px;
+    height: 388px;
+    background-image: url('assets/tap-spritesheetV2.png'); /* Проверь, что имя совпадает с файлом */
+    background-repeat: no-repeat;
+    
+    /* МАГИЯ ТУТ: Картинка ровно в 4 раза шире контейнера */
+    background-size: 400% 100%; 
+    background-position: 0% 0%; /* Стартуем с 0% */
+    
+    image-rendering: pixelated;
+    position: absolute;
+    bottom: -5px;
+    left: 100px;
+    z-index: 10;
+    transform-origin: bottom center;
+}
+
+
+@media (max-width: 1200px) {
+    #beer-tap { transform: scale(1); }
+}
+@media (max-width: 800px) {
+    #beer-tap { transform: scale(0.8); }
 }
 
 #mug {
@@ -187,4 +200,25 @@ img, div {
 @keyframes fire-reflection {
     0%, 100% { filter: brightness(1); transform: scale(1); }
     50% { filter: brightness(1.15); transform: scale(1.01); }
+}
+/* Определение анимации для переключения 4 кадров */
+@keyframes beerPour {
+  from {
+    /* Начинаем с первого кадра (0px) */
+    background-position: 0 0;
+  }
+  to {
+    /* Заканчиваем за последним кадром. Сдвигаем фон влево на всю ширину картинки */
+    background-position: -1600px 0;
+  }
+}
+
+/* Класс, который запускает анимацию */
+#beer-tap.animating {
+  /* Применяем анимацию:
+     название: beerPour, 
+     длительность: 1 секунда (можно поменять),
+     функция времени: steps(4) - ровно 4 резких шага,
+     повторение: infinite - бесконечно */
+  animation: beerPour 1.2s steps(4) infinite;
 }
