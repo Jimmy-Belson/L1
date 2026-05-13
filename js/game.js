@@ -1451,7 +1451,7 @@ handleBossDeath() {
 
     this.boss = null;
     this.bossSpawned = false;
-    this.gameTime = 0; // Таймер игры сбрасывается для следующего цикла
+ 
     
     // СБРОС ТАЙМЕРА СПАВНА:
     // Даем игроку 2-3 секунды тишины после победы
